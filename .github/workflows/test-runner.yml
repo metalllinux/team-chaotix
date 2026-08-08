@@ -1,0 +1,104 @@
+# Test runner: dispatchable test execution
+# Supports Docker-based testing (non-graphical) and Sparky testing (Rocky Linux)
+name: Test Runner
+
+on:
+  workflow_call:
+    inputs:
+      test-type:
+        required: true
+        type: string
+        description: 'docker or sparky'
+      docker-image:
+        required: false
+        type: string
+        default: 'ubuntu:latest'
+      sparky-test-dir:
+        required: false
+        type: string
+        default: 'tests/sparky'
+      sparky-vm-os:
+        required: false
+        type: string
+        default: 'rocky-10'
+      project-path:
+        required: false
+        type: string
+        default: '.'
+  workflow_dispatch:
+    inputs:
+      test-type:
+        required: true
+        type: choice
+        options:
+          - docker
+          - sparky
+        default: docker
+      docker-image:
+        required: false
+        type: string
+        default: 'ubuntu:latest'
+      sparky-test-dir:
+        required: false
+        type: string
+        default: 'tests/sparky'
+      sparky-vm-os:
+        required: false
+        type: string
+        default: 'rocky-10'
+      project-path:
+        required: false
+        type: string
+        default: '.'
+
+jobs:
+  # Docker-based testing for non-graphical projects
+  docker-test:
+    if: inputs.test-type == 'docker'
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+    steps:
+      # Checkout with cache
+      - uses: actions/checkout@v4
+
+      # Restore dependency cache
+      - uses: ./.github/actions/setup-deps-cache
+
+      # Run tests in Docker container
+      - uses: ./.github/actions/docker-test-runner
+        with:
+          image: ${{ inputs.docker-image }}
+          project-path: ${{ inputs.project-path }}
+
+      # Clean up Docker artifacts
+      - uses: ./.github/actions/docker-cleanup
+        if: always()
+
+  # Sparky testing for Rocky Linux projects
+  sparky-test:
+    if: inputs.test-type == 'sparky'
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+    steps:
+      # Checkout with cache
+      - uses: actions/checkout@v4
+
+      # Restore dependency cache
+      - uses: ./.github/actions/setup-deps-cache
+
+      # Set up libvirt VM with Rocky Linux
+      - uses: ./.github/actions/libvirt-vm-setup
+        with:
+          os: ${{ inputs.sparky-vm-os }}
+
+      # Run Sparky test suite
+      - uses: ./.github/actions/sparky-test-runner
+        with:
+          test-dir: ${{ inputs.sparky-test-dir }}
+          project-path: ${{ inputs.project-path }}
+
+      # Clean up VMs
+      - uses: ./.github/actions/libvirt-cleanup
+        if: always()

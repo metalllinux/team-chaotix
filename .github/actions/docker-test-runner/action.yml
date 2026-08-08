@@ -1,0 +1,34 @@
+# Docker test runner: execute tests inside a Docker container
+name: Docker Test Runner
+description: Run tests inside a Docker container for consistent environments
+
+inputs:
+  image:
+    description: 'Docker image to use for testing'
+    required: true
+    default: 'ubuntu:latest'
+  command:
+    description: 'Command to run inside the container'
+    required: false
+    default: 'bash -c "echo Running tests... && exit 0"'
+  project-path:
+    description: 'Path to project directory to mount'
+    required: false
+    default: '.'
+  extra-flags:
+    description: 'Additional Docker run flags'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables to prevent injection
+    - name: Run tests in Docker
+      shell: bash
+      env:
+        DOCKER_IMAGE: ${{ inputs.image }}
+        TEST_COMMAND: ${{ inputs.command }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        EXTRA_FLAGS: ${{ inputs.extra-flags }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

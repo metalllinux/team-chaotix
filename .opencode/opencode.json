@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Robotnik is the only agent that delegates. Making it the default
+  // means a bare `opencode` lands on the delegator rather than on a subagent
+  // that cannot fan work out.
+  "default_agent": "Robotnik",
+
+  // THIS is what prevents runaway recursion, not any `task: deny` permission.
+  // Depth 1 means Robotnik can call subagents and they cannot call
+  // further subagents, however hard they try.
+  "subagent_depth": 1,
+
+  // `auto: false` means a full context HARD-FAILS instead of silently
+  // degrading. That is deliberate: silent compaction drops the middle of a
+  // planning doc and the loop then runs on facts that are no longer there.
+  // The planning-doc contract in AGENTS.md section 2 is the only thing that
+  // makes this safe, so do not flip this to true to "fix" a context error.
+  // Fix the doc discipline instead.
+  "compaction": {
+    "auto": false,
+    "prune": true
+  },
+
+  // Caps a single tool result at 400 lines. A `git log` or a test dump that
+  // blows past this would otherwise eat the context that `auto: false` will
+  // not rescue.
+  "tool_output": {
+    "max_lines": 400
+  }
+}

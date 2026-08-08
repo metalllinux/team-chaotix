@@ -1,0 +1,28 @@
+# Checkout with git bundle caching for faster subsequent runs
+name: Checkout with Cache
+description: Checkout repository with git bundle caching to speed up subsequent runs
+
+inputs:
+  ref:
+    description: 'Branch, tag, or SHA to checkout'
+    required: false
+  fetch-depth:
+    description: 'Number of commits to fetch'
+    required: false
+    default: '1'
+  cache-key-prefix:
+    description: 'Prefix for cache key'
+    required: false
+    default: 'git-bundle'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables to prevent injection
+    - name: Checkout repository with cache
+      shell: bash
+      env:
+        INPUT_REF: ${{ inputs.ref }}
+        INPUT_FETCH_DEPTH: ${{ inputs.fetch-depth }}
+        CACHE_KEY_PREFIX: ${{ inputs.cache-key-prefix }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

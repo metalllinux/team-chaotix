@@ -1,0 +1,24 @@
+# Security audit: combined secret scanning and dependency check
+name: Security Audit
+description: Run comprehensive security audit including gitleaks, trufflehog, and dependency checks
+
+inputs:
+  scan-type:
+    description: 'Type of scan: gitleaks, trufflehog, or all'
+    required: false
+    default: 'all'
+  path:
+    description: 'Path to scan'
+    required: false
+    default: '.'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Run security audit
+      shell: bash
+      env:
+        SCAN_TYPE: ${{ inputs.scan-type }}
+        SCAN_PATH: ${{ inputs.path }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

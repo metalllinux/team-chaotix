@@ -1,0 +1,24 @@
+# Gitleaks action: scan for hardcoded secrets
+name: Gitleaks Action
+description: Run gitleaks to detect hardcoded secrets
+
+inputs:
+  path:
+    description: 'Path to scan'
+    required: false
+    default: '.'
+  baseline:
+    description: 'Path to baseline file'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Run gitleaks
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.path }}
+        BASELINE_PATH: ${{ inputs.baseline }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

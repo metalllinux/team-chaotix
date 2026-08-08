@@ -1,0 +1,19 @@
+# Docker cleanup: remove stale containers, images, and volumes
+name: Docker Cleanup
+description: Remove stale Docker containers, images, and volumes
+
+inputs:
+  keep-images:
+    description: 'Number of recent images to keep'
+    required: false
+    default: '5'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Docker cleanup
+      shell: bash
+      env:
+        KEEP_IMAGES: ${{ inputs.keep-images }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

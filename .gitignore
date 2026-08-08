@@ -1,0 +1,13 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.env
+CLAUDE.md
+*.bak
+scratch/
+planning/docs/*.bak
+*.qcow2

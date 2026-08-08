@@ -1,0 +1,39 @@
+# Libvirt VM setup: provision Rocky Linux VM for testing
+name: Libvirt VM Setup
+description: Set up a libvirt/QEMU virtual machine for Rocky Linux testing
+
+inputs:
+  os:
+    description: 'Operating system image (rocky-10, rocky-9)'
+    required: false
+    default: 'rocky-10'
+  ram:
+    description: 'RAM in MB'
+    required: false
+    default: '4096'
+  cores:
+    description: 'Number of CPU cores'
+    required: false
+    default: '4'
+  disk-size:
+    description: 'Disk size in GB'
+    required: false
+    default: '40'
+  vm-name:
+    description: 'Virtual machine name'
+    required: false
+    default: 'test-vm'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Set up libvirt VM
+      shell: bash
+      env:
+        VM_OS: ${{ inputs.os }}
+        VM_RAM: ${{ inputs.ram }}
+        VM_CORES: ${{ inputs.cores }}
+        VM_DISK_SIZE: ${{ inputs.disk-size }}
+        VM_NAME: ${{ inputs.vm-name }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

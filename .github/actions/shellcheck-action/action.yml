@@ -1,0 +1,24 @@
+# Shellcheck action: lint bash scripts
+name: Shellcheck Action
+description: Run shellcheck on bash scripts
+
+inputs:
+  paths:
+    description: 'Paths to check (glob patterns, space-separated)'
+    required: false
+    default: '*.sh'
+  severity:
+    description: 'Minimum severity level (info, warning, error)'
+    required: false
+    default: 'warning'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Run shellcheck
+      shell: bash
+      env:
+        CHECK_PATHS: ${{ inputs.paths }}
+        SEVERITY: ${{ inputs.severity }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

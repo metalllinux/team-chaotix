@@ -1,0 +1,19 @@
+# Dependency cache: restore and save apt/pip/npm caches
+name: Setup Dependencies Cache
+description: Restore and save dependency caches for faster subsequent runs
+
+inputs:
+  cache-key-suffix:
+    description: 'Suffix for cache key to differentiate environments'
+    required: false
+    default: 'default'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Setup dependency cache
+      shell: bash
+      env:
+        CACHE_SUFFIX: ${{ inputs.cache-key-suffix }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

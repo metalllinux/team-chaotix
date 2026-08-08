@@ -1,0 +1,24 @@
+# Libvirt cleanup: destroy VMs and clean up resources
+name: Libvirt Cleanup
+description: Destroy virtual machines and clean up libvirt resources
+
+inputs:
+  vm-name:
+    description: 'Specific VM to destroy (leave empty for all test VMs)'
+    required: false
+    default: 'test-vm'
+  remove-disks:
+    description: 'Remove disk images (true/false)'
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Libvirt cleanup
+      shell: bash
+      env:
+        VM_NAME: ${{ inputs.vm-name }}
+        REMOVE_DISKS: ${{ inputs.remove-disks }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"

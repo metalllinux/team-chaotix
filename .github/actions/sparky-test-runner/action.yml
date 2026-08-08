@@ -1,0 +1,34 @@
+# Sparky test runner: execute Sparky/Sparrow tests in libvirt VM
+name: Sparky Test Runner
+description: Run Sparky/Sparrow test suite inside a libvirt VM
+
+inputs:
+  test-dir:
+    description: 'Directory containing Sparky test tasks'
+    required: false
+    default: 'tests/sparky'
+  project-path:
+    description: 'Path to the project under test'
+    required: false
+    default: '.'
+  vm-name:
+    description: 'Name of the libvirt VM to use'
+    required: false
+    default: 'sparky-test-vm'
+  sparky-config:
+    description: 'Path to Sparky configuration (vars.yaml)'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    # Bind inputs to environment variables
+    - name: Run Sparky tests
+      shell: bash
+      env:
+        SPARKY_TEST_DIR: ${{ inputs.test-dir }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        SPARKY_VM_NAME: ${{ inputs.vm-name }}
+        SPARKY_CONFIG: ${{ inputs.sparky-config }}
+      run: bash "${GITHUB_ACTION_PATH}/run.sh"
