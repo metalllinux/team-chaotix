@@ -1,0 +1,41 @@
+# Static checks: lint, syntax, and style gates
+# Runs on push and PR for fast feedback without any secrets or infrastructure
+name: Static Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege: only read repo contents
+permissions:
+  contents: read
+
+jobs:
+  # Syntax and style checks for bash, Python, YAML, and Go files
+  lint:
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+    steps:
+      # Checkout with dependency cache for faster startup
+      - uses: actions/checkout@v4 # SHA: 08c6903
+
+      # Restore dependency cache
+      - uses: ./.github/actions/setup-deps-cache
+
+      # Run shellcheck on all bash scripts
+      - uses: ./.github/actions/shellcheck-action
+        with:
+          paths: '.github/**/*.sh'
+
+      # Run language-specific linters via composite action
+      - run: bash "${GITHUB_ACTION_PATH}/run.sh"
+        env:
+          LINT_PATHS: '.github/**/*.sh .opencode/**/*.md'
+
+      # Clean up cached dependencies
+      - uses: ./.github/actions/docker-cleanup
+        if: always()

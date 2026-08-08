@@ -7,7 +7,8 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 
 | Key | Title | Owner agent | Planning doc | Status |
 |---|---|---|---|---|
-| n/a | Team Chaotix V1 Setup | n/a | n/a, built ahead of the team | In Progress |
+| TASK-0001 | Team Chaotix V1 Setup | Robotnik | n/a, built ahead of the team | Done |
+| TASK-0002 | Port Cinnamon Desktop to Rocky Linux 10 | Robotnik | planning/docs/TASK-0002-cinnamon-rocky10.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
