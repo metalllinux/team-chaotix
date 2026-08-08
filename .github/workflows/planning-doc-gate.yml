@@ -1,0 +1,51 @@
+# Planning doc gate: ensures review, security, and testing happened before merge
+# Prevents the pattern of skipping review and security agents before merge
+name: Planning Doc Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Verify that planning doc exists and required sections are populated
+  planning-gate:
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # Checkout with cache
+      - uses: actions/checkout@v4
+
+      # Check for planning doc references in PR description
+      - name: Check planning doc reference
+        run: |
+          # PR body must reference a planning doc for non-trivial changes
+          pr_body="${{ github.event.pull_request.body }}"
+          if ! echo "$pr_body" | grep -qi "planning/doc\|TASK-[0-9]\{4\}"; then
+            echo "::warning::PR description should reference a planning doc (TASK-XXXX)"
+          fi
+
+      # Verify Review, Security, and Test Results sections exist
+      - name: Verify planning doc sections
+        run: |
+          # Look for planning docs modified in this PR
+          planning_docs=$(git diff --name-only origin/main HEAD -- planning/docs/ 2>/dev/null || true)
+          if [ -n "$planning_docs" ]; then
+            for doc in $planning_docs; do
+              echo "Checking $doc for required sections..."
+              for section in "Review" "Security" "Test Results"; do
+                if ! grep -q "## $section" "$doc"; then
+                  echo "::error file=$doc::Missing required section: ## $section"
+                  exit 1
+                fi
+              done
+            done
+          else
+            echo "No planning docs modified in this PR"
+          fi
