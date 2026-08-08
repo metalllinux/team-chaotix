@@ -17,13 +17,13 @@ echo "Checking dependencies..."
 # Raku (required for Sparky)
 if ! command -v raku >/dev/null 2>&1; then
   echo "Raku not found. Installing..."
-  sudo dnf install -y -q raku 2>/dev/null || sudo apt-get install -y -qq raku 2>/dev/null || true
+  sudo dnf install -y -q raku 2>/dev/null || true
 fi
 
 # libvirt tools
 if ! command -v virsh >/dev/null 2>&1; then
   echo "virsh not found. Installing libvirt..."
-  sudo apt-get install -y -qq libvirt-clients 2>/dev/null || sudo dnf install -y -q libvirt-daemon-client 2>/dev/null || true
+  sudo dnf install -y -q libvirt-daemon-client 2>/dev/null || true
 fi
 
 # Check if Sparky is installed

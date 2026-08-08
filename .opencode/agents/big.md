@@ -97,7 +97,7 @@ Reference: `https://docs.rockylinux.org/10/guides/automation/sparky_getting_star
 Test workflows live in `.github/workflows/`. Custom actions live in `.github/actions/`.
 
 House rules:
-- **Runners are `[self-hosted, Linux, X64]`** on Ubuntu Latest
+- **Runners are `[self-hosted, Linux, X64]`** on Rocky Linux 10.2
 - **No Marketplace actions.** Everything is a custom action we wrote, except `actions/checkout`
 - **Dependencies are cached** to minimize startup time
 - **Comment every line** in workflow files

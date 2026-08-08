@@ -49,7 +49,7 @@ Key permission patterns:
 
 1. **opencode** installed and configured
 2. **Git** with access to `metalllinux/team-chaotix` on GitHub
-3. **Self-hosted GitHub Actions runner** on Ubuntu (see Runner setup below)
+3. **Self-hosted GitHub Actions runner** on Rocky Linux (see Runner setup below)
 
 ### Quick start
 
@@ -83,14 +83,13 @@ project directory is reached through `external_directory`.
 
 ## Self-hosted runner setup
 
-Team Chaotix requires a self-hosted GitHub Actions runner on Ubuntu.
+Team Chaotix requires a self-hosted GitHub Actions runner on Rocky Linux 10.
 
 ### Install runner
 
 ```bash
-# Install prerequisites
-sudo apt-get update
-sudo apt-get install -y curl git jq docker.io libvirt-clients qemu-kvm
+# Install prerequisites on Rocky Linux 10
+sudo dnf install -y curl git jq podman libvirt-daemon-client libvirt-daemon-config-network qemu-kvm
 
 # Download runner (get latest URL from GitHub repo settings)
 curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/latest/download/actions-linux-x64-<version>.tar.gz
@@ -105,12 +104,18 @@ sudo ./svc.sh install
 sudo ./svc.sh start
 ```
 
-### Docker for testing
+### Docker / Podman for testing
+
+Rocky Linux ships with Podman instead of Docker. The `docker-test-runner` action uses the Docker CLI,
+which is available via `podman-docker`:
 
 ```bash
-# Add user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
+# Install Podman docker compatibility shim
+sudo dnf install -y podman-docker
+
+# Add user to libvirt group for VM access
+sudo usermod -aG libvirt $USER
+newgrp libvirt
 
 # Verify
 docker ps
@@ -119,8 +124,8 @@ docker ps
 ### Libvirt for Sparky testing
 
 ```bash
-# Install libvirt
-sudo apt-get install -y libvirt-daemon-system libvirt-clients bridge-utils virtinst
+# Install libvirt on Rocky Linux 10
+sudo dnf install -y libvirt-daemon-system libvirt-daemon-client bridge-utils virtinst
 
 # Start and enable
 sudo systemctl enable --now libvirtd
@@ -139,7 +144,7 @@ git clone https://github.com/rocky-linux/sparky.git
 cd sparky
 
 # Install dependencies (Raku for Sparrow tasks)
-sudo apt-get install -y raku
+sudo dnf install -y raku
 
 # Configure Sparky
 # See https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/

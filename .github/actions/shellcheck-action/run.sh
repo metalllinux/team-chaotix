@@ -12,7 +12,7 @@ severity="${SEVERITY:-warning}"
 # Check if shellcheck is installed
 if ! command -v shellcheck >/dev/null 2>&1; then
   echo "Installing shellcheck..."
-  apt-get update -qq && apt-get install -y -qq shellcheck >/dev/null 2>&1 || true
+  sudo dnf install -y -q shellcheck >/dev/null 2>&1 || true
 fi
 
 # Set severity filter

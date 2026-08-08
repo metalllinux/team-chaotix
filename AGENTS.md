@@ -128,7 +128,7 @@ the command that produced it. If you did not verify something, say so explicitly
 
 - **Workflows live in `.github/workflows/`.** `.github/actions/` holds custom action definitions. This
   is a GitHub constraint, not a preference.
-- **Runners are `[self-hosted, Linux, X64]` on Ubuntu Latest.** Every job runs on the user's local
+- **Runners are `[self-hosted, Linux, X64]` on Rocky Linux 10.2.** Every job runs on the user's local
   machine. Dependencies are cached to minimize startup time.
 - **No Marketplace or third-party actions.** The single permitted exception is `actions/checkout`,
   SHA-pinned with the tag in a trailing comment. Everything else is a custom action we wrote.
