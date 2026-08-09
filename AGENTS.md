@@ -11,6 +11,12 @@ Team Chaotix is a general-purpose, autonomous software development team built on
 handles any software development task thrown at it, from initial planning through deployment. All
 repositories are hosted on GitHub under the `metalllinux` account.
 
+**Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
+is `dnf`. Docker CE is installed directly (not podman). libvirt and QEMU are installed and running.
+
+**Model:** All agents use `evo-x2-qwen3.6/Qwen3.6-27B-UD-Q4_K_XL` on a local llama.cpp instance
+at `http://192.168.1.106:8085/v1`.
+
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
 Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to
 external repositories outside `metalllinux`, and deployments that require human confirmation.
@@ -158,12 +164,14 @@ The agents run **locally in opencode**. CI is entirely deterministic: agents *di
 Testing is multi-layered and adapts to the project type:
 
 - **Non-graphical projects:** Docker-based testing for consistent environments. Use `docker-test-runner`
-  action for containerized test execution.
+  action for containerized test execution. Docker CE is installed directly on the host.
 - **Graphical projects on Rocky Linux:** libvirt-based VMs with Sparky testing framework. Sparky uses
-  Sparrow tasks for automated UI testing. See
+  Sparrow tasks (Raku) for automated UI testing. See
   `https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/`.
 - **All Rocky Linux projects:** Sparky testing applies regardless of graphical or non-graphical nature.
 - **Unit and integration tests:** Standard language-native frameworks (pytest, cargo test, go test, etc.)
+- **Raku (Sparky prerequisite):** Not in Rocky Linux 10 repos. Install via
+  `curl -sL https://raw.githubusercontent.com/SuperBiBi20/raku-install/master/raku-install | bash`
 
 The `Big (Testing)` agent determines which testing layers apply and configures them accordingly.
 
@@ -209,3 +217,23 @@ Applies to READMEs, PR descriptions, and anything the user reads.
 Every agent operates with the minimum permissions required for its role. If an agent does not need
 write access, it does not get write access. If an agent does not need bash, it does not get bash.
 See individual agent definitions for specific permissions.
+
+---
+
+## 12. System configuration
+
+### Host system
+- **OS:** Rocky Linux 10.2 (Red Quartz)
+- **Package manager:** `dnf` (not `apt`)
+- **Container runtime:** Docker CE (installed directly, not podman)
+- **Virtualization:** libvirt + QEMU/KVM (installed and running)
+- **Runner:** GitHub Actions self-hosted, extracted to `~/gh-runner/`, needs registration token
+  from https://github.com/metalllinux/team-chaotix/settings/actions/runners
+
+### Credential storage
+- **GitHub Secrets only.** No local credential files, no Keychain, no pass store.
+- Issue tracking is **GitHub Issues only** via `gh` CLI. No Jira integration.
+
+### Sparky / Raku
+- Raku is not in Rocky Linux 10 default repos. Must be installed manually.
+- Sparky is cloned per-project as needed.
