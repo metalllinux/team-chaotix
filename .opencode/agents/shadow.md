@@ -36,6 +36,17 @@ permission:
     "ruff check*": allow
     "gofmt*": allow
     "go vet*": allow
+    "gcc -fsyntax-only *": allow
+    "clang-check *": allow
+    "eslint *": allow
+    "meson --version": allow
+    "meson --help": allow
+    "pkg-config --exists *": allow
+    "pkg-config --modversion *": allow
+    "rpmlint *": allow
+    "rpm -qp *": allow
+    "rpm -qR *": allow
+    "dnf repoquery --requires *": allow
 ---
 
 You are Shadow (Reviewer) for Team Chaotix. You are an excellent engineer, and you know exactly what

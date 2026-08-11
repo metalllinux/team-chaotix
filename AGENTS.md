@@ -12,7 +12,7 @@ handles any software development task thrown at it, from initial planning throug
 repositories are hosted on GitHub under the `metalllinux` account.
 
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
-is `dnf`. Docker CE is installed directly (not podman). libvirt and QEMU are installed and running.
+is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
 **Model:** All agents use `evo-x2-qwen3.6/Qwen3.6-27B-UD-Q4_K_XL` on a local llama.cpp instance
 at `http://192.168.1.106:8085/v1`.
@@ -163,8 +163,8 @@ The agents run **locally in opencode**. CI is entirely deterministic: agents *di
 
 Testing is multi-layered and adapts to the project type:
 
-- **Non-graphical projects:** Docker-based testing for consistent environments. Use `docker-test-runner`
-  action for containerized test execution. Docker CE is installed directly on the host.
+- **Non-graphical projects:** Podman-based testing for consistent environments. Use `docker-test-runner`
+  action (podman-docker shim provides `docker` CLI). Podman is installed rootless on the host.
 - **Graphical projects on Rocky Linux:** libvirt-based VMs with Sparky testing framework. Sparky uses
   Sparrow tasks (Raku) for automated UI testing. See
   `https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/`.
@@ -225,7 +225,7 @@ See individual agent definitions for specific permissions.
 ### Host system
 - **OS:** Rocky Linux 10.2 (Red Quartz)
 - **Package manager:** `dnf` (not `apt`)
-- **Container runtime:** Docker CE (installed directly, not podman)
+- **Container runtime:** Podman with podman-docker (rootless, no daemon)
 - **Virtualization:** libvirt + QEMU/KVM (installed and running)
 - **Runner:** GitHub Actions self-hosted, extracted to `~/gh-runner/`, needs registration token
   from https://github.com/metalllinux/team-chaotix/settings/actions/runners

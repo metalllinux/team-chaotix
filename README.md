@@ -104,21 +104,21 @@ sudo ./svc.sh install
 sudo ./svc.sh start
 ```
 
-### Docker / Podman for testing
+### Podman for testing
 
-Rocky Linux ships with Podman instead of Docker. The `docker-test-runner` action uses the Docker CLI,
+Rocky Linux ships with Podman. The `docker-test-runner` action uses the Docker CLI,
 which is available via `podman-docker`:
 
 ```bash
-# Install Podman docker compatibility shim
-sudo dnf install -y podman-docker
+# Install Podman and docker compatibility shim
+sudo dnf install -y podman podman-docker
 
 # Add user to libvirt group for VM access
 sudo usermod -aG libvirt $USER
 newgrp libvirt
 
 # Verify
-docker ps
+podman ps
 ```
 
 ### Libvirt for Sparky testing
@@ -157,7 +157,7 @@ sudo dnf install -y raku
 | `static-checks.yml` | push, PR | Lint and syntax checks |
 | `secret-scan.yml` | reusable | Secret detection (gitleaks + trufflehog) |
 | `secret-scan-self.yml` | push, weekly | Scan this repository |
-| `test-runner.yml` | dispatch, reusable | Docker or Sparky test execution |
+| `test-runner.yml` | dispatch, reusable | Podman or Sparky test execution |
 | `planning-doc-gate.yml` | PR | Ensures review/security/testing happened |
 | `deploy.yml` | dispatch only | Manual deployment with GPG preflight |
 
@@ -169,8 +169,8 @@ All actions are hand-written. No Marketplace actions are used (except `actions/c
 |---|---|
 | `checkout-with-cache` | Repository checkout with git bundle caching |
 | `setup-deps-cache` | Dependency cache restore/save |
-| `docker-cleanup` | Remove stale Docker containers and images |
-| `docker-test-runner` | Run tests in Docker containers |
+| `docker-cleanup` | Remove stale Podman containers and images |
+| `docker-test-runner` | Run tests in Podman containers (via podman-docker shim) |
 | `libvirt-vm-setup` | Provision Rocky Linux VM via libvirt |
 | `libvirt-cleanup` | Destroy VMs and clean pools |
 | `gitleaks-action` | Secret detection with positive control canary |

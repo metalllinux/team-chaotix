@@ -11,7 +11,7 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  edit: deny
+  edit: allow
   task: deny
   webfetch: allow
   websearch: allow
