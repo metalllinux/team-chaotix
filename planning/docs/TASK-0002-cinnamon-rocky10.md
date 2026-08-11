@@ -9,7 +9,20 @@
 
 ## Status
 
-**Now:** Implementation in progress. Machine rebuilt (Rocky Linux 10.2 fresh). Infrastructure being reinstalled (Podman, libvirt, QEMU, Raku). Build tools and CRB being configured. sudo NOPASSWD is working. Team updates pushed: Omega now has edit permissions, Shadow has C/JS/meson validation tools, AGENTS.md updated to Podman.
+**Now:** Implementation in progress. Machine rebuilt, infrastructure complete. Build crash identified: `ninja` defaulting to 16 parallel jobs caused OOM. Fixed with `maxjobs=2` in meson.conf and `~/.rpmmacros`. All builds now use `-j2`.
+
+**Completed components:**
+- cinnamon-desktop: built, installed, RPMs produced (6.7.2-1.el10)
+- cjs: built, installed, RPM spec exists (mozjs115 workaround via extracted Fedora RPM headers)
+- muffin: built with `-Dnative_backend=false -Dudev=false -Dstartup_notification=false -Dwayland=false`, installed (6.7.4-1.el10)
+- mozjs115-devel: custom RPM created (115.29.0-2.el10)
+
+**Infrastructure:**
+- Podman + podman-docker: installed, running
+- libvirt + QEMU/KVM: installed, running
+- CRB: enabled
+- gh CLI: installed, git credential configured (token-based)
+- meson 1.4.1, ninja 1.11.1, rpmbuild 4.19.1.1: installed
 
 **Environment / scope:**
 - Files in scope: `~/linux/projects/cinnamon_4_rocky10/` (project workspace)
@@ -51,14 +64,16 @@
 - [x] Amy: Create detailed plan for Cinnamon porting, including dependency analysis
 - [x] Amy: Determine build approach (RPM packaging vs source build)
 - [x] Amy: Identify Sparky test requirements for Cinnamon UI components
-- [ ] Tails: W0.1 — Set up build environment (enable CRB, install meson via pip, rpm-build, git, dev tools)
-- [ ] Tails: W1.1 ∥ W1.2 — Port cjs and muffin RPM specs from Fedora to EL10 (parallel)
-- [ ] Tails: W2.1 ∥ W2.2 ∥ W2.3 — Port xapps, cinnamon-desktop, cinnamon-session (parallel, after Phase 1)
-- [ ] Tails: W3.1 ∥ W3.2 ∥ W3.3 ∥ W3.4 — Port settings-daemon, control-center, nemo, cinnamon (parallel, after Phase 2)
+- [x] Tails: W0.1 — Set up build environment (CRB, meson, rpm-build, git, dev tools, Podman, libvirt)
+- [x] Tails: W1.1 — Build cjs (mozjs115 workaround via Fedora RPM headers)
+- [x] Tails: W1.2 — Build muffin (X11-only, no Wayland, no native backend)
+- [x] Tails: cinnamon-desktop — Built, installed, RPMs produced
+- [ ] Tails: W2.1 ∥ W2.2 ∥ W2.3 — Port xapps, cinnamon-session (cinnamon-desktop done)
+- [ ] Tails: W3.1 ∥ W3.2 ∥ W3.3 ∥ W3.4 — Port settings-daemon, control-center, nemo, cinnamon
 - [ ] Tails + Omega: W4.1 — SELinux policy for Cinnamon components
 - [ ] Big: W4.2 — Sparky UI test suite on libvirt VM
 - [ ] Vector: W5.1 — Rocky Linux build documentation
-- [ ] Knuckles: W5.2 — Fork creation at metalllinux/cinnamon
+- [ ] Knuckles: W5.2 — Push to metalllinux/cinnamon-for-rocky10
 
 ---
 
