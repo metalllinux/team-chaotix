@@ -161,6 +161,37 @@ for testing Cinnamon packages is at:
 
 This location is referenced by `Big` when creating libvirt VMs for Sparky testing.
 
+### Libvirt setup on Rocky Linux 10.2
+
+Reference: https://docs.rockylinux.org/10/guides/virtualization/libvirt-rocky/
+
+```bash
+# Install libvirt packages
+sudo dnf install -y libvirt-daemon-system libvirt-daemon-client qemu-kvm
+
+# Start and enable libvirt
+sudo systemctl enable --now libvirtd
+
+# Add user to libvirt group for VM access
+sudo usermod -aG libvirt $USER
+
+# Verify libvirt is running
+virsh list
+
+# Create VM from ISO (for testing)
+virt-install \
+  --name rocky10-test \
+  --ram 4096 \
+  --vcpus 2 \
+  --disk size=20 \
+  --cdrom ~/ISOs/Rocky-10.2-x86_64-dvd1.iso \
+  --os-type linux \
+  --os-variant rocky-10.0 \
+  --graphics none \
+  --console pty,target_type=serial \
+  --extra-args 'console=ttyS0,115200n8 serial'
+```
+
 ## CI/CD workflows
 
 | Workflow | Trigger | Purpose |
