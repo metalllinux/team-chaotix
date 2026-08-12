@@ -49,7 +49,24 @@ Key permission patterns:
 
 1. **opencode** installed and configured
 2. **Git** with access to `metalllinux/team-chaotix` on GitHub
-3. **Self-hosted GitHub Actions runner** on Rocky Linux (see Runner setup below)
+3. **GitHub token** with `repo` and `workflow` scopes (see below)
+4. **Self-hosted GitHub Actions runner** on Rocky Linux (see Runner setup below)
+
+### GitHub authentication
+
+Sonic, Knuckles, and Robotnik use `gh` CLI to read Issues, create PRs, and dispatch workflows. The
+token must be available as the `GH_TOKEN` environment variable before launching opencode:
+
+```bash
+export GH_TOKEN="ghp_..."
+opencode
+```
+
+The token needs `repo` and `workflow` scopes. That covers reading Issues and PRs, creating pull
+requests, and triggering GitHub Actions workflow runs.
+
+Do not commit the token to the repository. Keep it in `~/.bashrc` or a secret store. Token files
+named `githubtoken*.md` are in `.gitignore` to prevent accidental commits.
 
 ### Quick start
 

@@ -11,3 +11,6 @@ CLAUDE.md
 scratch/
 planning/docs/*.bak
 *.qcow2
+githubtoken*.md
+gh_token*
+.github_token
