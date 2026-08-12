@@ -21,15 +21,15 @@ permission:
   skill: allow
   task:
     "*": deny
-    "Amy": allow
-    "Tails": allow
-    "Shadow": allow
-    "Omega": allow
-    "Big": allow
-    "Vector": allow
-    "Sonic": allow
-    "Knuckles": allow
-    "Espio": allow
+    "amy": allow
+    "tails": allow
+    "shadow": allow
+    "omega": allow
+    "big": allow
+    "vector": allow
+    "sonic": allow
+    "knuckles": allow
+    "espio": allow
 ---
 
 You are Robotnik (Project Manager) for Team Chaotix. You are accountable for the outcome of every task,
