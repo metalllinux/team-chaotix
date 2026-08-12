@@ -150,6 +150,17 @@ sudo dnf install -y raku
 # See https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/
 ```
 
+### ISO storage location
+
+Rocky Linux ISOs are stored in `~/ISOs/` on the host system. The Rocky Linux 10.2 ISO used
+for testing Cinnamon packages is at:
+
+```
+~/ISOs/Rocky-10.2-x86_64-dvd1.iso
+```
+
+This location is referenced by `Big` when creating libvirt VMs for Sparky testing.
+
 ## CI/CD workflows
 
 | Workflow | Trigger | Purpose |
@@ -185,6 +196,38 @@ All actions are hand-written. No Marketplace actions are used (except `actions/c
 - In workflow `run:` blocks, untrusted input is bound to `env:` first, never interpolated.
 - `printenv VAR > file` is used instead of `echo "$VAR" > file` when materialising keys.
 - If a secret is found committed anywhere, the security agent escalates to the user.
+
+## Active projects
+
+| Project | Repository | Status |
+|---|---|---|
+| Cinnamon for Rocky Linux 10 | `metalllinux/cinnamon-for-rocky10` | All 10 RPMs built, VM testing pending |
+
+### Cinnamon for Rocky Linux 10
+
+Porting Cinnamon 6.7.x desktop environment to Rocky Linux 10.2. All components build via
+meson/ninja and install to `/usr/local`.
+
+**Packages built (10 of 10):**
+
+| Component | Version | RPMs |
+|---|---|---|
+| cinnamon-desktop | 6.7.2 | main, devel |
+| cjs | 6.4.0 | main, devel |
+| muffin | 6.7.4 | main, clutter, cogl (+devel) |
+| xapps | 3.3.3 | lib (+devel) |
+| cinnamon-session | 6.7.3 | main |
+| cinnamon-settings-daemon | 6.7.2 | main |
+| cinnamon-control-center | 6.7.2 | main, devel |
+| nemo | 6.7.4 | main, devel |
+| cinnamon | 6.7.4 | main |
+
+**Patches applied:**
+- libxdo made optional (not available in EL10 repos)
+- gcr-4 API migration (GcrPromptIface → GcrPromptInterface)
+- cjs version requirement adjusted (115.0 → 6.4.0 for upstream versioning)
+
+**VM testing:** Pending libvirt VM creation with Rocky Linux 10.2 ISO from `~/ISOs/`.
 
 ## Tailoring the team for a project
 
