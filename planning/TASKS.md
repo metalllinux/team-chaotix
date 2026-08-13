@@ -10,7 +10,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0001 | Team Chaotix V1 Setup | Robotnik | n/a, built ahead of the team | Done |
 | TASK-0002 | Port Cinnamon Desktop to Rocky Linux 10 | Robotnik | planning/docs/TASK-0002-cinnamon-rocky10.md | Done |
 | TASK-0003 | VM Testing: Cinnamon RPMs on Rocky Linux 10.2 | Robotnik | planning/docs/TASK-0003-cinnamon-vm-testing.md | In Test |
-| TASK-0004 | Build mozjs115 runtime and fix muffin circular dependency | Robotnik | planning/docs/TASK-0004-mozjs115-runtime-muffin-fix.md | Planning |
+| TASK-0004 | Build mozjs115 115.29.0, update cjs to 140.0, fix muffin circular dependency | Robotnik | planning/docs/TASK-0004-mozjs115-runtime-muffin-fix.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
