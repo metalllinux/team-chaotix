@@ -27,5 +27,6 @@
   // not rescue.
   "tool_output": {
     "max_lines": 400
-  }
+  },
+
 }
