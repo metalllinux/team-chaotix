@@ -14,3 +14,4 @@ planning/docs/*.bak
 githubtoken*.md
 gh_token*
 .github_token
+*.src.rpm
