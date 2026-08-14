@@ -86,6 +86,56 @@ opencode
 from a project directory loads zero custom agents and no `AGENTS.md`, and fails silently. The
 project directory is reached through `external_directory`.
 
+### Git worktrees for parallel projects
+
+Team Chaotix supports working on multiple projects simultaneously using git worktrees. Each
+worktree is an independent working directory linked to the same repository.
+
+**Creating a worktree for a project:**
+
+```bash
+cd ~/AI/projects/team-chaotix/team-chaotix
+git worktree add ../worktrees/cinnamon -b worktree/cinnamon
+cp -r .opencode ../worktrees/cinnamon/
+cp AGENTS.md ../worktrees/cinnamon/
+```
+
+**Launching opencode in a worktree:**
+
+```bash
+cd ~/worktrees/cinnamon
+opencode
+```
+
+Each worktree maintains its own branch, so changes don't conflict between projects. The main
+repo at `~/AI/projects/team-chaotix/team-chaotix/` remains the source of truth for team
+configuration, while worktrees handle project-specific development.
+
+**Listing and removing worktrees:**
+
+```bash
+# List all active worktrees
+git worktree list
+
+# Remove a worktree
+git worktree remove ../worktrees/cinnamon
+git branch -D worktree/cinnamon
+```
+
+**Multiple simultaneous projects:**
+
+```bash
+# Terminal 1: Cinnamon project
+cd ~/worktrees/cinnamon
+opencode
+
+# Terminal 2: Another project
+cd ~/worktrees/another-project
+opencode
+
+# Both sessions run independently without file conflicts
+```
+
 ### How it works
 
 1. The user hands a task to Robotnik
@@ -335,6 +385,7 @@ team-chaotix/
   .github/
     workflows/          # CI/CD workflow definitions
     actions/            # Custom composite actions
+    scripts/            # Helper scripts (worktrees, etc.)
   .opencode/
     opencode.json       # Project configuration
     agents/             # Agent definitions (10 files)
@@ -344,7 +395,12 @@ team-chaotix/
     templates/          # Doc templates
   AGENTS.md             # Shared operating rules (auto-loaded)
   README.md             # This file
+  worktrees/            # Git worktrees for parallel projects (auto-created)
 ```
+
+**Worktrees directory** (`worktrees/`): Each project gets its own worktree directory with
+isolated working files. Worktrees are git worktrees that share the same repository but
+maintain independent working directories.
 
 ## Model
 
@@ -356,6 +412,35 @@ Changes to the agentic team are committed to this repository and pushed to
 `https://github.com/metalllinux/team-chaotix`. To pull updates:
 
 ```bash
-cd ~/ai/projects/team-chaotix/team-chaotix
+cd ~/AI/projects/team-chaotix/team-chaotix
 git pull origin main
+```
+
+**Propagating changes to worktrees:**
+
+After updating the main repo, worktrees need to pull the configuration changes:
+
+```bash
+# Update main repo
+cd ~/AI/projects/team-chaotix/team-chaotix
+git pull origin main
+
+# Update each worktree's configuration
+for worktree in ~/worktrees/*/; do
+    cp -r .opencode "$worktree/"
+    cp AGENTS.md "$worktree/"
+done
+```
+
+Or use the worktree management script:
+
+```bash
+# Create worktree with proper configuration
+./.github/scripts/manage-worktrees.sh create <project-name>
+
+# List active worktrees
+./.github/scripts/manage-worktrees.sh list
+
+# Remove worktree
+./.github/scripts/manage-worktrees.sh remove <project-name>
 ```

@@ -220,7 +220,60 @@ See individual agent definitions for specific permissions.
 
 ---
 
-## 12. System configuration
+## 12. Git worktrees
+
+Team Chaotix supports parallel opencode sessions through git worktrees. Each worktree operates
+independently with its own working directory and branch.
+
+### Setup
+
+```bash
+# Create worktree for a project
+git worktree add ../worktrees/<project-name> -b "worktree/<project-name>"
+
+# Copy configuration to worktree
+cp -r .opencode ../worktrees/<project-name>/
+cp AGENTS.md ../worktrees/<project-name>/
+
+# Launch opencode in worktree
+cd ../worktrees/<project-name>
+opencode
+```
+
+### Conventions
+
+- **Worktrees live in `~/worktrees/`** relative to the main repo
+- **Each worktree has its own `.opencode/` directory** (copied from main repo)
+- **Agents understand worktree boundaries** - never modify files outside the current worktree
+- **Planning docs use worktree-relative paths** when referencing external files
+- **Git operations are worktree-scoped** - each worktree tracks its own branch
+
+### File access rules
+
+- Agents can read/write files within their worktree
+- Agents can read files in other worktrees (for reference only)
+- Agents cannot modify files in other worktrees
+- The main repo is read-only from worktree contexts
+
+### Example workflow
+
+```bash
+# Main repo: manage team configuration
+cd ~/AI/projects/team-chaotix
+opencode
+
+# Worktree 1: Cinnamon project
+cd ~/worktrees/cinnamon
+opencode
+
+# Worktree 2: Another project
+cd ~/worktrees/other-project
+opencode
+```
+
+---
+
+## 13. System configuration
 
 ### Host system
 - **OS:** Rocky Linux 10.2 (Red Quartz)
