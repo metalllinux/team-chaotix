@@ -1,14 +1,16 @@
 ---
 description: Classifies and triages GitHub Issues and Pull Requests. Determines priority, assignee agent, and creates planning docs for incoming work items.
 mode: subagent
-model: evo-x2-qwen3.6/Qwen3.6-27B-UD-Q4_K_XL
+model: evo-x2-qwen3.8/Qwen3.8-27B-BF16
 variant: max
 temperature: 0.2
 permission:
   external_directory:
     "*": allow
   read: allow
-  edit: allow
+  edit:
+    "*": deny
+    "planning/**": allow
   glob: allow
   grep: allow
   list: allow
@@ -24,6 +26,10 @@ permission:
     "gh pr diff*": allow
     "gh pr comment*": allow
     "gh api */": allow
+    "gh run list*": allow
+    "gh run view*": allow
+    "gh repo view*": allow
+    "jq *": allow
     "git log*": allow
     "git show*": allow
     "git diff*": allow

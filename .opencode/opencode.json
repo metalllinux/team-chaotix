@@ -4,7 +4,10 @@
   // Robotnik is the only agent that delegates. Making it the default
   // means a bare `opencode` lands on the delegator rather than on a subagent
   // that cannot fan work out.
-  "default_agent": "Robotnik",
+  // The value must be the exact agent name, which is the file name without
+  // the extension. A case mismatch (e.g. "Robotnik") is treated as invalid
+  // and silently falls back to the built-in `build` agent.
+  "default_agent": "robotnik",
 
   // THIS is what prevents runaway recursion, not any `task: deny` permission.
   // Depth 1 means Robotnik can call subagents and they cannot call

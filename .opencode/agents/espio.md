@@ -1,14 +1,16 @@
 ---
 description: Prunes planning documents, archives superseded content, and manages context hygiene. The only agent authorized to delete content from planning docs.
 mode: subagent
-model: evo-x2-qwen3.6/Qwen3.6-27B-UD-Q4_K_XL
+model: evo-x2-qwen3.8/Qwen3.8-27B-BF16
 variant: max
 temperature: 0.2
 permission:
   external_directory:
     "*": allow
   read: allow
-  edit: allow
+  edit:
+    "*": deny
+    "planning/**": allow
   glob: allow
   grep: allow
   list: allow

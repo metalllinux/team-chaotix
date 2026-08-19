@@ -26,10 +26,10 @@ Robotnik (PM) ── delegates to ──┬── Amy (Task Planner)
 |---|---|---|---|
 | **Robotnik (Project Manager)** | Orchestrates development cycle, delegates work | primary | Full access, delegates to all agents |
 | **Tails (Coder)** | All software development and implementation | subagent | Read/write files, full bash |
-| **Sonic (Triage)** | Classifies GitHub Issues and PRs | subagent | GitHub CLI, read-only git |
+| **Sonic (Triage)** | Classifies GitHub Issues and PRs | subagent | GitHub CLI, jq, read-only git |
 | **Big (Testing)** | Test strategy, CI workflows, verification | subagent | Full bash for test infrastructure |
-| **Shadow (Reviewer)** | Code quality and correctness review | all | Read-only, linters, git inspection |
-| **Omega (Security)** | Attack surface analysis, secrets, license compliance | subagent | Read-only, gitleaks, trufflehog |
+| **Shadow (Reviewer)** | Code quality and correctness review | all | Read-only code, writes Review section, linters, git inspection |
+| **Omega (Security)** | Attack surface analysis, secrets, license compliance | subagent | Read-only code, writes Security section, gitleaks, trufflehog |
 | **Amy (Task Planner)** | Planning docs, decision docs, CI/CD strategy | subagent | Read/write docs, read-only bash |
 | **Vector (Documentation)** | README, changelog, user-facing content | subagent | Read/write docs, read-only git |
 | **Espio (Context Curator)** | Planning doc pruning and context hygiene | subagent | File operations only, no bash |
@@ -39,7 +39,9 @@ Key permission patterns:
 
 - `external_directory: "*": allow` on all agents (prevents silent stalls in headless runs)
 - `task: deny` on all subagents (prevents recursion beyond depth 1)
-- Read-only agents (`Shadow`, `Omega`, `Espio`) cannot edit files
+- `Shadow`, `Omega`, and `Espio` are read-only on code. Their only writes go to the planning doc,
+  into their own section (`Espio` additionally archives within existing sections)
+- `Robotnik`, `Amy`, `Sonic` may only edit files under `planning/`
 - Bash-restricted agents have explicit allowlists of permitted commands
 - No agent can access credential stores directly
 
@@ -327,24 +329,6 @@ meson/ninja and install to `/usr/local`.
 
 **VM testing:** Pending libvirt VM creation with Rocky Linux 10.2 ISO from `~/ISOs/`.
 
-## Tailoring the team for a project
-
-The V1 team is general-purpose. To specialise it for a particular project:
-
-1. **Adjust agent prompts** in `.opencode/agents/` to reference the specific project, its stack,
-   and conventions.
-2. **Add project-specific workflows** to `.github/workflows/`.
-3. **Add project-specific custom actions** to `.github/actions/`.
-4. **Update AGENTS.md** with project-specific operating rules.
-5. **Create a project directory** outside the team repo where work artifacts are stored.
-
-For example, the Cinnamon Desktop porting project would have:
-
-- `Tails` tuned for Python/C desktop development with Rocky Linux packaging
-- `Big` configured with Sparky tests for Cinnamon panel, Nemo, and applets
-- `Amy` planning for RPM package builds and SELinux policies
-- A project directory at `~/linux/projects/cinnamon_4_rocky10/`
-
 ## License compliance
 
 Agents respect software licenses at all times. When forking or modifying upstream code:
@@ -404,7 +388,10 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `evo-x2-qwen3.6/Qwen3.6-27B-UD-Q4_K_XL` running on a local llama.cpp instance.
+All agents use `evo-x2-qwen3.8/Qwen3.8-27B-BF16` running on a local llama.cpp instance at
+`http://192.168.1.106:8086/v1`. The previous team model, Qwen3.6-27B on port 8085, cannot run
+concurrently with Qwen3.8 because the two models do not share the GPU memory, so its service is
+disabled.
 
 ## Updating the team
 
@@ -412,7 +399,7 @@ Changes to the agentic team are committed to this repository and pushed to
 `https://github.com/metalllinux/team-chaotix`. To pull updates:
 
 ```bash
-cd ~/AI/projects/team-chaotix/team-chaotix
+cd ~/AI/projects/team-chaotix
 git pull origin main
 ```
 
@@ -422,7 +409,7 @@ After updating the main repo, worktrees need to pull the configuration changes:
 
 ```bash
 # Update main repo
-cd ~/AI/projects/team-chaotix/team-chaotix
+cd ~/AI/projects/team-chaotix
 git pull origin main
 
 # Update each worktree's configuration

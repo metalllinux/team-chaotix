@@ -15,3 +15,17 @@ githubtoken*.md
 gh_token*
 .github_token
 *.src.rpm
+
+# GitHub Actions self-hosted runner, extracted in place for local use.
+# AGENTS.md section 13 targets ~/gh-runner/; until it moves, keep its
+# artifacts out of the repo.
+/bin/
+/run.sh
+/run-helper.cmd.template
+/run-helper.sh.template
+/config.sh
+/env.sh
+/safe_sleep.sh
+/actions-runner.tar.gz
+/.path
+/externals/
