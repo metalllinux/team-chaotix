@@ -14,10 +14,10 @@ repositories are hosted on GitHub under the `metalllinux` account.
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
 is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
-**Model:** All agents use `evo-x2-qwen3.8/Qwen3.8-27B-BF16` on a local llama.cpp instance
-at `http://192.168.1.106:8086/v1`. The previous team model, Qwen3.6-27B on port 8085, cannot run
-concurrently with Qwen3.8 because the two models do not share the GPU memory, so its service is
-disabled.
+**Model:** All agents use `evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL` on a local llama.cpp
+instance at `http://192.168.1.106:8088/v1`. The Qwen3.8-BF16 build on port 8086 and Qwen3.6-27B
+on port 8085 cannot run concurrently with it because the models do not share the GPU memory, so
+their services are disabled.
 
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
 Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to

@@ -388,10 +388,10 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `evo-x2-qwen3.8/Qwen3.8-27B-BF16` running on a local llama.cpp instance at
-`http://192.168.1.106:8086/v1`. The previous team model, Qwen3.6-27B on port 8085, cannot run
-concurrently with Qwen3.8 because the two models do not share the GPU memory, so its service is
-disabled.
+All agents use `evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL` running on a local llama.cpp
+instance at `http://192.168.1.106:8088/v1`. The Qwen3.8-BF16 build on port 8086 and Qwen3.6-27B
+on port 8085 cannot run concurrently with it because the models do not share the GPU memory, so
+their services are disabled.
 
 ## Updating the team
 

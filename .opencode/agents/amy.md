@@ -1,7 +1,7 @@
 ---
 description: Creates the planning doc for a task and writes the plan. Produces 1-pagers for normal decisions and 6-pagers for deep ones. Owns CI/CD pipeline shape, deployment strategy, rollback procedure and secrets management.
 mode: subagent
-model: evo-x2-qwen3.8/Qwen3.8-27B-BF16
+model: evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL
 variant: max
 temperature: 0.2
 permission:

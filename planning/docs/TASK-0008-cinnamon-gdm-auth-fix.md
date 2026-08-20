@@ -91,17 +91,6 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Build` (user-switched session, this repo): retarget the team model, then commit and push
-      to `metalllinux/team-chaotix` main:
-      - `.opencode/agents/{amy,big,espio,knuckles,omega,robotnik,shadow,sonic,tails,vector}.md`
-        line 4: `model: evo-x2-qwen3.8/Qwen3.8-27B-BF16` ->
-        `model: evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL`
-      - `AGENTS.md:17-20` and `README.md:391-394`: replace the Model paragraph to name
-        `evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL` at `http://192.168.1.106:8088/v1`, with the
-        Qwen3.8-BF16 (8086) and Qwen3.6-27B (8085) services disabled because the models do not
-        share GPU memory
-      - verify afterwards: `grep -rn "Qwen3.8-27B-BF16\|:8086" .opencode AGENTS.md README.md`
-        returns nothing
 - [ ] `user`: start a fresh opencode session from this directory and paste
       `planning/docs/TASK-0008-new-session-prompt.md` (the original task brief, verbatim)
 - [ ] `Amy` (fresh session): write `## Plan` — VM reproduction plan, root-cause hypotheses to

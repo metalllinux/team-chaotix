@@ -1,7 +1,7 @@
 ---
 description: Maintains project documentation, README files, changelogs, and user-facing content. Ensures documentation matches implementation after each completed task.
 mode: subagent
-model: evo-x2-qwen3.8/Qwen3.8-27B-BF16
+model: evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL
 variant: max
 temperature: 0.2
 permission:
