@@ -14,14 +14,14 @@ repositories are hosted on GitHub under the `metalllinux` account.
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
 is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
-**Model:** All agents use `evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL` on a local llama.cpp
-instance at `http://192.168.1.106:8088/v1`. The Qwen3.8-BF16 build on port 8086 and Qwen3.6-27B
-on port 8085 cannot run concurrently with it because the models do not share the GPU memory, so
-their services are disabled.
+**Model:** All agents use `Qwen3.8-27B-UD-Q8_K_XL`.
 
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
 Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to
 external repositories outside `metalllinux`, and deployments that require human confirmation.
+
+Standing permission (user, 2026-08-21): agents may commit and push to `metalllinux` repositories
+without asking the user for per-action confirmation. The two gates above are unchanged.
 
 | Repo | Role |
 |---|---|
