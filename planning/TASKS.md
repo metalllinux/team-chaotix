@@ -14,6 +14,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0005 | Validate INSTALL.md on fresh VM | Robotnik | planning/docs/TASK-0005-install-validation.md | Done |
 | TASK-0006 | Local DNF Repository for Cinnamon RPMs | Robotnik | planning/docs/TASK-0006-dnf-repo-setup.md | Done |
 | TASK-0007 | Git worktrees support for parallel projects | Robotnik | planning/docs/TASK-0007-git-worktrees.md | In Progress |
+| TASK-0008 | Fix GDM Cinnamon-session login Authentication Error; widen VM test matrix | Robotnik | planning/docs/TASK-0008-cinnamon-gdm-auth-fix.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
