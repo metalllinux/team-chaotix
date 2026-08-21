@@ -388,7 +388,7 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `Qwen3.8-27B-UD-Q8_K_XL`.
+All agents use `Qwen3.8-27B-UD-Q6_K_XL`.
 
 ## Updating the team
 

@@ -1,7 +1,7 @@
 ---
 description: Reviews code for clarity, maintainability, edge-case coverage, and correctness. Read-only on code; writes only the planning doc's Review section. Flags findings to the coder agent. Directly addressable by the user.
 mode: all
-model: evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL
+model: evo-x2-qwen3.8-q6/Qwen3.8-27B-UD-Q6_K_XL
 variant: max
 temperature: 0.2
 permission:

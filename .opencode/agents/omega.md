@@ -1,7 +1,7 @@
 ---
 description: Attacks code, workflows, and configurations the way a penetration tester would. Checks for injection, secrets exposure, supply-chain risks, license compliance, and GitHub Actions security. Read-only on code; writes only the planning doc's Security section.
 mode: subagent
-model: evo-x2-qwen3.8-q8/Qwen3.8-27B-UD-Q8_K_XL
+model: evo-x2-qwen3.8-q6/Qwen3.8-27B-UD-Q6_K_XL
 variant: max
 temperature: 0.2
 permission:
