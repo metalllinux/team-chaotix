@@ -14,9 +14,9 @@ stale entry means the whole loop runs on bad information.*
 
 **Now:** The 2026-08-22 `Amy` dispatch for `## Plan` died with the rest of that fan-out (all
 five subagents hit the 64k context wall on Q5; record: TASK-0008 `## Status`). `## Plan` is still
-an empty stub. Q5 now serves 1 slot x 262144 alongside Q6 (PM session on Q6); Amy dispatches as a
-single subagent immediately after the user's Q6 decision (TASK-0008 Next Actions). User directive
-(2026-08-21): for any desktop application testing, the team uses Sparky + pyatspi2
+an empty stub. Q6 is retired; Q5 serves 1 slot x 262144 (the measured hardware ceiling), so Amy
+dispatches as a single subagent, interleaved with TASK-0008 Wave 0 (TASK-0008 Next Actions).
+User directive (2026-08-21): for any desktop application testing, the team uses Sparky + pyatspi2
 (https://gitlab.gnome.org/GNOME/pyatspi2). The deliverable is the updated team configuration in
 `metalllinux/team-chaotix` (this repo), pushed to main.
 
@@ -36,9 +36,10 @@ Status`).
 **Constraint (2026-08-22, from the TASK-0008 incident):** a 5-way subagent fan-out on a
 1-slot endpoint killed all five sessions overnight (record: TASK-0008 `## Status`). The AGENTS.md
 update for this task should record the concurrency ceiling, and it must reflect the hardware fit,
-not just the endpoint: Q5 serves 1 slot x 262144 while Q6 runs and 3 slots x 262144 with Q6
-retired (92GB unified memory; record: TASK-0008 `## Status`), so future plans do not
-over-fan-out.
+not just the endpoint: the measured ceiling is 1 concurrent subagent at 262144 context (Q5 is 1
+slot x 262144; 2- and 3-slot x 262144 do not fit the 92GB unified memory even with Q6 retired;
+record: TASK-0008 `## Status` and `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md`),
+so future plans do not over-fan-out.
 
 **Unknowns:**
 - Where pyatspi2 (Python) sits relative to Sparky's Raku/Sparrow tasks: a Python driver invoked from
