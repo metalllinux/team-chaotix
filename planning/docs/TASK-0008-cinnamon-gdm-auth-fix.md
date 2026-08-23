@@ -12,11 +12,25 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
-**Now:** Wave 0 re-dispatch is the first action of the next session (Prompt 3 at
-`planning/docs/TASK-0008-new-session-prompt.md`), after an infra incident (below). `## Plan`
-complete
-(Amy, 2026-08-20): reproduction design, root-cause hypotheses H1-H4, fix approach, 6-scenario
+**Now (2026-08-23 11:30 JST):** Q5 context wall root-caused and fixed. The q5 unit forced
+`--n-gpu-layers 99`; llama.cpp's fit-to-device step (on by default) then silently shrank context
+262144 to 65536 per slot. The 2026-08-22 "verified `-c 262144`" entry was a misread of
+`/proc/PID/cmdline`: the flag was present but not in effect (evidence: startup log
+`n_ctx_seq (65536) < n_ctx_train (262144)`, `/v1/models` n_ctx=65536, requests over 65536 tokens
+rejected). The second Wave 0 re-dispatch (2026-08-22 19:55 JST, run `e9706ca3`) died on that wall:
+all five subagents errored "exceeds the available context size (65536)" within 10 min (amy's
+first call was 70043 tokens); the previous PM session died the same way at 20:32 JST. Endpoint
+state now: Q5/8084 runs 1 slot x 262144 (`--n-gpu-layers 99` removed from the unit, fit picks the
+split; n_ctx verified 262144, model loaded). Q6/8090 runs 1 slot x 262144 (user started it
+09:09 JST); the user switched the PM session to Q6 around 09:52 JST after the PM itself hit the
+64k wall (08:06 request truncated to fit, 09:08 rejected). Q8/8088 is down; its unit needs the
+same `-ngl` fix (empty-device fit: `-c 262144 -ngl 36`). Memory: 92GB unified; Q6 holds ~40GB, so
+Q5 can run only 1 slot x 262144 while Q6 lives; with Q6 retired, 3 slots x 262144 fits with
+headroom, 4 is at the ceiling. Provider entry, 10 agent frontmatter, AGENTS.md: retargeted and
+pushed (`2fe0c8b`). Branch `task-0008-gdm-auth` exists in the clone (at main, no commits yet).
+`## Plan` complete (Amy, 2026-08-20): reproduction design, H1-H4, fix approach, 6-scenario
 Sparky/Sparrow matrix, rollback. Decision doc: `planning/DECIDE-gdm-login-test-automation.md`.
+Wave 0 is not running; dispatch waits on the Q6 decision (see Next Actions).
 
 **Incident (2026-08-21 → 22): the Wave 0 fan-out lost all five sessions overnight.** Five
 concurrent subagent sessions ran against the single-slot model endpoint
@@ -44,11 +58,12 @@ AGENTS.md section 1, commit) is the first action of the next session and gates e
 Q6/8090 and Q8/8088 remain fallbacks. Full setup steps:
 `planning/docs/TASK-0008-new-session-prompt.md` (Prompt 3).
 
-**Dispatch policy (endpoint-bound):** on the 4-slot Q5 endpoint, run the plan's parallel waves
-as written (Wave 0: 1 ∥ 2 ∥ 3 ∥ 9a, Amy as fifth client or held; review fan-out: Shadow ∥
-Omega, then Big). Until Q5 is up, at most 2 subagents concurrently on Q6/8090 (one slot + 1h
-request timeout). Commit target stays feature branch `task-0008-gdm-auth` in the clone; item 13
-PRs it to main. A7 guard stands: one 4GB VM at a time, check `free -g` first.
+**Dispatch policy (endpoint-bound, corrected 2026-08-23):** while Q6 runs, Q5 is 1 slot x
+262144: at most 1 subagent at a time (PM polls from Q6; do not stack subagents on the single
+slot). If the user retires Q6, Q5 moves to 3 slots x 262144 and the plan's parallel waves run as
+written (Wave 0: 1 ∥ 2 ∥ 3 ∥ 9a + Amy; review fan-out: Shadow ∥ Omega ∥ Big). Commit target stays
+feature branch `task-0008-gdm-auth` in the clone; item 13 PRs it to main. A7 guard stands: one
+4GB VM at a time, check `free -g` first.
 User's failure recap: GDM "Authentication Error" selecting the Cinnamon session on Rocky Linux
 10.2 (Cinnamon RPMs from the local DNF repo per INSTALL.md, GDM + GNOME pre-existing); a reboot
 restored the session.
@@ -144,11 +159,19 @@ the PM reads.*
       are independent (see `## Plan` → Dependencies and sequence). Reproduction and matrix execution
       are owned by `Big` per the Definition of Done; `Tails` writes the harness scripts.
 - [x] `Robotnik` (2026-08-21): Wave 0 dispatched in a single message (items 1 ∥ 2 ∥ 3 ∥ 9a).
-- [ ] `Robotnik` (next session, Prompt 3): first stand up the Q5 endpoint and retarget the
-      agent config (gates everything; steps in Status and in Prompt 3). Then dispatch Wave 0
-      per the plan on 4 slots (1 ∥ 2 ∥ 3 ∥ 9a, plus Amy or held), then the critical path:
-      4 → 5 → 6 → (Shadow ∥ Omega, then Big) → 8 → 10 → (11) → 12 → 13 → 14. If a dispatch
-      comes back empty, suspect the endpoint before the agent (see Status).
+- [x] `Robotnik` (2026-08-22): Q5 endpoint verified up (record: Status); branch
+      `task-0008-gdm-auth` created in the clone; Wave 0 re-dispatched on 4 slots (items 1 ∥ 2
+      ∥ 3 ∥ 9a, Amy/TASK-0009 as fifth client).
+- [x] `Robotnik` (2026-08-23): Q5 64k wall root-caused (fit-to-device degradation under forced
+      `-ngl 99`); second dead Wave 0 (2026-08-22 19:55 JST: all five subagents + the PM session)
+      confirmed in opencode.log and the EVO-X2 journal; Q5 reconfigured to 1 slot x 262144
+      alongside Q6; PM session on Q6 (user switch ~09:52 JST).
+- [ ] `Robotnik`: Q6 retirement decided by the user (2026-08-23, option: PM session on Q5, Q5
+      at 3 slots x 262144). Pending: the user switches this session's model to
+      `evo-x2-qwen3.8-q5` (manual action; a 20-min DB poll 19:42-20:02 JST saw no switch). On
+      switch: stop + disable Q6 autostart, move Q5 to 3 slots, verify, dispatch Wave 0, then the
+      critical path: 4 → 5 → 6 → (Shadow ∥ Omega, then Big) → 8 → 10 → (11) → 12 → 13 → 14. If a
+      dispatch comes back empty, suspect the endpoint before the agent (see Status).
 
 ---
 

@@ -12,15 +12,18 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
-**Now:** Intake complete, awaiting `Amy`'s `## Plan`. User directive (2026-08-21): for any desktop
-application testing, the team uses Sparky + pyatspi2 (https://gitlab.gnome.org/GNOME/pyatspi2).
-The deliverable is the updated team configuration in `metalllinux/team-chaotix` (this repo), pushed
-to main.
+**Now:** The 2026-08-22 `Amy` dispatch for `## Plan` died with the rest of that fan-out (all
+five subagents hit the 64k context wall on Q5; record: TASK-0008 `## Status`). `## Plan` is still
+an empty stub. Q5 now serves 1 slot x 262144 alongside Q6 (PM session on Q6); Amy dispatches as a
+single subagent immediately after the user's Q6 decision (TASK-0008 Next Actions). User directive
+(2026-08-21): for any desktop application testing, the team uses Sparky + pyatspi2
+(https://gitlab.gnome.org/GNOME/pyatspi2). The deliverable is the updated team configuration in
+`metalllinux/team-chaotix` (this repo), pushed to main.
 
-**Model note (user, 2026-08-22):** the team model is re-targeted to `Qwen3.8-27B-UD-Q5_K_XL`
-(record: TASK-0008 `## Status`). That re-target (AGENTS.md section 1, agent frontmatter) lands
-before this task's Tails work, so Tails' scope here stays section 7 + big.md. The Q5 endpoint
-must be up before any dispatch; it is the session's first action.
+**Model note (user, 2026-08-22):** the team model is `Qwen3.8-27B-UD-Q5_K_XL`; the re-target
+landed (`2fe0c8b`), so Tails' scope here stays section 7 + big.md. The Q5 endpoint serves the
+full 262144 context (verified 2026-08-23 after the fit-degradation fix; record: TASK-0008 `##
+Status`).
 
 **Environment / scope:**
 - Files in scope: `AGENTS.md` (section 7, testing strategy), `.opencode/agents/big.md`, `README.md`,
@@ -30,10 +33,12 @@ must be up before any dispatch; it is the session's first action.
 - Graphical UI: no (this task configures the team; it governs UI testing)
 - Rocky Linux target: yes (the standard concerns UI testing on Rocky Linux)
 
-**Constraint (2026-08-22, from the TASK-0008 incident):** the team's model endpoint is a single
-llama.cpp slot (`--parallel 1`, port 8090, 1h request timeout). A 5-way subagent fan-out killed
-all five sessions overnight (record: TASK-0008 `## Status`). The AGENTS.md update for this task
-should record the concurrency ceiling (≤2 concurrent subagents) so future plans do not over-fan-out.
+**Constraint (2026-08-22, from the TASK-0008 incident):** a 5-way subagent fan-out on a
+1-slot endpoint killed all five sessions overnight (record: TASK-0008 `## Status`). The AGENTS.md
+update for this task should record the concurrency ceiling, and it must reflect the hardware fit,
+not just the endpoint: Q5 serves 1 slot x 262144 while Q6 runs and 3 slots x 262144 with Q6
+retired (92GB unified memory; record: TASK-0008 `## Status`), so future plans do not
+over-fan-out.
 
 **Unknowns:**
 - Where pyatspi2 (Python) sits relative to Sparky's Raku/Sparrow tasks: a Python driver invoked from
@@ -74,11 +79,14 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Amy`: write `## Plan` — exact file list, pyatspi2 integration approach (against the Sparky
-      source), how the config change is validated, rollback.
-- [ ] `Robotnik`: verify the Q5 endpoint is up first (session's first action, see TASK-0008
-      `## Status`); on Amy's plan completion, dispatch `Tails`, then `Shadow` ∥ `Omega` (then
-      `Big`), then `Vector`, then `Knuckles`.
+- [x] `Robotnik` (2026-08-22, corrected 2026-08-23): Q5 endpoint verified up; that verification
+      missed the fit-to-device context degradation, now root-caused and fixed (record:
+      TASK-0008 `## Status`).
+- [ ] `Robotnik`: dispatch `Amy` for `## Plan` (the 2026-08-22 dispatch died; brief unchanged:
+      exact file list, pyatspi2 integration approach against the Sparky source, validation,
+      rollback, and the AGENTS.md concurrency-ceiling note including the hardware fit). Then
+      `Tails`, then `Shadow` ∥ `Omega` (then `Big`), then `Vector`, then `Knuckles`. Sequencing
+      with TASK-0008 Wave 0 follows the Q6 decision (TASK-0008 Next Actions).
 
 ---
 
