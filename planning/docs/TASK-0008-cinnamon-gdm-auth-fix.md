@@ -170,12 +170,19 @@ the PM reads.*
       autostart disabled; 2-slot and 3-slot x 262144 configs tested and rejected (fit degrades
       them to 131072 and 87552); Q5 final at 1 slot x 262144, verified; fixes documented in
       `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md`.
+- [x] `Robotnik` (2026-08-24): session resumed. Q5 re-verified up (`/v1/models` on 8084 shows
+      `n_ctx: 262144`, no fit degradation). Clone `~/Linux/projects/cinnamon-for-rocky10/` branch
+      `task-0008-gdm-auth` verified at `1f00da5` = `origin/main` (no local commits). User reminder
+      (2026-08-24): keep `metalllinux/cinnamon-for-rocky10` main current on GitHub. Path: work
+      commits to feature branch, item 13 PRs it to main and `Knuckles` merges; nothing lands on
+      main before the fix is verified.
 - [ ] `Robotnik` (in progress): dispatch Wave 0 one subagent at a time, order: item 1 (Tails,
-      Sparky host infra), then 3 (Big, static inspection), 2 (Tails, GDM harness), 9a (Tails,
-      Sparrow suite), with Amy (TASK-0009 plan) interleaved. Poll each by its `### Item N`
-      subsection (`grep '^### Item'`). Then the critical path: 4 → 5 → 6 → Shadow, Omega, then
-      Big → 8 → 10 → (11) → 12 → 13 → 14. If a dispatch comes back empty, suspect the endpoint
-      before the agent (see Status).
+       Sparky host infra) DONE 2026-08-24 (all 4 acceptance criteria re-verified 09:48 JST; see
+       `### Item 1` in `## Implementation`); then 3 (Big, static inspection), 2 (Tails, GDM
+       harness), 9a (Tails, Sparrow suite), with Amy (TASK-0009 plan) interleaved. Poll each by its
+      `### Item N` subsection (`grep '^### Item'`). Then the critical path: 4 → 5 → 6 → Shadow,
+      Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14. If a dispatch comes back empty, suspect the
+      endpoint before the agent (see Status).
 
 ---
 
@@ -574,6 +581,292 @@ needs no review per AGENTS.md §8; the user may still want to see the diff.
 
 **Checks run:** compile · linter · harness
 
+### Item 1
+
+*Executed 2026-08-24 (00:30 to 01:26 JST). All four acceptance criteria met. No files in
+`metalllinux/cinnamon-for-rocky10` were touched, per the item brief.*
+
+**Acceptance criteria status**
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| `curl -sS localhost:4000` serves the web UI | MET | HTTP 303 to `/builds_latest`, HTML `<title>~SPARKY CI WEB~ \| latest builds</title>` (command + output below) |
+| Both services running | MET | tmux sessions `sparkyd` and `cro-run` (login-shell PATH), processes `rakudo ~/.raku/bin/sparkyd.raku` and `cro run`, `ss -ltn` shows `LISTEN 0.0.0.0:4000` |
+| No-op scaffold test project (docs pattern) runs end-to-end to "succeed" | MET | Trigger id `kvtmfqgjopawhnudicbr.283564`; `sqlite3 db.sqlite3 "SELECT id,project,state FROM builds"` returns state=1 (ok) for all three builds `sparky-rocky`, `qemu-session.default`, `test-use-case.default`; the in-VM task printed `no-op task ran OK` |
+| Setup notes written to `## Implementation` | MET | This subsection (item 9a moves it into `sparky/README.md`) |
+
+**Deviation from AGENTS.md section 7 (documented, not silent)**
+
+- The section 7 command `curl -sL https://raw.githubusercontent.com/SuperBiBi20/raku-install/master/raku-install | bash`
+  cannot be executed. The raw URL returns 404 and the GitHub account `SuperBiBi20` no longer exists
+  (profile fetch also 404; verified 2026-08-24 with `curl` and `webfetch`).
+- The current Rocky docs page for this exact task (
+  `https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/`, updated 2026-06-26)
+  recommends for x86_64 the `rakudo-pkg` package repo (GPG-signed cloudsmith channel) as method 1 and
+  rakubrew as method 2; the SuperBiBi20 script is no longer referenced.
+- The interrupted Wave 0 session (2026-08-22) had already installed `rakudo-pkg 2026.7.0-01` from
+  `/etc/yum.repos.d/nxadm-pkgs-rakudo-pkg.repo` (GPG key imported, dnf signature-verified) and added
+  the PATH line at `~/.bash_profile:9`. I completed the documented remaining steps instead of
+  rebuilding from source. **Recommendation to the user: update the Raku line in AGENTS.md section 7
+  to the rakudo-pkg procedure** (user-facing file, I did not edit it).
+- Chosen over a source build because a GPG-verified dnf package is a stronger supply-chain position
+  than `curl | bash` from a now-deleted personal repo, and the binary was already half-installed and
+  healthy.
+
+**Security observations (for Omega / user, redacted per section 4)**
+
+- `~/Code/sparky/.git/config` origin remote embeds a `metalllinux` GitHub token in the URL
+  (`https://metalllinux:ghp_...@github.com/melezhik/sparky.git`). Not committed anywhere; local git
+  config only. Same pattern as the cinnamon clone origin the user decided (2026-08-21, `## Status`)
+  to keep as-is. Token value deliberately not recorded here.
+- `~/.gitconfig` carries a global `url.https://metalllinux:ghp_...@github.com/.insteadOf=https://github.com/`
+  rewrite, so every git operation this user performs against github.com authenticates with that token.
+  Pre-existing user configuration; not modified.
+- `raku db-init.raku` prints the local Sparky API token to stdout (it is in `~/sparky.yaml`, a 15-char
+  random string for local Sparky auth, not a GitHub credential). Value not recorded here.
+- None of the above is committed, and none was written to any file or doc by this item.
+
+**Commands run and evidence** (in order)
+
+1. State inspection: `~/.raku/bin/` had only the zef wrapper (which `exec`s `rakudo`, absent from
+   PATH); `~/.zef/store` empty; `rpm -q rakudo-pkg` -> `2026.7.0-01 @nxadm-pkgs-rakudo-pkg`;
+   `/opt/rakudo-pkg/bin/raku --version` -> `Rakudo v2026.07, Raku v6.d, MoarVM 2026.07`.
+2. Dependencies per docs: `dnf list installed` over the 13 docs packages -> all present except `vim`
+   (provided by installed `vim-minimal` 9.1.083-9.el10; `which vim` -> `/usr/bin/vim`;
+   `sudo dnf install -y vim` -> "Nothing to do").
+3. Raku completion: `/opt/rakudo-pkg/bin/add-rakudo-to-path` -> "PATH already in ~/.bash_profile.
+   Skipped." (line 9 already covers the three dirs); `/opt/rakudo-pkg/bin/install-zef` -> zef 1.1.3
+   reinstalled, `Testing [OK]`; fresh login shell check
+   `bash -lc 'which raku rakudo zef; raku -v | head -1; zef --version'` ->
+   `/opt/rakudo-pkg/bin/raku`, `/opt/rakudo-pkg/bin/rakudo`, `/home/howard/.raku/bin/zef`,
+   `Welcome to Rakudo v2026.07.`, `1.1.3`.
+4. Sparky from clone (`~/Code/sparky` pre-existing, in sync with origin/master at `add1b02`, tag
+   0.2.32; `git fetch && git status -sb` clean). Documented three-stage install, logged to
+   `/tmp/opencode/sparky-zef-install.log`: `zef install DBIish --/test` (rc=0) ->
+   `zef install cro --deps-only` (rc=0) -> `zef install cro` (rc=0) -> `zef install .` (rc=0),
+   every module `Testing [OK]`. Installed set: Sparky 0.2.32, Sparky-Job-Api 0.0.13, cro 0.8.10,
+   Cro::Core 0.8.10, Cro::HTTP 0.8.13, Cro::TLS 0.8.10, Cro::WebApp 0.10.1, Cro::WebSocket 0.8.10,
+   DBIish 0.6.8, DBIish::Pool 1.1.0, Sparrow6 0.0.93, Sparrowdo 0.1.55. Bin scripts in
+   `~/.raku/bin`: `sparkyd`, `sparrowdo`, `sparman`, `sparky-runner`, `sparky-web.raku`, `s6`, `rakurl`.
+5. `cd ~/Code/sparky && raku db-init.raku` -> rc=0, "SQLite db populated as
+   /home/howard/.sparky/projects/db.sqlite3".
+6. `zef install Sparky::JobApi` -> "All candidates are currently installed" (the success line the
+   docs promise).
+7. `cd ~/Code/Sparky_Rocky && bash scripts/sync_project.sh` -> the exact expected five lines
+   (Creating project folder / Checking for ~/sparky.yaml / Creating API Key in ~/sparky.yaml /
+   Checking for ~/.sparky/templates/vars.yaml / Copying project files). Created
+   `~/.sparky/projects/sparky-rocky/` (sparrowfile, sparky.yaml, tasks: check-ssh, container,
+   kickstart-bootstrap, run-qemu-box, setup-qemu-image, stop-qemu-box),
+   `~/.sparky/templates/vars.yaml`, `~/sparky.yaml`.
+8. QEMU verification per docs: `which qemu-kvm` -> absent; `/usr/libexec/qemu-kvm` present
+   (QEMU 10.1.0, qemu-kvm-10.1.0-16.el10_2.2); created `ln -s /usr/libexec/qemu-kvm ~/bin/qemu-kvm`
+   (chosen over the docs' alias because Sparky invokes the binary from Raku, not from bash);
+   `qemu-kvm -machine help` -> best non-deprecated machine `pc-q35-rhel10.2.0` (alias `q35`);
+   set in `~/.sparky/templates/vars.yaml` (`qemu.machine`, with comments at the edit site).
+9. SSH per docs: `~/.ssh/id_ed25519` already present (created 2026-08-22 by the interrupted
+   session); `vars.yaml` `ssh_key_path` set to `~/.ssh/id_ed25519.pub` (replacing the template's
+   `id_rsa.pub`).
+10. Sudoers drop-in: wrote `/etc/sudoers.d/sparky` (0440 root:root) with
+    `howard ALL=(ALL) NOPASSWD: /usr/bin/mount,/usr/bin/umount`; `sudo visudo -c -f` -> "parsed OK";
+    functional check `sudo -n mount --version` runs passwordless; `sudo -n -l` shows the rule.
+    Drop-in chosen over editing `/etc/sudoers` per house package-ownership/least-privilege rules.
+11. Firewall: **N/A on this host.** `systemctl is-active firewalld` -> `inactive`; no firewall
+    daemon is running, so there is no live rule to add and the UI is already reachable on
+    localhost. Enabling firewalld would switch the whole machine to default-deny and could break
+    unrelated services (e.g. the model endpoint on 192.168.1.106:8084); that is a system-wide
+    posture change outside item 1 and was not done unilaterally. If firewalld is ever enabled, run
+    `sudo firewall-cmd --add-port=4000/tcp --permanent && sudo firewall-cmd --reload`.
+12. Services: `tmux new-session -d -s sparkyd 'bash -lc "cd ~/Code/sparky && exec sparkyd ..."'` and
+    same for `cro-run` (`cro run`); `ss -ltn` -> `LISTEN 0.0.0.0:4000`;
+    `curl -sS -i localhost:4000` -> `HTTP/1.1 303 See Other, Location: /builds_latest`;
+    `curl -sS -L localhost:4000` -> the web UI HTML (title above).
+13. No-op scaffold per the docs pattern ("Writing new tests -> Creating a repository"):
+    `~/Code/sparky-noop/` with `README.md`, `main.raku`
+    (`#!raku` + `task-run "tasks/check-noop";`), `tasks/check-noop/task.bash`
+    (`#!/bin/bash -` + echo); `git init` + commit `850bb2a` (local repo, no remote needed because
+    `Sparky_Rocky/sparrowfile` supports local dirs, `sparrowfile:174` `if $use_case_repo.IO ~~ :d`);
+    added `~/Code/sparky-noop` to `use_case_repo` in `~/.sparky/templates/vars.yaml`
+    (the template's own comment endorses local directories).
+14. End-to-end run: `curl -c cj -d 'login=admin&password=admin' localhost:4000/default_login`
+    -> 303 "user [admin] logged in" (default admin/admin account seeded at
+    `lib/Sparky.rakumod:57-59`, matching the docs);
+    `curl -b cj --data-urlencode 'tags=test_env=qemu,version=Rocky-10-GenericCloud:https://dl.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base.latest.x86_64.qcow2,releasever=10.2,use_case_repo=/home/howard/Code/sparky-noop,qemu_binary=qemu-kvm,qemu_machine=pc-q35-rhel10.2.0,ssh_key_path=~/.ssh/id_ed25519.pub,bootstrap=True,qemu_shut=True' --data-urlencode 'description=...' localhost:4000/build-with-tags/project/sparky-rocky`
+    -> 200, trigger id `kvtmfqgjopawhnudicbr.283564` at 01:20:35 JST.
+    - Pre-verified the VM-side bootstrap dependency first: the COPR `grayeul/TestProj` epel-10
+      chroot repo is live (`.repo` served at
+      `copr.fedorainfracloud.org/coprs/grayeul/TestProj/repo/epel-10/grayeul-TestProj-epel-10.repo`,
+      baseurl `download.copr.fedorainfracloud.org/results/grayeul/TestProj/epel-10-x86_64/`), and its
+      `primary.xml` lists `rakudo`, `moarvm`, `nqp`, `zef`, `raku-sparrow6`, `raku-sparrowdo`,
+      `raku-sparky-job-api` plus the raku-* dependencies. (An earlier probe of
+      `copr.fedorainfracloud.org/repo/grayeul/...` 404'd because that path scheme is not the one dnf
+      uses; the `dnf copr enable` flow fetches the `.repo` file above.)
+    - Result: `sqlite3 ~/.sparky/projects/db.sqlite3 "SELECT id,project,state FROM builds ORDER BY id"`
+      -> `1|sparky-rocky|1`, `2|qemu-session.default|1`, `3|test-use-case.default|1` (state 1 = ok
+      per the web UI's state mapping, `templates/builds_latest.crotmp`).
+    - Report evidence in `~/.sparky/projects/.reports/`:
+      - `qemu-session.default/build-2.txt`: VM reached the `Rocky Linux 10.2 (Red Quartz)` login
+        prompt; task check `# qemu should reach login prompt` -> `True`.
+      - `test-use-case.default/build-3.txt`: in-VM bootstrap installed curl/openssl-devel/wget/perl-*,
+        enabled the COPR (GPG key imported), installed moarvm-2026.07, nqp-2026.04, rakudo-2026.04,
+        zef-1.1.1, raku-sparrow6-0.0.93, raku-sparky-job-api-0.0.12 plus deps; framework pre-tasks ran
+        (scm dir, echo OK, `sudo dnf install -y python3-pip`, rl-releasever -> releasever 10.2);
+        `use_case_repo.tar` fetched from `http://10.0.2.2:4000/file/...` and unpacked;
+        `load scenario from main.raku`; `tasks/check-noop` -> `no-op task ran OK`.
+      - `sparky-rocky/build-1.txt`: `job succeeded` (exit 0); `qemu_shut=True` ->
+        `tasks/stop-qemu-box` killed the QEMU process.
+    - Wall time 01:20:35 to 01:25:42 JST (~5 min) including the 545MB image download at ~4.2MB/s.
+
+**Alternatives considered**
+
+**Problem: get a working Raku on this host per the item brief**
+**Option A — raku-install script from AGENTS.md section 7.** How: `curl | bash` as written. Pros:
+letter of the brief. Cons: the URL is dead (404, account gone); nothing to execute.
+**Option B — rakudo-pkg package repo (current Rocky docs, method 1).** How: keep the
+`rakudo-pkg 2026.7.0-01` the interrupted session installed and finish the documented
+`add-rakudo-to-path` / `install-zef` steps. Pros: GPG-signed dnf package (best supply-chain
+position), already partially installed and healthy, minutes instead of a 30-60 min source build.
+Cons: deviates from the section 7 line, which must be updated by the user.
+**Option C — rakubrew source build (docs method 2).** How: `rakubrew download moar-...`. Pros:
+from source. Cons: long build, a second Raku alongside a working one, no gain.
+**Chosen:** B, because A is impossible and B is the docs' recommended path with a verifiable
+signature chain.
+
+**Problem: put `qemu-kvm` on PATH**
+**Option A — bash alias (docs option 1).** Cons: aliases do not apply in non-interactive Raku
+invocations, which is how Sparky launches QEMU.
+**Option B — symlink `~/bin/qemu-kvm` (docs option 3).** How: `ln -s /usr/libexec/qemu-kvm ~/bin/qemu-kvm`
+(`~/bin` is already on PATH). Pros: works from any context.
+**Chosen:** B.
+
+**Problem: host the no-op scaffold repo**
+**Option A — push a public GitHub repo under metalllinux.** Cons: an external artifact for a
+host-local infrastructure check; not needed.
+**Option B — local directory.** How: `~/Code/sparky-noop` added to `use_case_repo`; the
+Sparky_Rocky sparrowfile archives local dirs instead of git-cloning (`sparrowfile:174`).
+**Chosen:** B; item 9a's real suite will use the git-URL path in `cinnamon-for-rocky10` itself.
+
+**Problem: trigger the test build**
+**Option A — write a trigger file directly into `~/.sparky/projects/sparky-rocky/.triggers/`.**
+Cons: bypasses the auth path.
+**Option B — web API: login (admin/admin) then `POST /build-with-tags`.** Pros: exercises exactly
+what the UI does, including cookie auth and tag encoding.
+**Chosen:** B.
+
+**Changes** (host state; nothing in any git repo under management, except the new local
+`~/Code/sparky-noop` repo commit `850bb2a`)
+
+| Path | What changed |
+|---|---|
+| `/etc/sudoers.d/sparky` | new drop-in, 0440 root:root, NOPASSWD `mount`/`umount` for `howard` |
+| `~/bin/qemu-kvm` | new symlink to `/usr/libexec/qemu-kvm` |
+| `~/.bash_profile` | untouched by me; line 9 (raku PATH) added by the interrupted session, left as-is |
+| `/etc/yum.repos.d/nxadm-pkgs-rakudo-pkg.repo` + `rakudo-pkg` | pre-existing from the interrupted session (2026-08-22), verified working, left as-is |
+| `~/.raku/` | zef 1.1.3 and all Sparky/cro/DBIish/Sparrow modules (home install); bin scripts for sparkyd, sparrowdo, sparman, sparky-runner, sparky-web.raku |
+| `~/.zef/store/` | module store populated (was empty) |
+| `~/Code/sparky/` | pre-existing clone, in sync at `add1b02` (0.2.32); new `sparkyd.log`, `cro-run.log` |
+| `~/Code/Sparky_Rocky/` | pre-existing clone at `57decf1`, unchanged |
+| `~/Code/sparky-noop/` | new local git repo (commit `850bb2a`), the no-op scaffold |
+| `~/.sparky/` | new: `projects/sparky-rocky/` (from sync_project.sh), `templates/vars.yaml` (machine, ssh key, no-op repo edits), `db.sqlite3`, `.reports/`, `work/` |
+| `~/sparky.yaml` | new: `SPARKY_API_TOKEN` (local random, value not recorded here) |
+| `~/rocky-linux-distro/default/` | new: `distro.Rocky-10-GenericCloud.qcow2` (545MB cache, reused on re-runs), `distro.qcow2` working copy, `.version` |
+| tmux sessions `sparkyd`, `cro-run` | new: the two running services |
+
+**Checks run**
+
+- `bash -lc 'which raku rakudo zef'` + versions: PASS (evidence step 3)
+- four `zef install` steps: 4/4 rc=0, all module tests OK (log `/tmp/opencode/sparky-zef-install.log`)
+- `raku db-init.raku`: rc=0
+- `zef install Sparky::JobApi`: "All candidates are currently installed"
+- `sudo visudo -c -f /etc/sudoers.d/sparky`: "parsed OK"; `sudo -n mount --version`: PASS
+- `qemu-kvm --version` / `-machine help`: 10.1.0 / `pc-q35-rhel10.2.0`
+- `ss -ltn | grep :4000`: LISTEN
+- `curl -sS localhost:4000`: web UI served
+- `sqlite3` builds query: 3/3 state=1 (ok)
+- report files `build-1.txt`, `build-2.txt`, `build-3.txt`: evidence quoted above
+
+**Competing priorities and leftover state (explicit)**
+
+- Firewall rule recorded as N/A rather than enabling firewalld; a system-wide default-deny switch
+  was not worth it for an already-reachable localhost service, and it risked unrelated services.
+- Reused the interrupted session's artifacts (rakudo-pkg install, both clones) instead of a clean
+  rebuild; they were verified healthy, and the deviation is recorded above.
+- `qemu_shut=True` on the no-op run to free the 6GB VM after the test. Note for item 10 (`Big`):
+  the cached `distro.Rocky-10-GenericCloud.qcow2` now has the Sparrow client and pre-tasks baked
+  in, and `~/.sparky/work/*/...` plus `~/rocky-linux-distro/default/.version` will suppress
+  re-bootstrap for the same version. Fresh-image-per-scenario isolation (a DoD requirement) needs
+  the `bootstrap` flag, distinct `prefix` values, or re-seeding per the plan's `sparky/seed-image.sh`
+  design.
+- Orphaned paused QEMU process `cinnamon-inspect-vm` (pid 216968, ~1.5GB RSS, running since
+  2026-08-22; `virsh list --all` shows no domain, so the domain record is gone while the process
+  survived). This matches the `## Status` incident note ("domain gone by 12:45 JST Aug 22, disk
+  kept"). Left as-is: it is `Big`'s artifact, paused (no CPU), holds no port (its networking was the
+  libvirt bridge, not hostfwd), and killing it is outside item 1. Flagged for cleanup.
+- Item 9a should move this subsection's setup notes into `sparky/README.md` per the plan, and the
+  AGENTS.md section 7 Raku line needs the user's update (dead URL).
+
+**Re-verification (Tails, 2026-08-24 09:22 to 09:48 JST)**
+
+Re-dispatched to execute item 1. The subsection above was written by an earlier Tails session
+(execution window 00:30 to 01:26 JST the same day). Before redoing anything, I verified all four
+acceptance criteria against live host state, then re-ran the no-op end-to-end check fresh. All
+four criteria currently hold; no repair work was required.
+
+**Acceptance criteria (live re-check)**
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| `curl -sS localhost:4000` serves the web UI | MET | `curl -sS -i localhost:4000` -> `HTTP/1.1 303 See Other`, `Location: /builds_latest`; `curl -sS -L localhost:4000` -> HTTP 200, `<title>~SPARKY CI WEB~ \| latest builds</title>` |
+| Both services running | MET | `tmux ls` -> sessions `sparkyd` and `cro-run`, both created Aug 24 00:45:19 JST; `ss -ltnp` -> `LISTEN 0.0.0.0:4000` held by pid 283564 `/opt/rakudo-pkg/bin/raku -Ilib bin/sparky-web.raku` (child of `rakudo ~/.raku/bin/cro.raku run`, pid 283539); sparkyd is pid 283538 `rakudo ~/.raku/bin/sparkyd.raku`, etime 08:38:55 (`ps -eo pid,etime,cmd`); error scan `grep -icE 'error\|panic\|exception\|died'` -> 0 matches in `sparkyd.log` (7689 lines) and `cro-run.log` (1 line) |
+| No-op scaffold runs end-to-end to "succeed" | MET | Re-ran fresh at 09:44:26 JST. `curl -c cj -d 'login=admin&password=admin' localhost:4000/default_login` -> 303, `Location: /?message=user [admin] logged in`; `curl -b cj --data-urlencode 'tags=...' localhost:4000/build-with-tags/project/sparky-rocky` (identical tags to the 01:20 run) -> 200, trigger id `ucyhfxtwnmgdkpzlorqb.283564`; by 09:48:03 JST `sqlite3 ~/.sparky/projects/db.sqlite3 "SELECT id,project,job_id,state FROM builds WHERE id>3"` -> rows 4/5/6 (`sparky-rocky`, `qemu-session.default`, `test-use-case.default`) all `state=1`; state mapping `1=ok, 0=run, -1=fail, -11=terminated` per `~/Code/sparky/templates/builds_latest.crotmp:106-124`; in-VM evidence: `build-5.txt:1489-1490` `# qemu should reach login prompt` -> `True`, `build-6.txt:190-193` `load scenario from main.raku` -> `[task run: task.bash - tasks/check-noop]` -> `no-op task ran OK`, `build-4.txt` tail `stop-qemu-box` killed pid 295795 -> `done`; `pgrep -af rocky-linux-distro` -> empty (QEMU shut per `qemu_shut=True`); wall time 09:44:26 to 09:46:45 JST; no image download (0 `download distro` lines in `build-5.txt`, cached qcow2 reused) |
+| Setup notes written to `## Implementation` | MET | the earlier session's notes above; this block adds the live re-check and the fresh run |
+
+**Live state checks (command -> result, 09:22 to 09:31 JST)**
+
+1. `bash -lc 'which raku rakudo zef; raku -v | head -1; zef --version'` -> `/opt/rakudo-pkg/bin/raku`,
+   `/opt/rakudo-pkg/bin/rakudo`, `/home/howard/.raku/bin/zef`; `Welcome to Rakudo v2026.07.`; `1.1.3`.
+2. `bash -lc 'zef list'` -> store contains Sparky 0.2.32, Sparky-Job-Api 0.0.13, Sparrow6 0.0.93,
+   Sparrowdo 0.1.55, Cro::Core 0.8.10, Cro::HTTP 0.8.13, Cro::TLS 0.8.10, Cro::WebApp 0.10.1,
+   Cro::WebSocket 0.8.10, DBIish 0.6.8, DBIish::Pool 1.1.0 (plus older cached versions).
+3. `grep -n rakudo ~/.bash_profile` -> line 9, the raku PATH export.
+4. `rpm -q rakudo-pkg` -> `rakudo-pkg-2026.7.0-01.x86_64`; `/etc/yum.repos.d/nxadm-pkgs-rakudo-pkg.repo` present.
+5. `git -C ~/Code/sparky status -sb` + `git log --oneline -1` -> `## master...origin/master`, HEAD `add1b02`;
+   `git -C ~/Code/Sparky_Rocky log --oneline -1` -> `57decf1`; `git -C ~/Code/sparky-noop log --oneline -1` -> `850bb2a`.
+6. `ls -la ~/.sparky/` -> `projects/{db.sqlite3,sparky-rocky,qemu-session.default,test-use-case.default,.reports,work}`,
+   `templates/vars.yaml`; `~/sparky.yaml` present (34 B).
+7. `cat ~/.sparky/templates/vars.yaml` -> `use_case_repo` includes `~/Code/sparky-noop`;
+   `qemu.binary: qemu-kvm`; `qemu.machine: "pc-q35-rhel10.2.0"`; `ssh_key_path: ~/.ssh/id_ed25519.pub`.
+8. `bash -lc 'qemu-kvm --version | head -1'` -> `QEMU emulator version 10.1.0 (qemu-kvm-10.1.0-16.el10_2.2)`;
+   `-machine help` -> `pc-q35-rhel10.2.0` (alias `q35`); `~/bin/qemu-kvm` is a symlink to `/usr/libexec/qemu-kvm`.
+9. `sudo ls -la /etc/sudoers.d/sparky` -> 0440 root:root, content `howard ALL=(ALL) NOPASSWD: /usr/bin/mount,/usr/bin/umount`;
+   `sudo visudo -c -f /etc/sudoers.d/sparky` -> "parsed OK"; `sudo -n mount --version` -> `mount from util-linux 2.40.2` (passwordless).
+10. `systemctl is-active firewalld` -> `inactive` (port-4000 rule remains N/A, as recorded above).
+11. `sqlite3 ~/.sparky/projects/db.sqlite3 "SELECT id,project,job_id,state,dt FROM builds ORDER BY id"` -> rows 1-3 all
+    `state=1`; row 1 `job_id` `kvtmfqgjopawhnudicbr.283564` matches the trigger id recorded above
+    (dt `2026-08-23 16:20:39` UTC = 01:20:39 JST).
+12. `ls -la ~/rocky-linux-distro/default/` -> `distro.Rocky-10-GenericCloud.qcow2` (544997376 B, mtime May 26 09:21),
+    `distro.qcow2` (905314304 B, Aug 24 01:25), `.version` (Aug 24 01:21).
+
+**Resolved discrepancy (image cache mtime).** `distro.Rocky-10-GenericCloud.qcow2` carries mtime
+May 26 09:21, which looks older than the 01:24 JST download recorded above; it is not a
+pre-existing cache. `build-2.txt:30-34` shows the download ran 01:21:32 to 01:24:09 and the
+`.cache` file was moved into place at 01:24:09; the mtime is the upstream image's Last-Modified,
+preserved by the downloader. (The same lines give 544997376 B in 157 s, a 3.5 MB/s average; the
+earlier "~4.2MB/s" figure was an estimate, the log timestamps are the evidence.)
+
+**Carried-forward flags (unchanged by this re-check)**
+
+- The orphaned paused `cinnamon-inspect-vm` QEMU pid 216968 is still present (RSS 1528796 KB,
+  STAT `Sl`, elapsed 2d 02:39; `virsh list --all` shows no domain), matching the `## Status`
+  incident note. Still Big's artifact, still flagged for cleanup; not touched here.
+- Host headroom at re-run time: `free -g` -> 30 GB total, 19 GB available; the re-run VM used
+  6024 MB (qemu command line in `build-5.txt`); the A7 one-VM-at-a-time constraint held.
+- The web-login cookie jar was removed after the run; no credentials persisted anywhere.
+
+**Verdict:** item 1 remains MET as of 2026-08-24 09:48 JST; no repair work was required. No files
+in `metalllinux/cinnamon-for-rocky10` were touched. Next per `## Next Actions`: item 3 (Big,
+static inspection). I updated the item-1 clause in `## Next Actions` accordingly (last-writer
+convention for that section).
+
 ---
 
 ## Review
@@ -608,6 +901,285 @@ needs no review per AGENTS.md §8; the user may still want to see the diff.
 ## Test Results
 
 *Owner: `Big`. Verdicts, never raw log dumps.*
+
+### Item 3
+
+*Executed 2026-08-24 (11:30 to 12:20 JST). Static packaging inspection per `## Plan` work
+breakdown item 3. Host: Rocky Linux 10.2 runner. Scratch VM `cinnamon-test-vm` (2 vCPU / 4GB,
+cloud image, provisioned by `vm-test/provision-vm.sh --destroy`, IP 192.168.122.52, destroyed
+after the checks). No files in `metalllinux/cinnamon-for-rocky10` were modified. Clone at
+`1f00da5` = `origin/main`, branch `task-0008-gdm-auth`. Scratch payloads kept under
+`/tmp/opencode/item3/` (host, disposable).*
+
+**Environment notes (not findings):**
+
+- `rpms/` holds 48 RPM files plus `repodata/` (`ls rpms/*.rpm | wc -l` -> `48`).
+- The clone has one untracked file, `vm-test/test-repo-setup.sh` (TASK-0006-era harness, never
+  committed). Not mine; left as-is; flagged for `Tails`/`Knuckles`.
+- Leftover state from the interrupted 2026-08-22 session removed as part of this item (both were
+  `Big` artifacts, flagged for cleanup in `## Status` and `### Item 1`): orphaned paused QEMU
+  `cinnamon-inspect-vm` pid 216968 (user `qemu`, RSS ~1.5GB, no domain record; `sudo kill 216968`
+  -> gone) and its disk `/var/lib/libvirt/images/cinnamon-test/cinnamon-inspect-vm.qcow2`
+  (1003552768 B; `rm` per the plan's rollback leftover-state rule). Host `free -g` after
+  cleanup: 22 GB available.
+
+**F1. Session/PAM/systemd file surface, all 48 RPMs (host).** Method: `rpm -qlp` on each of the
+48 RPMs, filtered on `^/etc/pam\.d/|^/usr/share/(xsessions|wayland-sessions)/|\.session$|^/usr/lib/systemd/`.
+Exactly two RPMs match; the other 46 have no files on this surface.
+
+- `cinnamon-6.7.4-1.el10.x86_64.rpm` (5 files): `/etc/pam.d/cinnamon`,
+  `/usr/share/cinnamon-session/sessions/cinnamon.session`,
+  `/usr/share/cinnamon-session/sessions/cinnamon-wayland.session`,
+  `/usr/share/xsessions/cinnamon.desktop`, `/usr/share/wayland-sessions/cinnamon-wayland.desktop`
+- `cinnamon-session-6.7.3-1.el10.x86_64.rpm` (1 file): `/usr/lib/systemd/user/cinnamon-session.target`
+
+**F2. The cinnamon-session user-unit question (plan, verified facts, `spec/cinnamon-session.spec:49-64`
+expectation "most likely absent").** The unit **is** shipped, contradicting that expectation:
+
+- `rpm -qlp --dump rpms/cinnamon-session-6.7.3-1.el10.x86_64.rpm` ->
+  `/usr/lib/systemd/user/cinnamon-session.target 339 1786320000 5dcfc138... 0100644 root root 0 0 0 X`
+- Installed on the scratch VM after the full install: `-rw-r--r--. 1 root root 339 Aug 10 00:00
+  cinnamon-session.target` in `/usr/lib/systemd/user/`.
+- Content (quoted from the RPM payload): a passive target, no `[Service]` section:
+  `Wants=graphical-session.target` / `Before=graphical-session.target` /
+  `Wants=graphical-session-pre.target` / `PropagatesStopTo=graphical-session.target` /
+  `CollectMode=inactive-or-failed`.
+- The session manager starts it itself: `cinnamon-session/csm-manager.c:1544`
+  `csm_util_start_systemd_unit ("cinnamon-session.target", "replace", NULL);` (stop at `:892`), so
+  registration happens at session start; the file lives in a standard user-unit path, which the
+  user manager scans without per-user enablement or `daemon-reload`.
+- It is **not** listed in `spec/cinnamon-session.spec:49-64` (`%files`). See F5.
+
+**F3. X11 `RequiredComponents` chain.** Installed
+`/usr/share/cinnamon-session/sessions/cinnamon.session` (identical in the `rpm2cpio`-extracted RPM
+payload):
+
+```
+[Cinnamon Session]
+Name=Cinnamon
+RequiredComponents=cinnamon;nemo-autostart;cinnamon-killer-daemon;
+DesktopName=X-Cinnamon
+```
+
+- `@REQUIRED@` in the source template (`cinnamon/cinnamon.session.in:3`) resolves to empty because
+  `spec/cinnamon.spec:91` builds with `-Dnm_agent=internal`
+  (`cinnamon/meson.build:63` `session_conf.set('REQUIRED', '')`).
+- Components resolve as **desktop files, not binaries**: `cinnamon-session/csm-session-fill.c:128`
+  calls `csm_util_find_desktop_file_for_app_name` (`csm-util.c:88`, `g_key_file_load_from_dirs` on
+  `<name>.desktop` across the desktop/autostart dirs).
+- Resolution state on the VM after the full 14-package install (all verified present):
+  `cinnamon` -> `/usr/share/applications/cinnamon.desktop` (cinnamon RPM, `Exec=/usr/bin/cinnamon-launcher`,
+  binary present); `nemo-autostart` -> `/usr/share/applications/nemo-autostart.desktop` (**nemo
+  RPM only**, `Exec=nemo-desktop`, `/usr/bin/nemo-desktop` present); `cinnamon-killer-daemon` ->
+  `/usr/share/applications/cinnamon-killer-daemon.desktop` (cinnamon RPM, `/usr/bin/cinnamon-killer-daemon`
+  present, `#!/usr/bin/python3`, `python3` present at `/usr/bin/python3`).
+- **Conditional gap:** if the installer skips the second command of INSTALL.md (`INSTALL.md:38-39`,
+  which includes `nemo`), `nemo-autostart.desktop` is absent and the session manager cannot fulfill
+  a required component. Item 3 cannot establish what the user actually installed; the matrix (S1)
+  uses the full INSTALL.md procedure.
+- `xsessions/cinnamon.desktop` Exec chain intact on the VM: `/usr/bin/cinnamon-session-cinnamon`
+  (`#!/usr/bin/sh`, `exec cinnamon-session --session cinnamon "$@"`) -> `/usr/bin/cinnamon-session`
+  (`#!/usr/bin/sh` wrapper) -> `/usr/libexec/cinnamon-session-binary`.
+- Wayland session (outside the X11 path, recorded for completeness):
+  `cinnamon-wayland.session` has `RequiredComponents=cinnamon-wayland;nemo-autostart;`; the
+  `cinnamon-wayland` component resolves to `/usr/share/applications/cinnamon-wayland.desktop`
+  (`Exec=cinnamon --replace`), but no RPM ships `/usr/bin/cinnamon-wayland`.
+
+**F4. PAM file (host + VM).** The installed `/etc/pam.d/cinnamon` is byte-identical to the RPM
+payload and to the source template. `md5sum` on all three:
+
+```
+e6aef20bcd9e897876e28b2e659b1e6c  (VM) /etc/pam.d/cinnamon
+e6aef20bcd9e897876e28b2e659b1e6c  (rpm2cpio payload)
+e6aef20bcd9e897876e28b2e659b1e6c  ~/Linux/projects/cinnamon_4_rocky10/cinnamon/data/pam/cinnamon.pam
+```
+
+Content is the standard RHEL-style stack: `auth`/`account`/`password`/`session` all
+`include system-auth`, `-auth sufficient pam_selinux_permit.so`, `-auth optional pam_gnome_keyring.so`.
+GDM's interactive login uses the `gdm-password` service (assumption A3), not the `cinnamon`
+service; `/etc/pam.d/cinnamon` is the only PAM file any of the 48 RPMs writes (F1). Even if it were
+used, its auth stack is the same `system-auth` includes as `gdm-password`, so no packaged content
+makes Cinnamon auth diverge from GNOME.
+
+**F5. Spec-to-RPM drift (repo-wide): the shipped RPMs were not built from the committed specs.**
+Method: each spec's `%files` entries macro-expanded with `rpm --eval` and compared against
+`rpm -qlp`; every entry below re-verified with direct `rpm -qlp | grep -qx` and the spec lines
+read from the clone.
+
+- `cinnamon-session` (the package the plan flagged): the spec lists **6 paths absent from the RPM**:
+  `/usr/bin/cinnamon-session-calculate-display-type`, `-debug`, `-launch-desktop`, `-restart-x`,
+  `-workspaces-client`, `/usr/libexec/cinnamon-session`. The RPM contains **11 files the spec does
+  not claim**: the systemd user unit (F2), `/usr/libexec/cinnamon-session-binary`,
+  `/usr/libexec/cinnamon-session-check-accelerated`,
+  `/usr/libexec/cinnamon-session-check-accelerated-helper`, 6 `cinnamon-session-properties` icons,
+  and `/usr/share/glib-2.0/schemas/org.cinnamon.SessionManager.gschema.xml` (the spec's glob
+  `org.cinnamon.desktop.session*.gschema.xml` at `spec/cinnamon-session.spec:60` does not match
+  that name).
+- `cinnamon-settings-daemon`: spec claims `/usr/bin/cinnamon-settings-daemon`,
+  `/usr/libexec/cinnamon-settings-daemon`, `/usr/share/cinnamon-settings-daemon`,
+  `/usr/share/dbus-1/services/org.cinnamon.settings_daemon.service`; all four **absent** from the
+  RPM (`rpm -qlp | grep -qx` -> ABSENT for each). The RPM ships `csd-*` binaries instead
+  (`/usr/bin/csd-a11y-settings` ... `/usr/bin/csd-xsettings`).
+- `nemo`: spec claims `/usr/bin/nemo-file-properties`, `/usr/bin/nemo-pathbar-popup` (absent) and
+  `Nemo-6.0.typelib` / `Nemo-6.0.gir` (the RPM has `Nemo-3.0.*`). The spec also declares a
+  `%files -n %{name}-python` subpackage; **no `nemo-python` RPM exists in `rpms/`** and no
+  `/usr/lib64/nemo/python3` path exists in any RPM.
+- `cinnamon-desktop`: spec claims `/usr/lib64/libcinnamon-desktop.so` and `/usr/lib64/libcvc.so`
+  (bare soname symlinks); the RPM contains only the versioned `libcinnamon-desktop.so.4[.0.0]`
+  and `libcvc.so.0[.0.0]`.
+- `cinnamon-menus`: spec claims `Menu-3.0.typelib` / `Menu-3.0.gir`; the RPM has `CMenu-3.0.*`.
+- `cinnamon` (818 files): all 32 exact spec entries and all 19 glob patterns are present in the
+  RPM; drift limited to the auto-added `/usr/lib/.build-id/*` files (standard rpmbuild/debugedit
+  behavior). This is the one base package whose spec matches its RPM.
+
+Timing evidence: the RPM mtimes are `Aug 12 11:10`; every drifted spec was introduced in commit
+`d5cfacd` (2026-08-12 11:14 JST, "Complete Cinnamon 6.7.x build") four minutes later
+(`git log --follow -- spec/cinnamon-session.spec` -> only `d5cfacd`;
+`git diff d5cfacd..HEAD -- spec/cinnamon-session.spec` -> empty). Conclusion: the committed specs
+were written after the build and do not describe the built files. Consequence for item 6:
+rebuilding any of the five drifted packages from the current specs fails in both directions
+(rpmbuild "File not found" for the missing `%files` paths; "File not owned by any package" for the
+unclaimed buildroot files). `%files` must be regenerated from actual build output before the
+rebuild.
+
+**F6. Scriptlets, all 48 RPMs (host).** `rpm -q --scripts -p` on each RPM: 8 RPMs carry
+scriptlets, all identical (`postinstall program: /sbin/ldconfig`,
+`postuninstall program: /sbin/ldconfig`): `cinnamon-control-center`, `cinnamon-desktop`,
+`cinnamon-menus`, `cinnamon-settings-daemon`, `cjs`, `mozjs115`, `muffin`, `nemo`. The other 40
+have none, **including `cinnamon` and `cinnamon-session`**. No systemd-related scriptlet exists in
+any RPM. `cinnamon` ships 2 `.so` files without an `ldconfig` scriptlet; that is mitigated by the
+manual `sudo ldconfig` at `INSTALL.md:47`, which is part of the user procedure and the matrix.
+
+**F7. Scratch VM installed state (Part B).**
+
+- Provision: `bash vm-test/provision-vm.sh --destroy` ->
+  `VM 'cinnamon-test-vm' provisioned and ready.`, `IP: 192.168.122.52`, from
+  `/var/lib/libvirt/images/cinnamon-test/Rocky-10-GenericCloud.qcow2` (2 vCPU / 4GB).
+- **Baseline before any modification:** `getenforce` -> `Enforcing`;
+  `/etc/selinux/config`: `SELINUX=enforcing`, `SELINUXTYPE=targeted`;
+  `cat /etc/redhat-release` -> `Rocky Linux release 10.2 (Red Quartz)`;
+  `rpm -q gdm gnome-shell` -> `package gdm is not installed` / `package gnome-shell is not installed`.
+  The cloud image boots **enforcing** by default.
+- Repo: `scp -r rpms repo-setup` to `/root/` (48 RPMs verified on the VM);
+  `bash /root/repo-setup/setup-repo.sh /root` -> `=== Repository setup complete ===`.
+- Install, the exact INSTALL.md procedure: `dnf install -y cinnamon` -> `Complete!`;
+  `dnf install -y cinnamon-session cinnamon-settings-daemon cinnamon-control-center nemo mozjs115-devel`
+  -> `Complete!`; `ldconfig` -> rc=0.
+- Installed set, `rpm -q` per package (all 14 packages of the INSTALL.md table, exact versions):
+  `mozjs115-115.29.0-1.el10.x86_64`, `mozjs115-devel-115.29.0-1.el10.x86_64`,
+  `cjs-6.4.0-1.el10.x86_64`, `muffin-6.7.4-3.el10.x86_64`, `muffin-clutter-6.7.4-3.el10.x86_64`,
+  `muffin-cogl-6.7.4-3.el10.x86_64`, `cinnamon-desktop-6.7.2-1.el10.x86_64`,
+  `xapps-lib-3.3.3-1.el10.x86_64`, `cinnamon-session-6.7.3-1.el10.x86_64`,
+  `cinnamon-settings-daemon-6.7.2-1.el10.x86_64`, `cinnamon-control-center-6.7.2-1.el10.x86_64`,
+  `cinnamon-menus-6.7.0-1.el10.x86_64`, `nemo-6.7.4-1.el10.x86_64`,
+  `cinnamon-6.7.4-1.el10.x86_64`.
+- `rpm -V` on all 14: no output for any package (no file-integrity diffs).
+- File contexts under enforcing after the full install (`ls -Z`):
+  `system_u:object_r:etc_t:s0 /etc/pam.d/cinnamon`, `bin_t:s0 /usr/bin/cinnamon`,
+  `bin_t:s0 /usr/libexec/cinnamon-session-binary`,
+  `systemd_unit_file_t:s0 /usr/lib/systemd/user/cinnamon-session.target`,
+  `usr_t:s0` on the three component `.desktop` files, both session files, and the xsessions entry.
+  All standard default contexts; no custom policy needed for the files to exist.
+  `ausearch -m avc -ts recent` -> `<no matches>` after the full install; `getenforce` still
+  `Enforcing` afterwards.
+
+**F8. `ldd` sweep (VM).** Method: `ldd <target> | grep -c "not found"`; every target returned 0.
+Targets, all `OK`: `/usr/bin/cinnamon`, `/usr/bin/cinnamon-launcher`,
+`/usr/libexec/cinnamon-session-binary`, `/usr/bin/muffin`, `/usr/bin/nemo`,
+`/usr/bin/nemo-desktop`, `/usr/bin/csd-power`, `/usr/bin/csd-xsettings`, `/usr/bin/csd-media-keys`,
+`/usr/lib64/libcinnamon-desktop.so.4`, `/usr/lib64/libmuffin.so.0`, `/usr/lib64/libcjs.so.0`.
+
+**F9. Availability probes (Part C, in the VM).**
+
+- Default repos (`appstream`, `baseos`, `crb`, `extras`, local `cinnamon-rocky10`;
+  `dnf repolist`): `dnf provides /usr/bin/xdotool` -> `Error: No matches found.`; same result for
+  `dnf provides /usr/bin/ydotool`, `dnf provides /usr/bin/dogtail`, `dnf provides dogtail`
+  (package name), and `dnf provides /usr/bin/lightdm`.
+- EPEL 10 (`dnf install -y epel-release`, then
+  `dnf --disablerepo="*" --enablerepo=epel list available "xdotool*" "ydotool*" "dogtail*" "lightdm*"`):
+  `Error: No matching Packages to list`. All four names are absent from EPEL 10 as well.
+- Micro-driver feasibility (fallback ladder, plan risk R1):
+  `dnf provides /usr/include/X11/Xlib.h` -> `libX11-devel-1.8.10-1.el10.x86_64` (appstream);
+  `dnf provides /usr/include/X11/extensions/XTest.h` -> `libXtst-devel-1.2.4-8.el10.x86_64`
+  (appstream); `dnf list available gcc make` -> `gcc-14.3.1-4.4.el10` (appstream),
+  `make-4.4.1-9.el10` (baseos). All build inputs are in the default repos.
+- SELinux surface: none of the 48 RPMs ships any SELinux file
+  (`rpm -qlp` scan on `selinux|\.te$|file_contexts|semanage` -> no matches in any RPM); the VM
+  carries stock `selinux-policy-targeted-42.1.18-4.el10.noarch`.
+
+**Decisions (acceptance criteria).**
+
+- **Input driver (A8, R1): the in-VM XTest micro-driver.** `xdotool`, `ydotool`, and `dogtail`
+  are all absent from the default Rocky 10 repos and from EPEL 10 (F9), so the first three rungs of
+  the plan's fallback ladder are unavailable. The fourth rung (an XTest micro-driver compiled in
+  the VM from `libX11-devel` + `libXtst-devel` + `gcc` + `make`, all present in default repos per
+  F9) is the only repo-sourced option. It is test-only, built at task start inside the VM, and is
+  never shipped in the `cinnamon-for-rocky10` repo. `Tails` (item 2) must therefore include the
+  driver source and an in-VM build step in the harness.
+- **LightDM (R6): scenario S2 is blocked at the repo level.** `lightdm` is not in the default EL10
+  repos and not in EPEL 10 (F9). S2 is excluded from the item 10 matrix and counted explicitly in
+  the checks-requested-vs-run below, per the plan's contingency ("recorded as blocked with the
+  `dnf` evidence", not silent).
+
+**H1-H4 marks.**
+
+- **H1 (session-file/packaging content): not supported as a cause of the installed-state failure.**
+  Every session-surface file installed is correct and internally consistent (F1-F4, F7, F8):
+  session entries, PAM file, `.session` content, and the full `RequiredComponents` chain all
+  resolve after the full INSTALL.md install. Two caveats: (a) the `nemo-autostart` component
+  resolves only if the `nemo` package was installed (F3); if the user skipped INSTALL.md:38-39,
+  session launch would fail on a missing required component. (b) The spec-to-RPM drift (F5) is a
+  real packaging-integrity defect in the repo, but it does not affect the installed state the user
+  has; it blocks item 6's rebuild until `%files` is regenerated.
+- **H2 (PAM auth failure): not assessable statically; neutral.** The package set never touches
+  GDM's `gdm-password` path, and the one PAM file it ships is a standard `system-auth` stack (F4).
+  Nothing in the RPMs makes Cinnamon auth behave differently from GNOME. Confirmation of A3 (the
+  service tag in `/var/log/secure` for a failed Cinnamon attempt) comes from item 4.
+- **H3 (transient first-login state): the unit-registration sub-hypothesis is not supported.**
+  The user unit ships, installs to the standard user-unit path, and is started by the session
+  manager itself (F2); no scriptlet or per-user enablement is required for it to be visible. The
+  remaining sub-hypotheses (GDM/logind state, first-run dconf for a pre-existing GNOME user) are
+  open and are decided by items 4 and 5.
+- **H4 (SELinux enforcing): not assessable statically; baseline recorded.** The cloud image boots
+  enforcing (F7), matching the assumed user-machine default (A2), while all prior harness runs were
+  permissive. Installed files carry standard default contexts with zero AVCs during the full
+  install (F7), and no RPM ships SELinux content (F9). The enforcing behavior question is decided
+  by scenario S5.
+
+**Checks requested vs run (item 3):** 17 requested, 17 executed. Nothing dropped.
+
+| # | Check (per the plan's item 3) | Status |
+|---|---|---|
+| 1 | `rpm -qlp` over all 48 RPMs, session/pam/systemd surface | run (48/48, F1) |
+| 2 | `rpm -q --scripts` over all 48 RPMs | run (48/48, F6) |
+| 3 | cinnamon-session user-unit question | run (F2) |
+| 4 | VM: diff `/etc/pam.d/cinnamon` vs source | run (md5-identical, F4) |
+| 5 | VM: `xsessions/cinnamon.desktop` | run (F3, F7) |
+| 6 | VM: `sessions/cinnamon.session` + `RequiredComponents` incl. `nemo-autostart` | run (F3) |
+| 7 | VM: `rpm -V` all 14 packages | run (14/14 clean, F7) |
+| 8 | VM: `ldd` | run (12 launch-chain targets, F8) |
+| 9 | `dnf provides /usr/bin/xdotool` | run (F9) |
+| 10 | `dnf provides` ydotool | run (F9) |
+| 11 | `dnf provides` dogtail | run (binary + package name, F9) |
+| 12 | `dnf provides /usr/bin/lightdm` | run (F9) |
+| 13 | `getenforce` on the cloud image | run (Enforcing, F7) |
+| 14 | Findings with command + output for every claim | this subsection |
+| 15 | H1-H4 each marked supported/unsupported | this subsection |
+| 16 | Input-driver choice decided and recorded | this subsection |
+| 17 | LightDM availability decided and recorded | this subsection |
+
+Additional evidence gathered beyond the letter of the item (EPEL probes, micro-driver
+feasibility, component-resolution code trace, spec-to-RPM comparison, file contexts, AVC check):
+listed in F3, F5, F7, F9. No check was reduced.
+
+**Verdict:** item 3 acceptance criteria met. The static inspection found no defect in the
+*installed* session surface that would explain the GDM Authentication Error (H1 not supported for
+installed content; H2 neutral; H3 unit sub-hypothesis not supported; H4 baseline recorded). It did
+find two repo-level defects that matter downstream: the spec-to-RPM drift (F5, blocks item 6's
+rebuild until `%files` is regenerated, goes to `Tails`) and the absence of every off-the-shelf
+greeter input driver from EL10 + EPEL repos (F9, forces the XTest micro-driver in item 2, goes to
+`Tails`). LightDM scenario S2 is blocked at the repo level and is recorded as such, not skipped
+silently. Next per `## Next Actions`: item 2 (Tails, GDM harness), informed by F9.
 
 **Workflow run:**
 
