@@ -12,6 +12,25 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-25 05:15 JST): Q5 endpoint crash-looping; both item 2 attempts lost to it; work
+preserved in an orphan VM.** opencode.log shows 10 Q5 crash/restart events since 2026-08-22 08:33
+UTC (Aug 24: 07:18, 08:20, 12:18, 18:27, 19:32). Each is "Unable to connect" + "Loading model"
+= process down, systemd cold-restart (`Restart=on-failure`, `RestartSec=5` per the unit record in
+`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md`), minutes-long model load during
+which opencode kills in-flight subagent sessions (no stream retry). Item 2 attempt 1 (03:50-08:20
+UTC, 4.5h) and attempt 3 (12:31-19:32 UTC, 7h) both died this way; attempt 3 did real harness work
+(permission log 14:54-18:12 UTC). Crash root cause unknown: the journal is on EVO-X2, unreachable
+from this host by key (password-only access per bash history; publickey denied 2026-08-25 04:58
+UTC). User action required (Next Actions). Server up again at write time (`n_ctx: 262144`).
+Work preserved: attempt 3's test VM is an ORPHAN QEMU process (libvirt domain deleted, process
+alive since 14:53 UTC Aug 24, 4GB RAM). Guest `gdm-login-vm`, disk
+`/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2` (2.3G), VNC 127.0.0.1:5900,
+ssh root@192.168.122.29 with `~/.ssh/cinnamon-test-key`. Verified inside (2026-08-25 05:05 JST):
+`/root/gdm-harness/` (`gdm-a11y.py` pyatspi2 finder, `gdm-drive.sh`, `ukey`+`ukey.c` uinput
+micro-driver), `/root/gdmtest.pass`, `/tmp/{holddev,holddev2,holddev3,xlisten,xtest-test}`; GDM +
+gnome-shell installed, `gdmtest` user, SELinux permissive. Do not kill the orphan process.
+Neither attempt wrote `### Item 2` to this doc.
+
 **Now (2026-08-23 21:45 JST):** Q5 context wall root-caused and fixed; endpoint layout final.
 Root cause: the q5 unit forced `--n-gpu-layers 99`, so llama.cpp's fit-to-device step (on by
 default) silently shrank context 262144 to 65536 per slot; the 2026-08-22 "verified `-c 262144`"
@@ -176,13 +195,18 @@ the PM reads.*
       (2026-08-24): keep `metalllinux/cinnamon-for-rocky10` main current on GitHub. Path: work
       commits to feature branch, item 13 PRs it to main and `Knuckles` merges; nothing lands on
       main before the fix is verified.
-- [ ] `Robotnik` (in progress): dispatch Wave 0 one subagent at a time, order: item 1 (Tails,
-       Sparky host infra) DONE 2026-08-24 (all 4 acceptance criteria re-verified 09:48 JST; see
-       `### Item 1` in `## Implementation`); then 3 (Big, static inspection), 2 (Tails, GDM
-       harness), 9a (Tails, Sparrow suite), with Amy (TASK-0009 plan) interleaved. Poll each by its
-      `### Item N` subsection (`grep '^### Item'`). Then the critical path: 4 → 5 → 6 → Shadow,
-      Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14. If a dispatch comes back empty, suspect the
-      endpoint before the agent (see Status).
+- [x] `Robotnik` (2026-08-25 05:15 JST): item 2 post-mortem done (record in Status). Both item 2
+      attempts died to Q5 endpoint crash-restarts, not agent failure. Endpoint is the blocker. No
+      re-dispatch until the Q5 crash loop is resolved.
+- [ ] `User` (BLOCKER): EVO-X2 access or diagnostics. Option A (recommended): on EVO-X2 run
+      `echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMlAKyaF/4tqoR4e0uEBSyQcneSJEVmMnA/pfrgMP8Rm sparky@team-chaotix-host' >> ~/.ssh/authorized_keys`
+      so Robotnik can root-cause the Q5 crashes from the journal and fix the unit. Option B: run on
+      EVO-X2 and paste output: `journalctl --user -u llama-server-qwen3.8-27b-q5 --since
+      '2026-08-24 17:00' --no-pager | tail -100` and `dmesg -T | grep -iE 'oom|kill' | tail -20`.
+- [ ] `Robotnik`: once the endpoint survives a multi-hour run, re-dispatch item 2 (Tails) with a
+      resume brief: adopt the orphan `gdm-login-vm` (details in Status), verify prior state, finish
+      the GDM harness, write `### Item 2`. Then 9a (Tails, Sparrow suite), Amy (TASK-0009 plan),
+      critical path 4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14.
 
 ---
 
