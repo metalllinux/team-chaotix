@@ -19,9 +19,18 @@ UTC (Aug 24: 07:18, 08:20, 12:18, 18:27, 19:32). Each is "Unable to connect" + "
 `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md`), minutes-long model load during
 which opencode kills in-flight subagent sessions (no stream retry). Item 2 attempt 1 (03:50-08:20
 UTC, 4.5h) and attempt 3 (12:31-19:32 UTC, 7h) both died this way; attempt 3 did real harness work
-(permission log 14:54-18:12 UTC). Crash root cause unknown: the journal is on EVO-X2, unreachable
-from this host by key (password-only access per bash history; publickey denied 2026-08-25 04:58
-UTC). User action required (Next Actions). Server up again at write time (`n_ctx: 262144`).
+(permission log 14:54-18:12 UTC). Root cause found 2026-08-25 (EVO-X2 kernel journal, SSH key access granted by user 08:55 JST):
+the Strix Halo iGPU wedges under llama-server load, amdgpu compute-ring timeouts (26 wedge events
+since the 2026-08-23 boot; exact time correlation with the opencode.log errors), each ring reset
+kills the Vulkan device and the process. Full record:
+`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md` (2026-08-25 section). A `-fa off`
+mitigation attempt broke startup (q8_0 V-cache quantization requires flash_attn; constraint now
+documented); user restored the unit from backup at 10:04 JST and froze the config (user decision
+2026-08-25: keep `-fa on` + q8_0 KV + 262144, no further unit changes). Standing rule (user):
+always back up the unit before modifying it. Wedge risk accepted; mitigation is process-level
+(checkpoint to this doc early and often, keep the VM as durable state, compare wedge counts
+before/after runs). Service verified healthy 10:40 JST (`n_ctx: 262144`, zero error lines since
+restore).
 Work preserved: attempt 3's test VM is an ORPHAN QEMU process (libvirt domain deleted, process
 alive since 14:53 UTC Aug 24, 4GB RAM). Guest `gdm-login-vm`, disk
 `/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2` (2.3G), VNC 127.0.0.1:5900,
@@ -196,17 +205,19 @@ the PM reads.*
       commits to feature branch, item 13 PRs it to main and `Knuckles` merges; nothing lands on
       main before the fix is verified.
 - [x] `Robotnik` (2026-08-25 05:15 JST): item 2 post-mortem done (record in Status). Both item 2
-      attempts died to Q5 endpoint crash-restarts, not agent failure. Endpoint is the blocker. No
-      re-dispatch until the Q5 crash loop is resolved.
-- [ ] `User` (BLOCKER): EVO-X2 access or diagnostics. Option A (recommended): on EVO-X2 run
-      `echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMlAKyaF/4tqoR4e0uEBSyQcneSJEVmMnA/pfrgMP8Rm sparky@team-chaotix-host' >> ~/.ssh/authorized_keys`
-      so Robotnik can root-cause the Q5 crashes from the journal and fix the unit. Option B: run on
-      EVO-X2 and paste output: `journalctl --user -u llama-server-qwen3.8-27b-q5 --since
-      '2026-08-24 17:00' --no-pager | tail -100` and `dmesg -T | grep -iE 'oom|kill' | tail -20`.
-- [ ] `Robotnik`: once the endpoint survives a multi-hour run, re-dispatch item 2 (Tails) with a
-      resume brief: adopt the orphan `gdm-login-vm` (details in Status), verify prior state, finish
-      the GDM harness, write `### Item 2`. Then 9a (Tails, Sparrow suite), Amy (TASK-0009 plan),
-      critical path 4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14.
+      attempts died to Q5 endpoint crash-restarts, not agent failure.
+- [x] `User` (2026-08-25): granted SSH key access from shadow to EVO-X2 (08:55 JST); restored the
+      Q5 unit from backup after the `-fa off` breakage (10:04 JST); froze the config (keep `-fa on`
+      + q8_0 KV + 262144, no further unit changes); set the standing backup-before-change rule.
+- [x] `Robotnik` (2026-08-25 10:45 JST): wedge root cause recorded (Status + fixes doc); service
+      verified healthy after user restore. Wedge risk accepted per user config freeze; mitigation
+      is process-level checkpointing.
+- [ ] `Robotnik` (in progress): re-dispatch item 2 (Tails) with a resume brief: adopt the orphan
+      `gdm-login-vm` (details in Status), verify prior state, finish the GDM harness, write
+      `### Item 2`. If a GPU wedge kills the session mid-run (check the wedge count on EVO-X2),
+      re-dispatch with the same resume brief; the VM is the durable state. Then 9a (Tails, Sparrow
+      suite), Amy (TASK-0009 plan), critical path 4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 →
+      (11) → 12 → 13 → 14.
 
 ---
 

@@ -1,9 +1,10 @@
 # TASK-0008 — new-session prompts
 
-Three prompts below. Prompt 1 is the verbatim original task brief, kept as the record of what
-the user asked. Prompt 2 (2026-08-21, post-plan) is superseded by the overnight dispatch
-incident it did not anticipate. **To continue the work, paste Prompt 3** (2026-08-22,
-post-incident, includes the Q5 model decision). The planning docs
+Four prompts below. Prompt 1 is the verbatim original task brief, kept as the record of what
+the user asked. Prompts 2 and 3 (2026-08-21 post-plan, 2026-08-22 post-incident) are
+superseded by the events they did not anticipate. **To continue the work, paste Prompt 4**
+(2026-08-25, post-GPU-wedge-incident: Wave 0 items 1 and 3 done, item 2 work preserved in
+the orphan `gdm-login-vm`, Q5 config frozen by user decision). The planning docs
 `planning/docs/TASK-0008-cinnamon-gdm-auth-fix.md` and
 `planning/docs/TASK-0009-pyatspi2-desktop-testing-standard.md` carry all state.
 
@@ -266,3 +267,94 @@ endpoint first (curl), then re-dispatch that one item only.
   the clone.
 - If a dispatch comes back empty with no file changes, suspect the endpoint before
   the agent.
+
+---
+
+## Prompt 4 — continuation, post-GPU-wedge-incident (2026-08-25)
+
+> Paste everything below this line into a fresh opencode (Robotnik) session to continue
+> TASK-0008 and TASK-0009.
+
+Task for Robotnik: continue TASK-0008 (reproduce and root-cause the GDM "Authentication
+Error" for the Cinnamon session on Rocky Linux 10, fix it in cinnamon-for-rocky10, widen
+the VM test matrix) and TASK-0009 (standardize desktop application testing on Sparky +
+pyatspi2). Both planning docs carry all state. Read their `## Status` and `## Next
+Actions` first, then dispatch.
+
+### Where we stand (catalogued 2026-08-25)
+
+**TASK-0008.** Wave 0 is two items done. Item 1 (Sparky host infra) is verified
+complete (`### Item 1` in `## Implementation`, re-verified with a fresh end-to-end
+Sparky run). Item 3 (static packaging inspection) is complete (`### Item 3` in
+`## Test Results`): the installed session surface is correct, there is spec-to-RPM
+drift (a repo defect that blocks the item 6 rebuild), the input driver is the in-VM
+XTest micro-driver (finding F9), and the LightDM scenario S2 is blocked at the repo
+level (recorded, not skipped). Item 2 (GDM harness) has run twice and died both times
+to the Q5 endpoint, not to the agent (4.5h and 7h runs; full record in `## Status`).
+All of attempt 3's work is alive in an orphan VM. Guest `gdm-login-vm`, orphan QEMU
+process (libvirt domain deleted), disk
+`/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2`, VNC 127.0.0.1:5900,
+ssh root@192.168.122.29 with `~/.ssh/cinnamon-test-key`. Inside: `/root/gdm-harness/`
+(`gdm-a11y.py` pyatspi2 finder, `gdm-drive.sh`, `ukey` + `ukey.c` uinput micro-driver),
+`gdmtest` user with password file, GDM + gnome-shell installed, SELinux permissive,
+XTest and uinput experiments in `/tmp`. Do not kill the orphan process; the next
+item 2 dispatch adopts this VM and does not create a new one.
+
+**Endpoint.** Q5 on EVO-X2 (192.168.1.106, port 8084) is 1 slot x 262144 and the only
+model the team runs on. The config is frozen by user decision (2026-08-25, keep `-fa
+on` + q8_0 KV + 262144); do not modify the unit. The iGPU wedges under load (amdgpu
+compute-ring resets; each wedge kills in-flight sessions and opencode has no stream
+retry). Root cause, the `-fa off` incompatibility (q8_0 V-cache quantization requires
+flash_attn), the standing backup-before-change rule, and the wedge-count command are
+documented in `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md` (the
+2026-08-25 section). Wedge baseline at write time: 13 (count: `ssh howard@192.168.1.106
+'journalctl -k --no-pager | grep -cE "device wedged"'`).
+
+**TASK-0009.** `## Plan` is still an empty stub (the 2026-08-22 Amy dispatch died in
+the first lost fan-out). Dispatch Amy for it after item 9a, per TASK-0008 `## Next
+Actions`.
+
+### First actions of the new session
+
+1. Verify the Q5 endpoint: `curl -sS -m 10 http://192.168.1.106:8084/v1/models`
+   (expect `"n_ctx":262144` in the model data).
+2. Read `## Status` and `## Next Actions` in both planning docs.
+3. Dispatch item 2 to Tails. The endpoint is 1 slot, so one subagent at a time.
+   Resume brief: read `## Plan` item 2 and the `### Item 3` findings (F9 in
+   particular), adopt the orphan `gdm-login-vm` (no new VM, do not kill the orphan),
+   verify its prior state, finish the GDM login harness, and write `### Item 2`
+   under `## Implementation`. Because a GPU wedge can kill the session at any time,
+   Tails must checkpoint findings to the doc early and often. The VM is the durable
+   state, not the session context.
+4. If a dispatch comes back "Connection reset by server" or dies mid-run, check the
+   wedge count first (command above). A delta over the baseline means the endpoint
+   took the session; re-dispatch the same resume brief. Never re-dispatch while a
+   session is still alive. Poll artifacts first, per Prompt 3's "How to run
+   subagents on this local endpoint".
+5. Then item 9a (Tails, Sparrow suite), then Amy for TASK-0009, then the critical
+   path 4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14, per
+   TASK-0008 `## Next Actions`.
+
+### Standing rules
+
+- Launch opencode from `~/AI/projects/team-chaotix` (agents and AGENTS.md only load
+  from there).
+- Commits and pushes to `metalllinux` repositories need no user confirmation (standing
+  permission 2026-08-21).
+- A GitHub token is intentionally embedded in the team repo's `origin` remote URL
+  (`.git/config`) and stays there (user decision, 2026-08-21). Never write it into a
+  file, commit, planning doc, or GitHub issue; never stage anything under `.git/`.
+- The git clone of the repo under fix is `~/Linux/projects/cinnamon-for-rocky10/` on
+  branch `task-0008-gdm-auth` (at main, no commits yet); the project dir
+  `~/Linux/projects/cinnamon_4_rocky10/` has no `.git`. Commits go to the clone's
+  feature branch.
+- User reminder (2026-08-24): keep `metalllinux/cinnamon-for-rocky10` main current on
+  GitHub. Work commits to the feature branch; item 13 PRs it to main and Knuckles
+  merges. Nothing lands on main before the fix is verified.
+- All VMs run on this host (shadow) via libvirt. A7 guard: one 4GB VM at a time, check
+  `free -g` first.
+- EVO-X2 access: `ssh howard@192.168.1.106` (publickey, working since 2026-08-25).
+  Fallback only: `sshpass -p "$(sed -n 2p ~/ai_machine_pass.md)"` (never print or
+  write the password down).
+- Standing rule (user, 2026-08-25): always back up a systemd unit before modifying
+  it (`cp <unit> /tmp/<unit>.bakN.$(date +%s)`).
