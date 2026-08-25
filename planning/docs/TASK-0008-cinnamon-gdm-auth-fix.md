@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-25, new session): item 2 attempt 4 lost to the wedge; TASK-0010 (fix the GPU
+wedge) is now the gating task, in progress.** Attempt 4 dispatched ~05:54 UTC with the orphan
+VM verified alive (QEMU PID 324361, ssh OK, wedge count 13 = baseline). Wedge count rose to 15
+during the run; opencode.log shows stream errors 05:55 UTC (endpoint down, model reloading);
+session cancelled 06:29 UTC. No `### Item 2` written (orphan VM state to be re-verified on the
+next dispatch). User ordered the GPU wedge fixed now (2026-08-25); see TASK-0010
+(`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md`). Item 2 re-dispatch waits for a measurably
+stable endpoint.
+
 **Now (2026-08-25 05:15 JST): Q5 endpoint crash-looping; both item 2 attempts lost to it; work
 preserved in an orphan VM.** opencode.log shows 10 Q5 crash/restart events since 2026-08-22 08:33
 UTC (Aug 24: 07:18, 08:20, 12:18, 18:27, 19:32). Each is "Unable to connect" + "Loading model"
@@ -212,12 +221,18 @@ the PM reads.*
 - [x] `Robotnik` (2026-08-25 10:45 JST): wedge root cause recorded (Status + fixes doc); service
       verified healthy after user restore. Wedge risk accepted per user config freeze; mitigation
       is process-level checkpointing.
-- [ ] `Robotnik` (in progress): re-dispatch item 2 (Tails) with a resume brief: adopt the orphan
-      `gdm-login-vm` (details in Status), verify prior state, finish the GDM harness, write
-      `### Item 2`. If a GPU wedge kills the session mid-run (check the wedge count on EVO-X2),
-      re-dispatch with the same resume brief; the VM is the durable state. Then 9a (Tails, Sparrow
-      suite), Amy (TASK-0009 plan), critical path 4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 →
-      (11) → 12 → 13 → 14.
+- [x] `Robotnik` (2026-08-25, new session): Q5 verified up (`n_ctx: 262144`); orphan
+      `gdm-login-vm` verified alive (QEMU PID 324361, ssh OK); wedge count 13 = baseline. Item 2
+      attempt 4 dispatched to Tails with the resume brief (adopt orphan VM, no new VM, verify
+      prior state, finish the GDM harness, write `### Item 2`, checkpoint early and often).
+- [x] `Robotnik` (2026-08-25): attempt 4 post-mortem: wedge count 13 → 15 during the run
+      (stream errors 05:55 UTC in opencode.log); session cancelled 06:29 UTC. User ordered the
+      GPU wedge fixed now; TASK-0010 created, Tails dispatched for diagnosis + runtime
+      mitigation (see TASK-0010 Next Actions).
+- [ ] `Robotnik`: when TASK-0010 shows a measurably stable endpoint, re-dispatch item 2 with the
+      same resume brief (never while a session is still alive; check the wedge count first on
+      any dead dispatch). Then 9a (Tails, Sparrow suite), Amy (TASK-0009 plan), critical path
+      4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14.
 
 ---
 
@@ -901,6 +916,84 @@ earlier "~4.2MB/s" figure was an estimate, the log timestamps are the evidence.)
 in `metalllinux/cinnamon-for-rocky10` were touched. Next per `## Next Actions`: item 3 (Big,
 static inspection). I updated the item-1 clause in `## Next Actions` accordingly (last-writer
 convention for that section).
+
+### Item 2
+
+*In progress since 2026-08-25 11:45 JST (attempt 4, this session). Orphan VM `gdm-login-vm`
+adopted per the resume brief: no new VM created, orphan QEMU process PID 324361 not touched.
+Checkpoints land here as the run proceeds; the VM is the durable state.*
+
+**Prior state of the adopted VM (verified, not assumed)**
+
+- Host: QEMU PID 324361 alive, `Sl`, RSS 2759848 KB, elapsed 11:43:48 at first check
+  (`ps -p 324361 -o pid,stat,etime,rss,cmd`); command line confirms `-vnc 127.0.0.1:0`
+  (VNC :0 = 127.0.0.1:5900), disk `/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2`,
+  4GB, 2 vCPU. `virsh list --all` shows no domain: the VM is outside libvirt control.
+- Guest reachable: `ssh -i ~/.ssh/cinnamon-test-key root@192.168.122.29` OK;
+  `date` -> `Tue Aug 25 02:42:00 AM UTC 2026`; `uptime` -> up 11:00, load 0.00.
+- `id gdmtest` -> `uid=1000(gdmtest) gid=1000(gdmtest) groups=1000(gdmtest)`.
+- `getenforce` -> `Permissive`; `/etc/selinux/config` -> `SELINUX=permissive`,
+  `SELINUXTYPE=targeted`.
+- `rpm -q gdm gnome-shell` -> `gdm-47.0-22.el10_2.x86_64`,
+  `gnome-shell-49.4-8.el10_2.rocky.0.2.x86_64`; `systemctl is-enabled gdm` -> `enabled`;
+  `systemctl is-active gdm` -> `active`.
+- `/root/gdm-harness/` (attempt 3 artifacts): `gdm-a11y.py` (7020 B, 15:51), `gdm-drive.sh`
+  (13682 B, 15:51), `ukey.c` (13648 B, 16:21), `ukey` built binary (17816 B, 16:21).
+  `/root/gdmtest.pass` present (25 B, mode 600; value not recorded here).
+- `/tmp/` attempt-3 experiment artifacts: `holddev{,2,3}` (+ `.c` sources, uinput device
+  lifetime probes), `xlisten` (ELF, links `libX11` only; event listener), `xtest-test`
+  (ELF, links `libXtst`; uses `XTestFakeButtonEvent`/`XTestFakeMotionEvent`/
+  `XTestQueryExtension` per `strings`). All superseded by the uinput design (below);
+  left in place, disposable.
+- Greeter live at check time: `loginctl list-sessions --no-legend` -> session `c1`,
+  uid 42 (`gdm`), seat0, tty1, CLASS `greeter`, STATE idle, since 8h ago; process tree
+  `/usr/sbin/gdm` (1015) -> `gdm-session-worker [pam/gdm-launch-environment]` (1021) ->
+  `/usr/libexec/gdm-wayland-session ... gnome-session --autostart
+  /usr/share/gdm/greeter/autostart` (1173) -> `/usr/bin/gnome-shell` (1462) +
+  `/usr/bin/Xwayland :1024 -rootless` (2100).
+- Cinnamon **not** installed yet: `rpm -q cinnamon cinnamon-session nemo` -> all "not
+  installed"; `/usr/share/xsessions/` empty; `/usr/share/wayland-sessions/` has only
+  `gnome.desktop`, `gnome-wayland.desktop`.
+
+**Design claims of the attempt-3 harness, independently verified (this session)**
+
+The attempt-3 design pivots from the plan's X11 greeter + `xdotool`/XTest to a Wayland
+greeter driven by a uinput keyboard/pointer (`ukey`) + AT-SPI2 state reader
+(`gdm-a11y.py`). I verified every load-bearing claim rather than trusting the comments:
+
+1. No X server installable from the EL10 repos (in the VM):
+   `dnf list available "xorg-x11-server*"` -> `Error: No matching Packages to list`.
+2. No X server on the 10.2 DVD (host, ISO mounted at `/tmp/opencode/dvd`): the only
+   `xorg-x11-server*` RPM under `AppStream/Packages/x/` or `BaseOS/Packages/x/` is
+   `xorg-x11-server-Xwayland-24.1.9-4.el10_2.x86_64.rpm`; no `xorg-x11-server-Xorg`.
+   (EPEL 10 check for the same package still pending at this checkpoint; item 3 F9
+   already established EPEL 10 lacks xdotool/ydotool/dogtail/lightdm.)
+3. gdm-47 is Wayland-only (in the VM): `rpm -ql gdm | grep '^/usr/libexec/'` ->
+   `gdm-auth-config-redhat`, `gdm-new-session`, `gdm-runtime-config`,
+   `gdm-session-worker`, `gdm-wayland-session`. No `gdm-x-session`.
+
+Consequence (matches attempt 3's finding, now evidence-backed): the greeter is
+gnome-shell/mutter on Wayland; the plan's `WaylandEnable=false` X11-greeter baseline
+(`## Plan`, VM reproduction design) is infeasible on EL10; input must come from
+display-server-agnostic sources (uinput), and greeter UI state from AT-SPI2. This is a
+supersession of the plan's XAUTHORITY/xdotool steps, not a deviation: the plan's risk R1
+fallback ladder and A8 anticipated it, and item 3 F9 removed the off-the-shelf rungs.
+
+**Orphan-VM constraint (affects the harness run, recorded now)**
+
+Because the libvirt domain record is gone, `virsh` cannot reach this VM: `--attach` in
+`vm-test/test-gdm-login.sh` (which calls `virsh domstate`), `host_shot` (`virsh
+screenshot`), `reboot_and_wait` (`virsh reboot`), and the VNC-display lookup are all
+unavailable. For this run I drive the phases over SSH (the in-VM scripts are
+self-contained) and capture pixel evidence with a minimal RFB framebuffer grabber
+against 127.0.0.1:5900 (to be added to `tasks/lib/` as host-side tooling). A reboot, if
+needed, goes through `ssh ... reboot` with IP re-polling. This deviation is specific to
+the adopted orphan VM; a fresh libvirt VM (items 4, 5, 7c) uses the harness unchanged.
+
+**Run state at this checkpoint:** prior state verified; no VM modification yet made in
+this session. Next: EPEL check, a11y-bus smoke test, ukey input smoke test, then the
+phase sequence (GNOME control login -> INSTALL.md install -> Cinnamon attempt) with
+evidence.
 
 ---
 
