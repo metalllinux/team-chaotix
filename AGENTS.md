@@ -14,7 +14,7 @@ repositories are hosted on GitHub under the `metalllinux` account.
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
 is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
-**Model:** All agents use `Qwen3.8-27B-UD-Q5_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q5`, port 8084, `--parallel 4`).
+**Model:** All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 4`).
 
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
 Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to

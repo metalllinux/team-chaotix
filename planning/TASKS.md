@@ -17,6 +17,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0008 | Fix GDM Cinnamon-session login Authentication Error; widen VM test matrix | Robotnik | planning/docs/TASK-0008-cinnamon-gdm-auth-fix.md | In Progress |
 | TASK-0009 | Standardize desktop application testing on Sparky + pyatspi2 | Robotnik | planning/docs/TASK-0009-pyatspi2-desktop-testing-standard.md | Planning |
 | TASK-0010 | Fix EVO-X2 iGPU wedge killing llama-server (Q5) sessions | Robotnik | planning/docs/TASK-0010-evox2-gpu-wedge-fix.md | In Progress |
+| TASK-0011 | Set Q4_K_XL Qwen 3.8 as the team's default model | Amy | planning/docs/TASK-0011-default-model-q4kxl.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the

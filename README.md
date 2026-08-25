@@ -388,7 +388,7 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `Qwen3.8-27B-UD-Q5_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q5`, port 8084, `--parallel 4`).
+All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 4`).
 
 ## Updating the team
 
