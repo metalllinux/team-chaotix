@@ -12,6 +12,48 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-26 19:30 UTC): attempt 6 also exited the loop with an empty final message;
+the test VM is ALIVE as an orphan QEMU.** opencode.log (run `4408203b`) session
+`ses_fc0ff7665ffe9MyRmvZb8V1nDG`: 27 steps ~18:35–19:06 UTC, zero errors, `exiting loop`
+19:06:46 UTC. No doc writes, no commits, no registered VM. But: QEMU PID 390197
+(`-name guest=gdm-login-vm`, `domain-3-gdm-login-vm`) has run 4h25m since ~14:40 UTC
+(attempt 5's `virt-install.log` 14:51 UTC: "Domain creation completed") and holds
+`/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2` (2.28 GB, grown from the 545 MB
+cloud base = guest-side dnf activity happened inside it). The domain definition was removed
+while QEMU kept running — the same orphan mode as the Aug 25 incident. ARP shows
+192.168.122.15 on virbr0 (52:54:00:a0:8b:34, STALE). **Pattern: two consecutive Q4 sessions
+(attempts 5, 6) exited the loop with an empty final message before the item 2 deliverable.**
+New approach: item 2 is split into single-deliverable dispatches — 2a recover + inventory the
+VM, 2b install the RPMs in it, 2c run the harness and write `### Item 2` — each requiring a
+non-empty final message.
+
+**Now (2026-08-26 16:50 UTC): attempt 5 ran to loop exit with an empty final message;
+progress preserved, VM never provisioned.** opencode.log (run `4408203b`) records session
+`ses_fc197dc78ffeR41BULZ1t9QxIv` running 55 steps ~14:20–16:38 UTC, then `message="exiting
+loop"` with no error, abort, or stream failure. Q4 endpoint healthy throughout (wedge count
+0, no reboot, load ~0.3). Progress: checkpoint commit `b15dfcb` pushed to
+`origin/task-0008-gdm-auth` (local working tree clean); checkpoint section `### Item 2 —
+attempt 5` written in `## Implementation` (line 1016). Not reached: VM provisioning (host
+`virsh list --all` empty), harness completion, `### Item 2`, Next Actions update. This is a
+Q4 behaviour (loop exits with an empty final message), not an infrastructure failure. Note:
+the 2026-08-25 20:19 UTC `exceeds the available context size (65536)` error in the log was
+the **old** opencode run (`5ce7e912`) with stale cached limits; the current run and
+`opencode.json` both carry the Q4 limit `context: 262144, output: 131072` — no config fix
+needed. Attempt 6 re-dispatches from the attempt 5 checkpoint with a non-empty final message
+required.
+
+**Now (2026-08-26 12:50 UTC): item 2 re-dispatching now, on the Q4 endpoint, with a new VM.**
+EVO-X2 was rebooted 2026-08-26 ~12:25 UTC (record: TASK-0010 `## Status`): zero wedges since
+boot, Q5 (8084) no longer served, team runs Q4 (8092, `n_ctx: 262144`) and this session proves
+dispatch from a fresh session. The orphan `gdm-login-vm` did **not** survive the reboot
+(`virsh list --all` empty), so item 2 provisions a **new** VM instead of adopting the orphan.
+Local clone `~/Linux/projects/cinnamon-for-rocky10/` branch `task-0008-gdm-auth` is at `1f00da5`
+(= origin/main) with the attempts 3/4 working tree: modified `vm-test/lib.sh`,
+`vm-test/provision-vm.sh`; untracked `vm-test/test-gdm-login.sh`, `vm-test/test-repo-setup.sh`,
+`tasks/`. Tails commits that state to the branch and pushes it to origin first, as a
+checkpoint, then continues. Wedge count is checked before and after the dispatch (command:
+TASK-0010 `## Status`); the dispatch is cancelled if wedges appear.
+
 **Now (2026-08-25, new session): item 2 attempt 4 lost to the wedge; TASK-0010 (fix the GPU
 wedge) is now the gating task, in progress.** Attempt 4 dispatched ~05:54 UTC with the orphan
 VM verified alive (QEMU PID 324361, ssh OK, wedge count 13 = baseline). Wedge count rose to 15
@@ -229,10 +271,34 @@ the PM reads.*
       (stream errors 05:55 UTC in opencode.log); session cancelled 06:29 UTC. User ordered the
       GPU wedge fixed now; TASK-0010 created, Tails dispatched for diagnosis + runtime
       mitigation (see TASK-0010 Next Actions).
-- [ ] `Robotnik`: when TASK-0010 shows a measurably stable endpoint, re-dispatch item 2 with the
-      same resume brief (never while a session is still alive; check the wedge count first on
-      any dead dispatch). Then 9a (Tails, Sparrow suite), Amy (TASK-0009 plan), critical path
-      4 → 5 → 6 → Shadow, Omega, then Big → 8 → 10 → (11) → 12 → 13 → 14.
+- [x] `Robotnik` (2026-08-26): endpoint-stability decision recorded (Status): host rebooted
+      ~12:25 UTC, zero wedges since, Q5 no longer served, team on Q4. Orphan VM dead (reboot),
+      so item 2 re-dispatches with a new VM; wedge count monitored before/after.
+- [x] `Tails` (item 2, attempt 5, dispatched 2026-08-26 ~14:20 UTC): ran 55 steps, exited the
+      loop at 16:38 UTC with an empty final message (no error; record: Status). Progress:
+      checkpoint commit `b15dfcb` pushed to `origin/task-0008-gdm-auth` (working tree clean);
+      checkpoint section `### Item 2 — attempt 5` written in `## Implementation`. Not reached:
+      VM provisioning, harness completion, `### Item 2`, this section.
+- [x] `Tails` (item 2, attempt 6, dispatched 2026-08-26 ~18:35 UTC): 27 steps, exited the
+      loop at 19:06:46 UTC with an empty final message (no errors; record: Status). No doc
+      writes, no commits. Left the guest running as orphan QEMU PID 390197 with the
+      domain definition removed (record: Status).
+- [x] `Robotnik` (2026-08-26 19:30 UTC): item 2 re-scoped into single-deliverable dispatches
+      2a/2b/2c after two consecutive empty-exit Q4 sessions (record: Status).
+- [ ] `Tails` (item 2a, attempt 7, dispatched 2026-08-26): recover and inventory the orphan
+      guest — QEMU PID 390197, likely 192.168.122.15 on virbr0, image
+      `/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2`, domain definition gone.
+      Verify ssh (root key per the attempt 5 section), re-register the domain in libvirt
+      without disturbing the running QEMU (or record why not), inventory what is already
+      installed in the guest (attempts 5/6 did guest-side dnf work; disk grew 545 MB →
+      2.28 GB), and write a checkpoint in `## Implementation`. Leave the VM running.
+      Deliverable: live, ssh-verified, libvirt-managed VM + inventory checkpoint. Read only
+      the `### Item 2 — attempt 5` section (line ~1016) plus `## Status` and `## Next
+      Actions`; end with a **non-empty final message**.
+- [ ] `Robotnik`: after 2a, dispatch 2b (install the remaining RPMs in the VM, checkpoint),
+      then 2c (run the GDM harness, write the `### Item 2` completion + this section's
+      completion entry). Then the rest of the chain: 9a (Tails, Sparrow suite), Amy
+      (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
 ---
 
@@ -919,7 +985,7 @@ convention for that section).
 
 ### Item 2
 
-*In progress since 2026-08-25 11:45 JST (attempt 4, this session). Orphan VM `gdm-login-vm`
+*In progress since 2026-08-25 11:45 JST (attempt 4). Orphan VM `gdm-login-vm`
 adopted per the resume brief: no new VM created, orphan QEMU process PID 324361 not touched.
 Checkpoints land here as the run proceeds; the VM is the durable state.*
 
@@ -994,6 +1060,182 @@ the adopted orphan VM; a fresh libvirt VM (items 4, 5, 7c) uses the harness unch
 this session. Next: EPEL check, a11y-bus smoke test, ukey input smoke test, then the
 phase sequence (GNOME control login -> INSTALL.md install -> Cinnamon attempt) with
 evidence.
+
+### Item 2 — attempt 5 (2026-08-26, dispatched ~14:20 UTC, Q4 endpoint)
+
+*Resumed after the EVO-X2 reboot of 2026-08-26 ~12:25 UTC (record: TASK-0010 `## Status`).
+Deviation from the attempt-4 resume brief, per `## Status`: the orphan `gdm-login-vm` is
+dead (`virsh list --all` empty at 14:21 UTC this session), so a **new** VM is provisioned
+per the plan instead of adopting the orphan.*
+
+**Wedge monitoring (per dispatch):** baseline count **0** at 14:22 UTC (`ssh
+howard@192.168.1.106 'journalctl -k --no-pager | grep -cE "device wedged"'`; EVO-X2
+uptime 1:57, matching TASK-0010 "zero wedges since boot"). Re-checked before teardown;
+if the count rises, checkpoint here and stop.
+
+**Orphan leftover state:** the disk `/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2`
+(2.3G) survived the host reboot. No state is needed from it: the repo working tree is the
+superset of its `/root/gdm-harness/` (repo `gdm-a11y.py` 10356 B / `gdm-drive.sh` 16050 B /
+`ukey.c` 13716 B vs VM 7020 / 13682 / 13648 B, plus repo-only `vnc-grab.py` and the
+`--attach --ip` orphan mode in `test-gdm-login.sh`). `provision-vm.sh:163`
+(`cp "$CLOUD_IMAGE" "$DISK_PATH"`) overwrites it when the new VM provisions under the same
+name, so no stale-state risk; the file is the new VM's disk after the run.
+
+**Working-tree checkpoint (verified, not assumed, 14:25 UTC):**
+
+- Branch `task-0008-gdm-auth` at `1f00da5` = `origin/main`; `git status -sb`: modified
+  `vm-test/lib.sh`, `vm-test/provision-vm.sh`; untracked `tasks/`,
+  `vm-test/test-gdm-login.sh`, `vm-test/test-repo-setup.sh`. Matches the brief.
+- Syntax checks all clean (14:25 UTC): `bash -n` on `test-gdm-login.sh`, `gdm-drive.sh`,
+  `test-repo-setup.sh`, `provision-vm.sh`, `lib.sh`; `python3 -m py_compile` on
+  `gdm-a11y.py` + `vnc-grab.py`; `gcc -fsyntax-only -Wall -Wextra` on `ukey.c`.
+- `tasks/lib/__pycache__/` (bytecode from the py_compile check) is excluded from the
+  commit; `__pycache__/` added to `.gitignore`.
+- `vm-test/test-repo-setup.sh` (TASK-0006-era harness) is committed per the brief; Big
+  had flagged it in item 3 as "not mine; left as-is; flagged for Tails/Knuckles".
+
+**Harness contents at this checkpoint (the committed working tree):**
+
+- `vm-test/test-gdm-login.sh` (665 lines): 9-phase orchestrator. (1) provision with
+  `--graphics vnc`; (2) scp harness files to `/root/gdm-harness/`; (3) baseline:
+  deterministic SELinux mode (`--selinux`, default permissive per the plan's base
+  reproduction) + `dnf install gdm gnome-shell` + ephemeral `gdmtest` user with a random
+  hex password generated inside the VM + ukey build; (4) reboot into
+  `graphical.target`, wait for the greeter session + a11y UI; (5) **GNOME control login**
+  (state-based verdict, then logout to the greeter); (6) INSTALL.md install exactly
+  (`setup-repo.sh` + the two `dnf install` commands + `ldconfig`); (7) optional
+  `--reboot-after-install` (item 5 experiment B) / `--daemon-reload-after-install`
+  (experiment C); (8) **Cinnamon login attempt**, reported as `VERDICT` (not FAIL) so the
+  result under test cannot abort the harness before evidence capture; (9) collect
+  `/root/evidence` to `vm-test/results/gdm-login-<TS>/` (gitignored); teardown via
+  `--destroy-only` unless `--keep-vm`. Verdicts are state-based (`loginctl` session type
+  x11/wayland + desktop process), pixel evidence is best-effort `virsh screenshot`.
+- `tasks/lib/gdm-drive.sh` (438 lines): in-VM driver library. ukey build (gcc +
+  kernel-headers); logind session-state helpers (the `loginctl list-sessions` column
+  layout verified on EL10 / systemd 257 in the attempt-4 observation pass); greeter
+  wait with the dual-mode UI (face list with "Not listed?" vs username dialog with
+  "Log In", attempt-4 finding); login drive (click the user's face, or "Not listed?" +
+  type username + Return; wait for the "Login code:" label; for Cinnamon, Ctrl+Alt+Down
+  session select with the entry found by name in the a11y tree and ukey-clicked at its
+  screen extents; type password; Return); `gdm_wait_session` verdict;
+  `gdm_capture_evidence` (the plan's step-5 set: `journalctl -u gdm --since t0`,
+  `journalctl _UID=<uid> --since t0`, `tail -n 200 /var/log/secure`, `loginctl`
+  session state, `getenforce`, session entries, a11y tree + text).
+- `tasks/lib/ukey.c` (429 lines): uinput keyboard + relative-pointer micro-driver
+  (`type` / `key` / `combo` / `move` / `click`), built in the VM.
+- `tasks/lib/gdm-a11y.py` (326 lines): AT-SPI2 reader (`tree` / `text` / `has` /
+  `wait` / `find` / `waitvis` / `textof`), `waitvis`/`find` print screen-space extents
+  for ukey clicks.
+- `tasks/lib/vnc-grab.py` (185 lines): host-side RFB framebuffer grabber, the attempt-4
+  orphan-mode observation channel. Not needed for a libvirt-domain run (`virsh
+  screenshot` covers pixels); committed for the orphan path and item 9a.
+- `vm-test/provision-vm.sh` + `vm-test/lib.sh`: item-2 diffs per the working tree
+  (`--graphics <type>`, `--destroy-only`, `--name`, `VM_NAME` env override in lib.sh).
+
+**Run plan (attempt 5):**
+
+1. Commit the working tree to `task-0008-gdm-auth` and push the branch (checkpoint).
+2. `bash vm-test/test-gdm-login.sh` with defaults (name `gdm-login-vm`, SELinux
+   permissive, no post-install mode): phases 1-6 + 8 + 9 = the item 2 acceptance run.
+   Item 5's experiments B/C run later on fresh VMs with the `--*` flags.
+3. Phase results + evidence paths checkpointed here as they land.
+4. Final `### Item 2` text: alternatives, changes table, checks run, verdict.
+
+**Next:** commit + push, then the harness run.
+
+### Item 2 — attempt 7 (item 2a: recover + inventory the orphan VM, 2026-08-27, Q4 endpoint)
+
+*Single-deliverable dispatch 2a per `## Next Actions` (2026-08-26 19:30 UTC). The dispatch
+premise "domain definition gone" is **wrong** — see the premise check below. No QEMU process
+and no guest state was touched; the only state change made is one protective libvirt flag
+(autostart).*
+
+**Premise check — contradicts `## Status` (2026-08-26 19:30 UTC, "the domain definition was
+removed"):** the domain is fully registered and libvirt-managed. There was nothing to
+re-register; no `virsh define` was run. Evidence (2026-08-27 04:40 JST = 19:40 UTC):
+
+- `sudo virsh list --all` -> `3  gdm-login-vm  running`
+- `sudo virsh dominfo gdm-login-vm` -> `State: running`, `Persistent: yes`, `Autostart:
+  disable` (at check time), UUID `671de411-6a1f-4885-a112-7a4db95a1288` (equals the QEMU
+  cmdline `-uuid` of PID 390197)
+- `sudo virsh qemu-monitor-command gdm-login-vm --cmd '{"execute":"query-status"}'` ->
+  `{"return":{"status":"running","running":true},"id":"libvirt-27"}` (live QMP path through
+  the libvirt QEMU driver)
+- Persistent XML present: `sudo ls /etc/libvirt/qemu/` -> `gdm-login-vm.xml`
+- Registration is continuous, not re-established: the libvirt QEMU driver
+  (`virtqemud`, PID 307826; this host uses the RHEL 10 split-daemon layout, no monolithic
+  `libvirtd`) has run unbroken since 2026-08-24 05:58 UTC (`systemctl show virtqemud`), which
+  brackets the domain's creation at 14:51 UTC.
+
+The "orphan" label is inherited from the Aug 25 incident (record: Status) and does not apply
+to this VM. The 16:50 UTC Status entry ("Not reached: VM provisioning, `virsh list --all`
+empty") and the 19:30 UTC entry disagree with the observed state; how those checks came back
+empty is unverified, surfaced per AGENTS.md section 5. Related: the 12:50 UTC entry's "the
+orphan `gdm-login-vm` did not survive the reboot" cannot be the runner's reboot — the runner
+(192.168.1.102) has been up since 2026-08-15 14:10 JST (`uptime -s`), so the 2026-08-26
+~12:25 UTC reboot was EVO-X2 only. The old orphan (PID 324361, alive at 2026-08-25 05:54 UTC)
+was gone before the new VM's 14:51 UTC provisioning; how it died is unverified.
+
+**SSH verified:** `ssh -i ~/.ssh/cinnamon-test-key root@192.168.122.15` -> OK. Guest:
+`localhost.localdomain`, Rocky Linux 10.2, kernel `6.12.0-211.16.1.el10_2.0.1`, `up 4:27` at
+19:45 UTC (boot 15:18 UTC per `last reboot`). 192.168.122.15 confirmed by `ip neigh show dev
+virbr0` (52:54:00:a0:8b:34 REACHABLE; MAC equals the QEMU cmdline `mac`).
+
+**Protective change (the only state change made):** `sudo virsh autostart gdm-login-vm` ->
+"Domain 'gdm-login-vm' marked as autostarted"; `dominfo` now `Autostart: enable` (was
+disable). Reason: this VM holds the only copy of the attempts 5/6 guest-side state that 2b/2c
+need, and the prior VM was lost when its host-side state died. Non-destructive to the running
+QEMU (affects the next libvirt start only). Revert: `sudo virsh autostart --disable
+gdm-login-vm`.
+
+**Guest inventory (all via ssh, 19:40-19:50 UTC):**
+
+- **Cinnamon packages: zero** (`rpm -qa | grep -c cinnamon` -> 0; 804 packages total).
+  Harness phase-3 baseline present: `gdm-47.0-22.el10_2`,
+  `gnome-shell-49.4-8.el10_2.rocky.0.2`. `dnf history list`: tx#3 `install -y gdm gnome-shell`
+  (351 pkgs) and tx#4 `install -y gcc kernel-headers` (9 pkgs), both 14:52 UTC; no dnf
+  activity since. The INSTALL.md Cinnamon install (harness phase 6) was **never executed**:
+  `dnf repolist` shows only Rocky baseos/appstream/extras, no file:// repo. This is what 2b
+  must do.
+- Users: `gdmtest` (uid 1000); password file `/root/gdmtest.pass` (25 B, the harness random
+  hex). No other non-system users.
+- SELinux: `getenforce` -> `Permissive`; `SELINUX=permissive` in `/etc/selinux/config`
+  (harness sets this deterministically).
+- GDM: `systemctl is-enabled/is-active gdm` -> enabled/active. Greeter session `c1` on
+  `seat0`/`tty1`, Type=**wayland**, online; `gdmtest` in the face list, "Login code:" prompt
+  present (the dual-mode UI). `/var/log/secure`: **zero** `gdm-password` lines — no GUI
+  password login has ever been attempted. Phase 5 (GNOME control login) never completed: its
+  15:21 UTC evidence (`/root/evidence/gnome-control/`) still shows the greeter a11y tree and
+  `journal-uid.log` = `-- No entries --` (no uid-1000 session ever).
+- Harness at `/root/gdm-harness/`: `gdm-a11y.py` (10356 B), `gdm-drive.sh` (16050 B),
+  `ukey.c` (13716 B) — **md5-identical** to the committed repo files at `b15dfcb`
+  (`a2961c22...`, `2c662a40...`, `c14f531b...` on both sides) — plus built `ukey` binary
+  (17816 B, 14:52 UTC) and attempt-5 scratch `state-dump.py` (609 B, 16:03 UTC; not in repo).
+- Evidence at `/root/evidence/`: `baseline-{dnf,driverdeps,packages,repos}.log` (15:17),
+  `greeter-ui-{text,tree}.log` (15:18), `gnome-control/` (15:18-15:21: a11y trees, loginctl,
+  secure tail, getenforce=Permissive, sessions-available).
+- Resources: `/dev/vda4` 2.2G used of 8.4G (6.2G free); 4GB RAM, ~2G available.
+
+**Finding for 2c (recorded, not fixed): the greeter is Wayland-only; no X server is
+installed.** `rpm -q xorg-x11-server-Xorg` -> not installed; `/usr/share/xsessions/` empty;
+available sessions are `gnome.desktop` + `gnome-wayland.desktop` (wayland-sessions dir only);
+greeter Type=wayland. The committed harness selects the session with Ctrl+Alt+Down
+(`tasks/lib/gdm-drive.sh`), X11 GDM behavior. 2c must either install `xorg-x11-server-Xorg`
+and set `WaylandEnable=false` in `/etc/gdm/custom.conf` before the Cinnamon login attempt, or
+extend the driver for the Wayland greeter's session menu. Decision belongs to 2c.
+
+**Landmine for 2c:** `vm-test/provision-vm.sh:163` does `cp "$CLOUD_IMAGE" "$DISK_PATH"`.
+Provisioning a new VM under the same name `gdm-login-vm` would overwrite this disk in place
+while QEMU holds it open (the guest state above destroyed). Any 2c harness run must use a
+different `--name`/`VM_NAME`, or destroy this domain first — and 2b must run before any
+destroy.
+
+**State left as found:** VM running under libvirt (`sudo virsh list`: Id 3 running), ssh
+working, autostart enabled (the single change above), guest sitting at the GDM greeter with
+`gdmtest` in the face list. Nothing killed, no guest modification.
+
+**Next (2b):** install the Cinnamon RPMs inside (local repo + the INSTALL.md dnf commands),
+then 2c decides the Wayland/X11 question and runs the login attempt.
 
 ---
 
