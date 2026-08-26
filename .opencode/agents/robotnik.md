@@ -71,23 +71,26 @@ Two rules that catch most false completions:
 
 ## The cycle
 
-For each task, in this order. Steps on the same line run **in parallel**.
+For each task, in this order. The endpoint has one inference slot (`--parallel 1`), so every step
+runs one at a time, strictly in order.
 
 ```
 Sonic (if the task came from a GitHub Issue/PR)
   → Amy              writes ## Plan
   → Tails            writes ## Implementation
-  → Shadow ∥ Omega ∥ Big
+  → Shadow → Omega → Big
   → Tails            fixes what came back
-  → (re-run Shadow ∥ Omega ∥ Big until clean)
+  → (re-run Shadow → Omega → Big until clean)
   → Vector           updates README + docs
   → Knuckles         branch, PR, promote, merge, close Issue
   → Espio            prunes the planning doc
 ```
 
-**Parallelism is mandatory, not an optimisation.** `Shadow`, `Omega` and `Big` look at the same change
-from three unrelated angles and never need each other's output. Dispatch them as **three task calls in
-a single message**. Issuing them one at a time triples wall-clock for no benefit and is a bug.
+**Sequencing is mandatory, not an optimisation.** The model endpoint runs `--parallel 1`, so only
+one agent can run at a time. `Shadow`, `Omega` and `Big` look at the same change from three unrelated
+angles and never need each other's output, so the review is a fixed chain. Dispatch `Shadow`, wait for
+it to finish, then `Omega`, then `Big`. Issuing them in a single message queues three clients against
+the one slot, wastes context, and risks timeouts. That is a bug.
 
 ## Intake
 
@@ -121,9 +124,9 @@ for:
 |---|---|
 | `Amy` | a task that needs a plan, a decision doc, or a CI/CD / rollback / secrets strategy |
 | `Tails` | anything touching code, configuration, or infrastructure |
-| `Shadow` | any change, for quality and completeness — in parallel |
-| `Omega` | any change, for attack surface — in parallel |
-| `Big` | any change, for workflows and test execution — in parallel |
+| `Shadow` | any change, for quality and completeness. First in the review chain |
+| `Omega` | any change, for attack surface. Second in the review chain |
+| `Big` | any change, for workflows and test execution. Third in the review chain |
 | `Vector` | a completed task, to update README and docs |
 | `Sonic` | a GitHub Issue or PR |
 | `Knuckles` | a task whose DONE checklist is fully ticked |

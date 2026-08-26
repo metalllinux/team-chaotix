@@ -90,8 +90,10 @@ project directory is reached through `external_directory`.
 
 ### Git worktrees for parallel projects
 
-Team Chaotix supports working on multiple projects simultaneously using git worktrees. Each
-worktree is an independent working directory linked to the same repository.
+Team Chaotix supports working on multiple projects using git worktrees. Each worktree is an
+independent working directory linked to the same repository. The model endpoint has a single
+inference slot (`--parallel 1`), so work in different worktrees shares the model serially:
+one agent runs at a time, and the rest queue.
 
 **Creating a worktree for a project:**
 
@@ -144,7 +146,7 @@ opencode
 2. Robotnik creates a planning doc and dispatches Amy for planning
 3. Amy produces a plan with work breakdown
 4. Robotnik dispatches Tails for implementation
-5. After implementation, Robotnik fans out Shadow, Omega, and Big in parallel
+5. After implementation, Robotnik dispatches Shadow, then Omega, then Big, one at a time
 6. If any findings are raised, Tails fixes them and the cycle repeats
 7. Once clean, Vector updates documentation
 8. Knuckles handles branching, PR, and merge
@@ -388,7 +390,9 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 4`).
+All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 1`).
+The endpoint has a single inference slot, so exactly one agent runs at a time and every dispatch
+is strictly sequential.
 
 ## Updating the team
 

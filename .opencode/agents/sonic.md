@@ -87,7 +87,7 @@ For every incoming item:
 
 | Type | First agent | Follow-up |
 |---|---|---|
-| Bug | Tails | Shadow, Omega, Big in parallel |
+| Bug | Tails | Shadow, Omega, Big one at a time |
 | Feature | Amy | Tails, Shadow, Omega, Big |
 | Documentation | Vector | Shadow for review |
 | Security | Omega | Tails for fix, Big for regression test |

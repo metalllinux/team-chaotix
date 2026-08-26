@@ -14,7 +14,8 @@ repositories are hosted on GitHub under the `metalllinux` account.
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
 is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
-**Model:** All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 4`).
+**Model:** All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 1`).
+The single inference slot means exactly one agent runs at a time. All dispatch is sequential (see section 3).
 
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
 Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to
@@ -75,8 +76,8 @@ Binding rules:
    reads the doc. The doc is the bus, not the PM.
 4. **The planning doc is the durable context.** Anything that matters after your turn ends must be
    written there. Anything only you needed for this turn must not be.
-5. One task = one doc. That isolation is what makes parallel fan-out safe: three agents can work the
-   same task at once because they write to disjoint sections.
+5. One task = one doc. That isolation is what makes shared-doc work safe. Several agents work the
+   same task in sequence, and each writes to disjoint sections.
 6. `Espio` is the **only** agent that deletes content. It moves superseded detail into
    `## Archive` and deletes only narration, superseded plans, and findings that are resolved and
    shipped. Decisions and verified facts are never deleted.
@@ -89,15 +90,18 @@ the command that produced it. If you did not verify something, say so explicitly
 
 ---
 
-## 3. Delegation and parallelism
+## 3. Delegation and sequencing
 
 - **`Robotnik` is the only agent that delegates.** `subagent_depth` is 1, so subagents cannot
   spawn subagents even if they try.
-- **Run work in parallel wherever it is independent.** To do that, `Robotnik` must issue
-  **multiple task calls in a single message**. Sequential task calls for independent work is a bug.
-  `Shadow`, `Omega` and `Big` on the same change are independent — fan them out together.
-- Dependent work is sequential by necessity: `Amy` → `Tails` → (`Shadow` ∥ `Omega` ∥
-  `Big`) → `Tails` fixes → `Vector` → `Knuckles`.
+- **The model endpoint runs `--parallel 1`: one inference slot, one agent at a time.** All
+  dispatch is strictly sequential. `Robotnik` issues **one task call, waits for it to complete,
+  then issues the next**. Issuing several task calls in a single message queues them against the
+  single slot, wastes context, and risks timeouts.
+- The review trio is independent, so its internal order is free, but it still runs one at a time
+  in a fixed sequence: `Shadow` → `Omega` → `Big`.
+- The cycle is a single chain: `Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Tails` fixes →
+  `Vector` → `Knuckles`.
 - Keep briefs to subagents short. Point at the planning doc; do not restate it.
 
 ---
@@ -224,8 +228,10 @@ See individual agent definitions for specific permissions.
 
 ## 12. Git worktrees
 
-Team Chaotix supports parallel opencode sessions through git worktrees. Each worktree operates
-independently with its own working directory and branch.
+Team Chaotix supports multiple opencode sessions through git worktrees. Each worktree operates
+independently with its own working directory and branch. The model endpoint runs `--parallel 1`,
+so only one agent runs at a time across all sessions. Work in a second session queues on the
+model until the first one yields its turn.
 
 ### Setup
 

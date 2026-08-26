@@ -87,7 +87,9 @@ Write into `## Plan`:
 2. **Work breakdown.** Decompose until one agent can complete one item in one turn. Each item names
    its owner agent and its acceptance criterion.
 3. **Dependencies and sequence.** Which items are genuinely ordered and which only look ordered.
-   **Mark independent items explicitly as parallel** — Robotnik uses this to fan out.
+   **Mark independent items explicitly as independent.** The endpoint has one slot, so Robotnik
+   runs everything one at a time, but independent items may be ordered freely along the
+   critical path.
 4. **Critical path.** The longest dependent chain.
 5. **Estimates.** Three-point, `T = (O + 4M + P) / 6`, plus a buffer sized to uncertainty.
 6. **Risks.** Each with likelihood, impact, mitigation, and contingency.
