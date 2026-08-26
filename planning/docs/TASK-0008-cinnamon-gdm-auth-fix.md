@@ -12,6 +12,25 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-26 19:55 UTC): item 2a (attempt 7) complete — and my orphan/reboot misread is
+corrected.** `Tails` finished 2a with a non-empty final message (record: its `### Item 2 —
+attempt 7` checkpoint in `## Implementation`, commit `425afa7`). **Correction (AGENTS.md §5):**
+my `virsh list --all` checks (12:50, 16:45, 19:1x UTC) ran **without `sudo`**, which queries
+the user libvirt session — always empty here. The system instance (`sudo virsh list --all`)
+shows `gdm-login-vm` running (Id 3), **persistent**, QMP-live, XML on disk, managed
+continuously since attempt 5's `virt-install` at 14:51 UTC. The domain was never removed, and
+the libvirt host was **never** rebooted (up since Aug 15; the ~12:25 UTC reboot was EVO-X2,
+the model host — that part of the TASK-0010 record stands, its "orphan died" consequence does
+not). The Aug 25 orphan (QEMU PID 324361) is separately confirmed dead (gone by 14:40 UTC).
+Inventory: 804 packages, **zero Cinnamon**, phase-3 baseline only (gdm, gnome-shell); the
+INSTALL.md Cinnamon install (phase 6) never ran — that is 2b. Findings for 2c: the greeter is
+Wayland-only (Xorg absent) while the committed harness assumes X11 — 2c installs
+`xorg-x11-server-Xorg` + `WaylandEnable=false` or extends the driver; `provision-vm.sh:163`
+clobbers this disk in place under the same name — 2c must use a different `--name` or destroy
+first, with 2b before any destroy. VM left running at the greeter, ssh at
+192.168.122.15 (root, `~/.ssh/cinnamon-test-key`), `virsh autostart` enabled as protection.
+Item 2b (RPM install) dispatches next.
+
 **Now (2026-08-26 19:30 UTC): attempt 6 also exited the loop with an empty final message;
 the test VM is ALIVE as an orphan QEMU.** opencode.log (run `4408203b`) session
 `ses_fc0ff7665ffe9MyRmvZb8V1nDG`: 27 steps ~18:35–19:06 UTC, zero errors, `exiting loop`
@@ -19,8 +38,9 @@ the test VM is ALIVE as an orphan QEMU.** opencode.log (run `4408203b`) session
 (`-name guest=gdm-login-vm`, `domain-3-gdm-login-vm`) has run 4h25m since ~14:40 UTC
 (attempt 5's `virt-install.log` 14:51 UTC: "Domain creation completed") and holds
 `/var/lib/libvirt/images/cinnamon-test/gdm-login-vm.qcow2` (2.28 GB, grown from the 545 MB
-cloud base = guest-side dnf activity happened inside it). The domain definition was removed
-while QEMU kept running — the same orphan mode as the Aug 25 incident. ARP shows
+cloud base = guest-side dnf activity happened inside it). The domain definition was removed (corrected 2026-08-26 19:55 UTC: never removed — the
+unsuffixed `virsh` checks saw the empty user session; `sudo virsh` shows the domain running
+and persistent, record above). ARP shows
 192.168.122.15 on virbr0 (52:54:00:a0:8b:34, STALE). **Pattern: two consecutive Q4 sessions
 (attempts 5, 6) exited the loop with an empty final message before the item 2 deliverable.**
 New approach: item 2 is split into single-deliverable dispatches — 2a recover + inventory the
@@ -33,8 +53,9 @@ progress preserved, VM never provisioned.** opencode.log (run `4408203b`) record
 loop"` with no error, abort, or stream failure. Q4 endpoint healthy throughout (wedge count
 0, no reboot, load ~0.3). Progress: checkpoint commit `b15dfcb` pushed to
 `origin/task-0008-gdm-auth` (local working tree clean); checkpoint section `### Item 2 —
-attempt 5` written in `## Implementation` (line 1016). Not reached: VM provisioning (host
-`virsh list --all` empty), harness completion, `### Item 2`, Next Actions update. This is a
+attempt 5` written in `## Implementation` (line 1016). Not reached: VM provisioning (host `virsh list --all` empty — corrected 2026-08-26 19:55 UTC:
+check lacked `sudo`; the domain **was** created at 14:51 UTC during this attempt and has run
+since), harness completion, `### Item 2`, Next Actions update. This is a
 Q4 behaviour (loop exits with an empty final message), not an infrastructure failure. Note:
 the 2026-08-25 20:19 UTC `exceeds the available context size (65536)` error in the log was
 the **old** opencode run (`5ce7e912`) with stale cached limits; the current run and
@@ -46,7 +67,7 @@ required.
 EVO-X2 was rebooted 2026-08-26 ~12:25 UTC (record: TASK-0010 `## Status`): zero wedges since
 boot, Q5 (8084) no longer served, team runs Q4 (8092, `n_ctx: 262144`) and this session proves
 dispatch from a fresh session. The orphan `gdm-login-vm` did **not** survive the reboot
-(`virsh list --all` empty), so item 2 provisions a **new** VM instead of adopting the orphan.
+(`virsh list --all` empty — corrected 2026-08-26 19:55 UTC: that check lacked `sudo`; the Aug 25 orphan QEMU PID 324361 was in fact dead by 14:40 UTC, and attempt 5 provisioned a new domain at 14:51 UTC which is running), so item 2 provisions a **new** VM instead of adopting the orphan.
 Local clone `~/Linux/projects/cinnamon-for-rocky10/` branch `task-0008-gdm-auth` is at `1f00da5`
 (= origin/main) with the attempts 3/4 working tree: modified `vm-test/lib.sh`,
 `vm-test/provision-vm.sh`; untracked `vm-test/test-gdm-login.sh`, `vm-test/test-repo-setup.sh`,
