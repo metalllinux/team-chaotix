@@ -1260,6 +1260,85 @@ then 2c decides the Wayland/X11 question and runs the login attempt.
 
 ---
 
+### Item 2 — attempt 8 (item 2b: install the Cinnamon RPMs, 2026-08-27, Q4 endpoint)
+
+*Single-deliverable dispatch 2b per `## Next Actions` (2026-08-26 19:30 UTC). The VM was not
+destroyed, re-provisioned, or rebooted. No GDM restart and no greeter session configuration
+change (the Wayland/Xorg decision stays in 2c's scope). All guest commands ran over ssh
+(root, `~/.ssh/cinnamon-test-key`) at 192.168.122.15. Times below are guest-local (UTC) with
+JST in parentheses; the guest clock is UTC (boot 15:18 UTC + uptime 5:44 at 21:02).*
+
+**Pre-check (21:02 UTC / 06:02 JST): state matches the attempt 7 inventory exactly.**
+`rpm -qa | grep -c cinnamon` -> 0; `dnf repolist` -> appstream/baseos/extras only (no file://
+repo); `/root/` holds only `evidence/`, `gdm-harness/`, `gdmtest.pass`; `/dev/vda4` 6.2G free;
+uptime 5h44m (boot 15:18 UTC, unchanged).
+
+**Host-side metadata check (why no `createrepo_c` re-run on the host):** the host
+`~/Linux/projects/cinnamon-for-rocky10/rpms/` already contains valid `repodata/` (generated
+2026-08-14 07:54 JST, after the newest RPM mtime 2026-08-13 19:34). `primary.xml` lists all
+48 package names on disk (per-RPM `rpm -qp --qf '%{NAME}'` vs metadata names, `diff` rc=0).
+The "49 RPMs" from the first `ls | wc -l` was 48 RPMs + the `repodata` directory
+(`ls -1 *.rpm | wc -l` -> 48). Metadata is current; no regeneration needed.
+
+**Procedure — harness phase 6 verbatim (test-gdm-login.sh:510-543 = INSTALL.md quick start):**
+
+1. `scp -r rpms/ repo-setup/ root@192.168.122.15:/root/` (test-gdm-login.sh:513-516). Verified
+   on the guest: 48 RPMs, 213M; md5 of `cinnamon-6.7.4-1.el10.x86_64.rpm`
+   (`717b4d6c...`) and `mozjs115-115.29.0-1.el10.x86_64.rpm` (`c6118e02...`) match host.
+2. `bash /root/repo-setup/setup-repo.sh /root` (test-gdm-login.sh:526) -> rc=0 (log
+   `/root/evidence/install-setup-repo.log`): installed createrepo_c 1.1.2-4.el10 (dnf tx#5,
+   2 pkgs), reused the existing repodata (generation skipped), wrote
+   `/etc/yum.repos.d/cinnamon-rocky10.repo` with `baseurl=file:///root/rpms`, enabled CRB,
+   `dnf makecache` OK. `dnf repolist` then lists `cinnamon-rocky10`; `dnf list available
+   --repo cinnamon-rocky10` serves the local packages.
+3. `dnf install -y cinnamon` (test-gdm-login.sh:528) -> rc=0, "Complete!", zero
+   error/failed/nothing-provides lines (log `/root/evidence/install-cinnamon.log`, dnf tx#6).
+   9 packages: cinnamon 6.7.4, cinnamon-desktop 6.7.2, cinnamon-menus 6.7.0, cjs 6.4.0,
+   mozjs115 115.29.0, muffin 6.7.4-3, muffin-clutter 6.7.4-3, muffin-cogl 6.7.4-3,
+   xapps-lib 3.3.3 (exactly the 8 hard deps in INSTALL.md + cinnamon).
+4. `dnf install -y cinnamon-session cinnamon-settings-daemon cinnamon-control-center nemo
+   mozjs115-devel` (test-gdm-login.sh:530-532) -> rc=0, "Complete!", zero error lines (log
+   `/root/evidence/install-core.log`, dnf tx#7). 5 packages.
+5. `ldconfig` -> rc=0 (log `/root/evidence/install-ldconfig.log`).
+
+**Verification (21:11-21:18 UTC / 06:11-06:18 JST):**
+
+- `rpm -q cinnamon cinnamon-session nemo` -> all present; `/usr/share/xsessions/cinnamon.desktop`
+  present, 152 B (log `/root/evidence/install-versions.log`). Cinnamon-family total: 14
+  packages (`rpm -qa | grep -cE 'cinnamon|cjs|muffin|mozjs115|nemo|xapps'` -> 14), exactly the
+  INSTALL.md "Installed packages" table set; no debuginfo/debugsource installed.
+- ldd sweep: 43 binaries in `/usr/bin` matching `cinnamon|cjs|muffin|nemo` + 6 shared
+  libraries -> **0 "not found" lines total**. The ELF binaries that actually link resolve
+  fully: `cinnamon` (133 libs), `cjs` (44), `muffin` (108), `nemo` (73); the remaining 39
+  entries are scripts (0 libs, expected).
+- The INSTALL.md troubleshooting check (`ldd /usr/lib64/libcinnamon-desktop.so.4 | grep
+  "not found"`) -> 0 lines.
+- ld cache (`ldconfig -p`): libcjs.so.0, libmuffin.so.0, libcinnamon-desktop.so.4,
+  libcinnamon-menu-3.so.0, libcinnamon-control-center.so.1, libxapp.so.1, all under /lib64.
+- The `/usr/lib64/muffin/` subdirectory (libmuffin-clutter-0.so.0, libmuffin-cogl-0.so.0,
+  -cogl-pango, -cogl-path) is **not** in the ld cache (no `/etc/ld.so.conf.d/` entry). Those
+  libs resolve via RPATH baked into the binaries: `objdump -p /usr/bin/cinnamon` ->
+  `RPATH /usr/lib64/muffin:/usr/lib64/cinnamon`; `libmuffin.so.0` and the `muffin/` libs
+  carry `RPATH /usr/lib64/muffin`. `ldd /usr/bin/cinnamon` maps all four `muffin/` libs to
+  their real paths. Package design choice, not a defect; ldd (which honors RPATH) reports
+  everything resolved.
+
+**VM state (unchanged, per the dispatch constraint):** `systemctl is-active gdm` -> active;
+greeter session c1 on seat0/tty1 (Type=wayland) elapsed 4h39m at check time — not restarted,
+not disturbed. `dnf history list` shows tx#5-7 = this attempt's three transactions (21:09-21:11
+UTC). VM left running under libvirt, ssh working, load 0.
+
+**Not done (2c scope):** no greeter session configuration touched; no `systemctl restart gdm`
+(harness phase 6 contains no GDM restart — restart/reboot are phase 7 experiments,
+test-gdm-login.sh:545-574). The session file `/usr/share/xsessions/cinnamon.desktop` now
+exists for 2c's session selection. The `provision-vm.sh:163` disk-clobber landmine (record:
+attempt 7) stands: any 2c harness run needs a different `--name` or a destroy first.
+
+**Next:** 2c — decide the Wayland/Xorg question (attempt 7 finding: greeter is Wayland-only,
+the committed harness drives X11 GDM with Ctrl+Alt+Down), then run the login attempt.
+
+---
+
 ## Review
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
