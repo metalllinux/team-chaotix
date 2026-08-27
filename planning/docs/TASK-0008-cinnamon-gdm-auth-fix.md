@@ -382,16 +382,19 @@ the PM reads.*
       Wayland harness adaptation in `tasks/lib/gdm-a11y.py`, `tasks/lib/gdm-drive.sh`,
       `vm-test/test-gdm-login.sh` (173 lines added), no doc checkpoint; committed + pushed
       by Robotnik as `456ce71`.
-- [ ] `Tails` (item 2c-2b, dispatched 2026-08-27): resume from `456ce71` (Wayland harness
-      adaptation in progress). Read only `## Status`, `## Next Actions`, and the `### Item 2 —
-      2c-1` section. Finish the adaptation, run the login flow with `gdmtest` selecting
-      `cinnamon-wayland.desktop`, record success (session active) or failure (PAM/greeter
-      evidence = the Authentication-Error reproduction) in the guest `/root/evidence/`, and
-      write checkpoint `### Item 2 — 2c-2`. **Finish inside ~60 min** (safe regime: the 5 h
-      2c-2 run accumulated 3 wedges in its final hour). End with a non-empty final message.
-- [ ] `Tails` (item 2c-3, after 2c-2): write the `### Item 2` completion in `##
-      Implementation` + a completion entry here; commit + push harness fixes to
-      `task-0008-gdm-auth`.
+- [x] `Tails` (item 2c-2b, 2026-08-27): complete — login run executed (FAIL: the
+      Authentication-Error reproduction, twice, with the account + PAM stack proven sound
+      via the su control); adaptation finished with the proven caps-corruption bug fixed
+      in `gdm-drive.sh` (static greeter caps label → LED-parity normalization); evidence in
+      guest `/root/evidence/cinnamon-attempt-2c2b/`; checkpoint `### Item 2 — 2c-2`.
+      (Ran ~82 min vs the ~60 min bound; the time-bound deviation is recorded in the
+      checkpoint.)
+- [ ] `Tails` (item 2c-3, after 2c-2): per the 2c-2 checkpoint's "For 2c-3": add
+      `gdm-a11y.py textofext`, add the probe-typed caps pre-pass to `gdm_login`, re-run
+      the flow (PASS closes the input-layer suspect; a second FAIL with a verified
+      lowercase password promotes the PAM hypotheses H1–H4); then write the `### Item 2`
+      completion in `## Implementation` + a completion entry here; commit + push harness
+      fixes to `task-0008-gdm-auth`.
 - [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
       (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
@@ -1507,6 +1510,128 @@ dispatch that does make changes must define its own revert.
 **Decision requested (Robotnik):** approve re-scoping 2c-2 to the Wayland greeter
 (option D) or direct otherwise (options B/C carry the stated costs). No guest work is
 blocked on the decision; the guest is stable for either path.
+
+---
+
+### Item 2 — 2c-2 (item 2c-2b: resume + Wayland login run, 2026-08-27, Q4 endpoint)
+
+*Resume dispatch from `456ce71` per `## Next Actions` (2026-08-27). Ran 19:18–20:40 UTC,
+all guest commands over ssh (root, `~/.ssh/cinnamon-test-key`) to 192.168.122.15.
+**Outcome: FAILURE — the Authentication-Error reproduction is confirmed twice, with the
+account and the PAM stack proven sound outside the greeter.** The in-progress Wayland
+harness adaptation was already complete at `456ce71`: the repo and in-VM copies of
+`tasks/lib/gdm-a11y.py`, `tasks/lib/gdm-drive.sh`, `tasks/lib/ukey.c` are
+byte-identical (verified by `diff` of `cat` over ssh, all three no output), and the
+login drive (`gdm_login` → face click → password stage by role `password text` →
+Login Options menu → `Cinnamon (Wayland)` entry → password → Return) executes end to
+end on the live greeter. One real bug found and fixed in the adaptation: the caps
+handling (below).*
+
+**Attempt A (previous dead 2c-2 session, 17:36–17:40 UTC, evidence
+`/root/evidence/cinnamon-attempt-2c2/`):** session `Cinnamon (Wayland)` selected,
+password submitted, `journal-gdm.log` 17:38:01:
+`pam_unix(gdm-password:auth): authentication failure; ... user=gdmtest` and
+`secure-tail.log`: `unix_chkpwd[17893]: password check failed for user (gdmtest)`;
+post-attempt a11y text shows the greeter dialog "Sorry, password authentication
+didn’t work. Please try again."; no gdmtest session in `loginctl-sessions.log`.
+
+**Attempt B (this run, 20:29–20:32 UTC, evidence
+`/root/evidence/cinnamon-attempt-2c2b/`):** `gdm_login gdmtest
+/root/gdmtest.pass cinnamon-wayland` rc=0 (input sent): a11y-verified clicks on
+`gdmtest` face (597,349), `Login Options` (1160,744), `Cinnamon (Wayland)`
+(1162,638); the new caps normalization logged `caps LED off; no toggle sent`;
+`journal-gdm.log` 20:30:10: same `pam_unix ... authentication failure; ...
+user=gdmtest`; `gdm_wait_session` rc=3 (no session after 120 s); post-attempt tree
+shows the failure dialog visible @(443,505 394x40) and the password stage; no
+gdmtest session in `loginctl-sessions.log`. **Control: the same password
+authenticates through PAM outside the greeter** — `echo "$(cat
+/root/gdmtest.pass)" | su -c 'id -un' gdmtest` → `gdmtest`, rc=0
+(`04-su-control.log`, 20:32:23). The password is also crypt-verified against the
+`/etc/shadow` hash in the same window (python3 `crypt.crypt(pw, shadow) ==
+shadow` → `match: True`; passfile 24 hex chars, charset digits + `b`,`e`,`f`,
+unchanged since baseline Aug 26 15:17).
+
+**Diagnosis (what the evidence establishes, in order):**
+
+1. **The account and the PAM stack are sound.** Control in Attempt B (su, same
+   `pam_unix` service path) accepts the passfile password; the hash matches.
+   Whatever the greeter's PAM received was not the passfile content.
+2. **The password is corrupted in the input layer, most plausibly by caps lock.**
+   Only the `b`/`e`/`f` chars of the password are shift-sensitive; a caps-on
+   state uppercases exactly those and leaves the digits intact — the minimal
+   alteration consistent with a `pam_unix` rejection.
+3. **Proven harness bug (root cause of Attempt A):** the greeter's "Caps lock is
+   on" label is a **static display**. Evidence (this run, greeter session c2):
+   two ukey `Caps_Lock` presses flipped the kernel's cross-device caps LED
+   (`/sys/class/leds/input1::capslock/brightness` 0 → 1 → 0, read between
+   presses) while the label stayed visible the whole time, and the a11y clock
+   node advanced in the same window (the a11y tree is live; the label is not
+   updating). The label also survived a full greeter restart (visible at 15:59
+   pre-restart in `2c2-pre-greeter-restart/a11y-text.log` and at 17:37 on the
+   restarted greeter) and at 20:32 reports collapsed extents 80x0. The old
+   `gdm_caps_lock_off` (label-driven, "toggle until the label is gone, 3 tries
+   max") therefore sent all 3 presses whenever the label was visible: starting
+   from caps OFF it ends caps **ON**, uppercasing the password's `b`/`e`/`f`
+   chars — the exact corruption Attempt A shows. **Fixed** in
+   `tasks/lib/gdm-drive.sh` (`gdm_caps_lock_off`): the label is no longer read;
+   normalization is from the kernel caps LED (one press iff the LED is on), and
+   `gdm_login` proves the input pipeline live by the face click before any
+   password typing. Attempt B ran the fixed code (`caps LED off; no toggle
+   sent`), which removes the proven corruption path.
+4. **Open hypothesis (not yet proven): the compositor's caps state has diverged
+   from the kernel LED.** Even with the LED off and no toggle sent, Attempt B's
+   password was still rejected. The kernel LED is the parity proxy only while
+   every caps press reaches the compositor; the 2c-2 session already observed a
+   total input freeze on the previous greeter instance (01:07 UTC, record
+   `2c2-pre-greeter-restart/diagnosis.log`), so a press that reached the kernel
+   but not mutter would break parity. The compositor's caps state is currently
+   unread: the label is static (item 3), the password field reads back empty by
+   design (AT-SPI), and the username field's a11y node has an **empty name**,
+   which `gdm-a11y.py textof` cannot target (probe attempt 20:36 UTC: typed
+   `beef42` into the field node at (555,335), readback empty).
+5. **Consistency with the user's original report** (Authentication Error
+   selecting Cinnamon; a reboot restored the session): a stuck compositor caps
+   state fits both details (reboot clears the greeter process's keyboard state),
+   so does a transient PAM-state cause (H1–H4 remain open). The S-matrix
+   scenarios (post-install reboot etc.) are the discriminator; this item
+   establishes the reproduction and the input-layer suspect, not the fix.
+
+**Changes this run:**
+
+| File | Change | Why |
+|---|---|---|
+| `tasks/lib/gdm-drive.sh` (clone, synced to in-VM `/root/gdm-harness/`) | `gdm_caps_lock_off` rewritten: label-driven 3-toggle loop → kernel-LED-parity normalization (one press iff `/sys/class/leds/*capslock*/brightness` is 1); comment records the static-label evidence chain | Proven cause of Attempt A's password corruption; the label is unusable as a state source on the gdm-47 Wayland greeter |
+| guest `/root/evidence/cinnamon-attempt-2c2b/` (new) | Attempt B evidence set: pre/post a11y, journal-gdm, journal-uid, secure-tail, loginctl, getenforce, sessions-available, 03-state-after, 04-su-control | The failure evidence + diagnosis for the item 2 verdict |
+| host `/tmp/opencode/gdm-2c2b/` | `00-greeter-before.png`, `01-post-attempt.png` (`sudo virsh screenshot gdm-login-vm`) | Pixel record of both states |
+
+**Alternatives considered:** (a) re-run Attempt B with the old label-driven caps
+code — rejected, it is the proven corruptor; (b) extend `gdm-a11y.py` with a
+`textof`-by-extents (index) so the username field can read back typed text, then
+a probe-typed-caps-verify loop in `gdm_login` — the right next step but beyond
+this dispatch's time bound (recorded for 2c-3); (c) reboot the guest to clear
+any stuck compositor state — rejected as a first move: it would destroy the
+unreproduced state (the live divergence evidence) and the no-re-provisioning
+constraint applies to reboots that clobber the greeter's history.
+
+**Time-bound note (AGENTS.md §5, stated plainly):** the ~60-min bound was
+exceeded (~82 min). At the 50-minute mark (≈20:08 UTC) the login run had not yet
+started; the run under test was the single decisive deliverable action and had
+not been executed, so stopping would have left the outcome unrecorded. The
+session stayed in the safe regime throughout (short commands, long idle gaps,
+small context — the wedge risk is sustained long-run load, not command count).
+
+**VM left as found:** running at the greeter (session c2, seat0/tty1, face list
+up, `gdmtest` face visible — verified 20:38 UTC), no gdmtest session, ssh OK,
+SELinux permissive, no guest reboot, no re-provision. Evidence dirs
+`/root/evidence/cinnamon-attempt-2c2/` and `cinnamon-attempt-2c2b/` in place.
+
+**For 2c-3 (next dispatch):** add `gdm-a11y.py textofext <x> <y>` (Text
+interface on the visible node at given screen extents, no name needed); add a
+caps pre-pass to `gdm_login` that types a probe into the username field, reads
+it back, and toggles `Caps_Lock` until the readback is lowercase (max 3);
+re-run the flow. A PASS then closes the input-layer suspect and points the fix
+work at PAM/session launch (H1–H4); a second FAIL with a verified-lowercase
+password promotes the PAM hypotheses.
 
 ---
 
