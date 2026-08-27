@@ -12,6 +12,25 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 11:10 UTC): attempt 3 complete — trigger characterization solid, runtime
+mitigation exhausted, `auto` kept; a FRESH chip wedges on a single ~201k prefill.** Tails
+session 2 (08:35–10:4x UTC) delivered checkpoints 3.2–3.4 (record: `## Implementation`): every
+writable sysfs surface probed (level file accepts only auto/low/high/manual, `medium`=EINVAL;
+`pp_dpm_sclk` in manual mode: all writes EINVAL; `pp_od_clk_voltage`: EINVAL; no power-cap
+hwmon entry; no `ppfeaturemask`) → **no runtime knob can cut sustained power while holding
+speed within 20%**. `low` measured and rejected (4.5x slower: 55.5/2.83 t/s vs 255.8/11.87).
+The decisive ~201k cold-prefill repro on a fresh chip: **FAILED — rc=52, 0→1 wedges, wall
+1760 s (29.3 min)** (`/tmp/run_end_repro201k_auto.txt`): a single ~201k prefill at the 120 W
+cap is itself the trigger; no accumulated stress needed. The session then died in the wedge
+burst (10:46:26 + 10:46:39 UTC, both "recovered through reset"); the "Staged, awaiting user
+approval" section was never filled (still "none yet"). **Operational note: llama-server is now
+a manual process** (unit `llama-server-qwen3.8-27b-q4.service` inactive; pid 13071 since
+10:41 UTC) — a wedge kills it and **nothing restarts it**; the recovery command of record is
+in checkpoint 3.2. `Robotnik` decision (recorded): the team operates in the **safe regime** —
+small-context dispatches; the 2a/2b delta-prompt regime ran 4.5 h with zero in-window wedges,
+and the cascade is only lethal when a session's context approaches ~200k. Restart/reboot-level
+options await the user's decision.
+
 **Now (2026-08-27 02:45 UTC): Q4 wedges too — 5 events since the 2026-08-26 12:25 UTC boot;
 the TASK-0008 2c dispatch died to one at 02:33 UTC.** Kernel journal shows 5 `device wedged`
 events since boot (0 at 12:50 UTC on Aug 26; 11:42 UTC now, uptime 14:17). The 2c session
@@ -140,16 +159,17 @@ the PM reads.*
 - [x] `Robotnik` (2026-08-27 02:45 UTC): Q4 wedge record (record: `## Status`): 5 events
       since the 2026-08-26 12:25 UTC boot; the TASK-0008 2c dispatch died to one at 02:33 UTC;
       the 2026-08-26 12:50 UTC stability decision is withdrawn.
-- [ ] `Tails` (attempt 3, dispatched 2026-08-27): on EVO-X2 (`ssh howard@192.168.1.106`),
-      resume from the last attempt 2 checkpoint in `## Implementation` / `## Test Results` if
-      any (do not redo it). Then: record current sysfs values, apply the safest runtime
-      mitigation to lower the wedge rate (`power_dpm_force_performance_level`; currently
-      `auto` at 2699 MHz) and **measure the inference-speed impact** — the whole team runs on
-      this endpoint, so a level that is too slow gets reverted; measure the wedge count under
-      load; keep what works, revert what does not; characterize the trigger by correlating
-      the 5 kernel-journal wedge timestamps against the dispatch activity windows recorded in
-      `## Status`. Restart/reboot-level options: stage only, do not execute. Checkpoint early
-      and often; end with a non-empty final message.
+- [x] `Tails` (attempt 3, sessions 1+2, 2026-08-27): characterization complete (checkpoint
+      3.1: power-cap stress, ~201k cold-prefill cascade, reload ~5.1 s); runtime surface
+      exhausted, `auto` kept, `low` rejected with numbers (3.3/3.4); 201k repro executed on a
+      fresh chip: wedged at 29.3 min (end marker on EVO-X2). Session died in the 10:46 UTC
+      wedge burst; staged options NOT written (section still "none yet").
+- [ ] `Robotnik`: user decision on the remaining options (accept risk / re-enable the systemd
+      unit / kernel-upgrade window); record the decision in `## Status`.
+- [ ] `Tails` (only if the user picks a kernel-upgrade window): research + stage the exact
+      commands and revert under "Staged, awaiting user approval" (research-only, nothing
+      executes).
+- [ ] `Shadow` → `Omega`: review the applied/staged changes once Tails checkpoints them.
 - [ ] `Tails` (attempt 2, dispatched 2026-08-25 10:25 UTC): on EVO-X2 (`ssh
       howard@192.168.1.106`), resume from the last checkpoint (do not redo it). First action:
       pull the kernel-journal wedge timestamps with surrounding context and write that
@@ -365,6 +385,253 @@ or reboot)*
 - `journalctl -k | grep -c -iE "out of memory|oom-kill"` = 0
 - `amdgpu_top -J` decode of `gpu_metrics` (rev 3, 264 B) matches sysfs: socket power 119.05 W at 99%
   busy vs 11-47 W in inter-token gaps; no `Throttle Status` field in v3 metrics, `stapm_power_limit` null
+
+### Attempt 3 (dispatched 2026-08-27 ~05:10 UTC, Tails)
+
+**Checkpoint 3.1 (2026-08-27 05:20 UTC): state snapshot + trigger characterization complete.**
+
+State: host `trip` (EVO-X2), kernel `7.0.12-1.el10.elrepo.x86_64`, boot 2026-08-26 12:25 UTC
+(uptime 16:48 at 05:13 UTC). Q4 endpoint: `llama-server-qwen3.8-27b-q4.service`, pid 4707 on
+8092, model `/mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf`; frozen flags intact
+(`-fa on`, `-ctk q8_0 -ctv q8_0`, `-c 262144`, `--parallel 1`; plus `-t 32 -tb 32 -ub 2048 --mlock
+--n-gpu-layers 99 --mmproj ...`). Q5 (8084): no listener. Wedge count 5
+(`journalctl -k --no-pager | grep -cE "device wedged"`); fence-fallback hangs 7; throttling events
+0 with logging enabled.
+
+Sysfs prior state (05:13 UTC, light load) — the backup of record per DoD:
+
+| File | Value |
+|---|---|
+| `power_dpm_force_performance_level` | `auto` |
+| `power_dpm_state` | `performance` |
+| `pp_cur_state` | `0` |
+| `pp_dpm_sclk` | `0: 600 / 1: 2728* / 2: 2900` MHz |
+| `pp_dpm_mclk` | `0: 400 / 1: 800 / 2: 1000*` MHz |
+| `pp_dpm_socclk` | `600..1472` MHz (8 states) |
+| hwmon2 | edge 74.0 C, PPT 99.1 W, sclk 2726 MHz, busy 89% (mid-session sample) |
+| `tuned` profile | `throughput-performance` |
+
+Revert of record for the mitigation to be applied:
+`echo "600 2728 2900" > /sys/class/drm/card0/device/pp_dpm_sclk && echo auto > /sys/class/drm/card0/device/power_dpm_force_performance_level`.
+
+**The 5 wedges (UTC, `journalctl -k --utc`):** 01:08:08 (comp_1.1.0, pid 1817), 01:36:48
+(comp_1.2.0, pid 4369), 01:37:18 (comp_1.2.0, pid 4369, 30 s later, same process), 02:05:28
+(comp_1.2.0, pid 4478), 02:33:17 (comp_1.2.0, pid 4596). All 5 fall inside the 2c dispatch window
+(01:08-02:33 UTC). Zero wedges during the 2a/2b window (2026-08-26 20:00 -> 2026-08-27 00:30 UTC)
+or after 02:34 UTC. Fence fallbacks: 01:38:11, 01:38:43 (right after the 01:37:18 wedge),
+02:34:42 (right after 02:33:17), 04:47:18 (during idle).
+
+**Service lifecycle (user journal, UTC):** 1817 listening 12:25:30 -> wedge 01:08:08; 4369
+01:08:21 -> wedges 01:36:48 + 01:37:18; 4478 01:37:30 -> wedge 02:05:28; 4596 02:05:39 -> wedge
+02:33:17 (= the 2c death at 02:33:18); 4707 02:33:28 -> now. **Model reload takes ~5.1 s**
+(`loading model` -> `model loaded` on NVMe + mlock), so per-wedge downtime is ~6-10 s, not the
+"multi-minute model reload" recorded in `## Status` (that description predates the Q4 boot).
+
+**In-flight work at each wedge (Q4 user journal, epoch-bounded windows):**
+- Wedges 2/4/5 were each a **cold ~201k-token prefill of the 2c session's full context**, starting
+  within ~6 s of each restart (opencode retrying the same request on the fresh process, empty KV):
+  - Wedge 2 (pid 4369): started 01:08:26, total = 102400/0.51 ~= 200,784 tokens, rate 146.07 ->
+    123.81 t/s; last confirmed progress 137,216 (68.3%) at 01:26:54 (t=1108 s), then **no progress
+    lines for 9.9 min** and the ring timeout fired 01:36:48 (t=1702 s, 28.4 min): a silent hang
+    after 137k tokens.
+  - Wedge 4 (pid 4478): started 01:37:37, total = 126976/0.63 ~= 201,549; last line 176,128
+    (87.4%) at 02:05:22 (t=1665 s), wedge 02:05:28 (t=1671 s, 27.9 min) ~6 s later, ~176.8k
+    tokens (87.7%).
+  - Wedge 5 (pid 4596): started 02:05:39, total = 124928/0.62 ~= 201,497; last line 174,080
+    (86.4%) at 02:33:11 (t=1631 s), wedge 02:33:17 (t=1638 s, 27.3 min) ~6 s later, ~174.8k
+    tokens (86.8%).
+  - The cold-prefill hang point degrades with cumulative chip stress: 68.3% -> 87.7% -> 86.8%
+    of a ~201k prompt (the fresh-chip Q5 threshold from attempt 1 was ~190-198k, i.e. 96-99%).
+- Wedge 1 (pid 1817): the request in flight at 01:08:08 started after 01:07:51 (previous request
+  completed 01:07:51: 623-token delta prefill + 3675-token decode at 8.07 t/s; `all slots are
+  idle` 01:07:51). No progress line logged before the wedge: in-flight work was a small delta
+  prefill on an intact ~200k context, 17 s in. Not a cold 200k prefill. The chip had carried
+  2a/2b churn since ~20:00 UTC (4.5 h, zero wedges inside that window) plus 2c start
+  (00:30-01:08 UTC).
+
+**Correlation verdict:** all 5 wedges inside the 2c window, zero in 2a/2b or after 02:34. The
+2a/2b-style churn (sampled 2026-08-26 15:30-17:33 UTC: delta prompts 348-4034 tokens at 52-164
+t/s + 1-2.3k-token decodes at 8-11 t/s, idle gaps 17 s-8 min) does not wedge in-window but
+accumulates stress; wedge 1 fired on the next request after ~12 h of mixed load. The cascade
+(wedges 2-5) is self-perpetuating: each wedge kills the KV cache, forcing a cold ~201k re-prefill
+on retry, which wedges again at 27-28 min. The 2c session could never complete its ~201k request
+inside this loop (died 02:33:18).
+
+**Characterization (updated, supersedes attempt 1 wording):** trigger = sustained continuous
+full-power load accumulating chip-level stress that a compute-ring reset does NOT clear. Two
+observed regimes: (1) hours of high-churn delta work (2a/2b: 4.5 h, 0 in-window wedges, set up
+wedge 1); (2) a single cold ~200k prefill (wedges 2-5: 27.3-28.4 min, hang point degrading
+68-88% with cumulative stress). First live readings at a wedge moment (baseline repro CSV, 16th
+wedge, `auto`, 2026-08-25 09:42-10:15 UTC, `/tmp/gpu_samples_baseline.csv`): PPT pinned
+119-120 W for the entire 32.7 min (chip at the package power cap; sclk oscillating 2513 -> 2836
+MHz to stay under it), edge 84 -> 92 C drifting up, 100% busy, 0 throttle events. Power flat at
+the cap, temperature far below any trip point: consistent with sustained at-power-cap operation,
+not thermal throttling.
+
+**Mitigation implication:** under `auto` the ceiling is power-limited at ~120 W with sclk
+2500-2900 MHz. Pinning sclk to 2500 MHz should drop steady PPT to ~105-110 W and slow stress
+accumulation. Decisive test: the same ~201k cold prefill must COMPLETE under the pin (it hangs at
+68-88% under `auto` on this already-stressed chip).
+
+Next (in order): baseline speed at `auto` (16k cold prefill + 64 decode, 3 runs) -> apply
+`manual` + `pp_dpm_sclk 2500` -> verify clocks under load -> re-measure speed -> 201k cold-prefill
+repro under the pin (background, 5 s sampling) -> keep/revert.
+
+### Attempt 3, session 2 (re-dispatched 2026-08-27 ~08:35 UTC, Tails)
+
+**Checkpoint 3.2 (2026-08-27 08:45 UTC): new-boot context + fresh sysfs snapshot.**
+
+Context added since checkpoint 3.1 (per dispatch brief): EVO-X2 fully shut down and rebooted,
+user-confirmed. **Time discrepancy (flagged, not silently overridden):** the brief says the
+reboot was "~17:01 UTC"; host evidence says boot ~08:01 UTC = 17:01 JST (`date -u` = 08:42:24
+UTC with `uptime` = 41 min at 08:42 UTC). The brief's "17:01" is JST (EVO-X2 local time, UTC+9).
+All times in this checkpoint are UTC. The previous boot's journal is gone: the 5 wedges recorded
+in checkpoint 3.1 are the complete record of the previous boot as of 02:45 UTC; any wedges
+between 02:45 UTC and the ~07:5x shutdown are unrecoverable (gap, recorded).
+
+State (08:42 UTC): kernel `7.0.12-1.el10.elrepo.x86_64`; wedge count **0** (monitoring command
+`journalctl -k --no-pager | grep -cE "device wedged"`). 8092: llama-server **pid 1852, running as
+a manual process since boot** (user-confirmed); systemd unit
+`llama-server-qwen3.8-27b-q4.service` reports **inactive** — recorded per dispatch instruction,
+unit management not changed. 8084 (Q5): no listener. Frozen flags intact per
+`tr "\0" " " < /proc/1852/cmdline`: `-fa on -ctk q8_0 -ctv q8_0 -c 262144 --parallel 1` (plus
+`-t 32 -tb 32 -ub 2048 --mlock --n-gpu-layers 99 --mmproj`), model
+`/mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf`.
+
+**Recovery command of record** (risk: this is a manual process, so a wedge kills it and
+**nothing restarts it** — unlike the previous boot, where the unit auto-restarted ~10 s after
+each wedge. If a wedge hits, run this to restore the endpoint; using the unit instead is the
+user's call, recorded only):
+
+```
+nohup /usr/local/bin/llama-server --model /mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf --mmproj /mnt/data/models/qwen3.8-27b-q4/mmproj-F16.gguf --alias Qwen3.8-27B-UD-Q4_K_XL --host 0.0.0.0 --port 8092 --n-gpu-layers 99 -fa on --parallel 1 -t 32 -tb 32 -ub 2048 -ctk q8_0 -ctv q8_0 --mlock -c 262144 > /tmp/llama-server-manual.log 2>&1 &
+```
+
+Sysfs prior state (08:42 UTC, mid-session load, busy 98) — backup of record for this boot:
+
+| File | Value |
+|---|---|
+| `power_dpm_force_performance_level` | `auto` |
+| `power_dpm_state` | `performance` |
+| `pp_cur_state` | `0` |
+| `pp_dpm_sclk` | `0: 600 / 1: 1100 / 2: 2900*` MHz |
+| `pp_dpm_mclk` | `0: 400 / 1: 800 / 2: 1000*` MHz |
+| `pp_dpm_socclk` | `600 / 736 / 883 / 981 / 1104 / 1261 / 1472 / 1472` MHz |
+| hwmon2 (`name=amdgpu`) | `temp1=edge` 64.0 C, `power1=PPT` 111.1 W at busy 98 |
+| `thermal_throttling_logging` | enabled, 60 s interval |
+| `tuned` profile | `throughput-performance` |
+
+**The DPM sclk state table changed between boots (open question, recorded):** checkpoint 3.1
+(05:13 UTC, previous boot) read `600 / 2728* / 2900`; this boot reads `600 / 1100 / 2900*`.
+Consequence for the mitigation surface: `power_dpm_force_performance_level` maps
+low/medium/high to states 0/1/2, so on this boot `low`=600 (unusable), `medium`=**1100**
+(~2.6x slower than 2728, too slow for the team), `high`=2900 (pinned top state, no mitigation
+versus auto's oscillation). The checkpoint 3.1 plan therefore still stands as the right lever:
+`power_dpm_force_performance_level=manual` + `pp_dpm_sclk=2500`. A `medium` probe run is planned
+to record the rejection with a number.
+
+Revert of record for this boot: `echo "600 1100 2900" > /sys/class/drm/card0/device/pp_dpm_sclk && echo auto > /sys/class/drm/card0/device/power_dpm_force_performance_level`.
+
+`/tmp` survived the reboot (not tmpfs): attempt 1 artifacts `/tmp/wedge_repro.sh` and
+`/tmp/gpu_samples_baseline.csv` (16th wedge, Q5) still present; payload files gone. Python
+3.12.13 present. New test script written this session: `/tmp/run_test.sh` (see checkpoint 3.3).
+
+Next (in order, supersedes the checkpoint 3.1 "Next" list): baseline speed at `auto` (3x
+~16k cold prefill + 64 decode, 2 s power sampling) -> apply `manual` + `pp_dpm_sclk 2500` ->
+verify clocks under load -> re-measure speed (keep if prefill and decode slowdowns are both
+<= 20%, otherwise revert) -> `medium` probe (1 small run, for the record) -> restore pin ->
+201k cold-prefill repro under the pin (background, 5 s sampling, single long wait) -> keep/revert.
+
+**Checkpoint 3.3 (2026-08-27 ~09:35 UTC): runtime mitigation surface is exhausted on this
+driver build; keeping `auto`. Corrections to checkpoint 3.2 included.**
+
+Corrections (evidence below):
+1. **`pp_dpm_sclk` middle entry is the LIVE clock, not a fixed DPM state.** Values observed at
+   different moments: `1100*` (08:42, marker actually on state 2 = 2900), `2843*` then `902*`
+   2 s apart (~09:10, no GPU load between commands), `1410*`, `2713*`, `2682*`, `2756*`.
+   Interpretation consistent with all readings: the file shows `[min state, current sclk, max
+   state]` and `*` marks the entry equal to the current clock (state 2 when current = max).
+   Checkpoint 3.2's "medium = 1100, too slow" claim is withdrawn.
+2. **`power_dpm_force_performance_level=medium` is rejected** on this driver build:
+   `echo medium | sudo tee .../power_dpm_force_performance_level` -> `tee: Invalid argument`.
+   Accepted values (verified by write + readback): `auto`, `low`, `high`, `manual`.
+3. **Sysfs writes require root.** Files are `-rw-r--r-- root root`; user `howard`
+   (uid 1000, groups wheel) gets `Permission denied` on direct writes. `howard` has
+   passwordless sudo (`sudo -n true` OK); all writes this session used `echo ... | sudo tee`.
+
+Baseline speed at `auto` (this boot, 09:15-09:25 UTC, 3 runs, unique payloads per run so
+`cache_n=0` cold prefill each time; `/tmp/run_test.sh`, tag `auto16k_{1,2,3}`, 76000 chars =
+15392 prompt tokens, n_predict=64):
+
+| run | prefill t/s | decode t/s | PPT mean/max (W) | sclk range (MHz) | edge max (C) |
+|---|---|---|---|---|---|
+| auto16k_1 | 254.7 | 11.90 | 119.1 / 133.1 | 1893-2887 | 91.0 |
+| auto16k_2 | 256.3 | 11.82 | 117.5 / 133.1 | 600-2887 | 88.0 |
+| auto16k_3 | 256.3 | 11.88 | 117.4 / 133.1 | 600-2896 | 87.0 |
+
+PPT pinned at the 120 W cap on average (120,002,000 uW read live), 133-134 W transient spikes,
+sclk oscillating 600-2900 under the cap — same signature as the 16th-wedge baseline CSV
+(checkpoint 3.1). Wedge count stayed 0 through all runs.
+
+Mitigation surface, empirically probed (all writes as root via `sudo tee`):
+
+| Surface | Probes | Result |
+|---|---|---|
+| `power_dpm_force_performance_level` | auto/low/high/manual accepted; **medium rejected (EINVAL)** | writable |
+| `pp_dpm_sclk` (manual mode) | `2500`, `2500 2500`, `600 2500`, `600 2500 2900`, `2500000`, `2500000 2500000`, `600000 2500000`, state indexes `0`/`1`/`2`, `600 2900` | **all EINVAL — no clock settable in manual mode on this build** |
+| `pp_od_clk_voltage` | multi-line `OD_SCLK:`/`OD_RANGE:` block, `2500`, single-line `OD_RANGE:` | all EINVAL (read shows default 2-anchor table 600/2900, no voltage data exposed) |
+| hwmon2 power cap | full file survey | **none** (only edge temp, PPT, sclk freq, vddgfx/vddnb=0; `power` entry is a PCI device dir) |
+| `ppfeaturemask` | `ls` | does not exist in this build |
+
+**Decision: no effective runtime (sysfs) mitigation is available on this driver build.**
+The level file can only pin 600 (`low`, ~4x too slow for the team), 2900 (`high`, top state,
+no power benefit over auto's PPT-clamped oscillation — not tested, reasoned from the 120 W cap
+being firmware-enforced), or leave clocks unmanaged (`manual` with no settable clock behaves
+like auto: live clocks 2682-2798 observed during manual). Reverted everything to `auto`
+(verified). The checkpoint 3.1 plan (manual + 2500 pin) is dead on this build; it is not
+retried.
+
+Wedge-count under load is still measurable: the decisive ~201k cold-prefill repro (checkpoint
+3.1) now runs under `auto` on a fresh chip as the baseline "under load" data point (does a
+201k prefill complete on a fresh chip at all? the 5 wedges of the previous boot were on an
+already-stressed chip, the old Q5 fresh-chip threshold was ~190-199k). It doubles as the
+first full-window live sensor profile on this boot. Risk accepted per dispatch: a wedge kills
+the manual llama-server (pid 1852) and this session; recovery command is in checkpoint 3.2 and
+all artifacts land on EVO-X2.
+
+Next: `low` probe (1 small run, records the rejection with a number) -> 201k repro under `auto`
+(background, 5 s sampling, single long wait) -> keep/revert final -> staged options -> fixes doc.
+
+**Checkpoint 3.4 (2026-08-27 ~09:55 UTC): `low` probe rejected with numbers; runtime decision
+final = keep `auto`; 201k repro starting now.**
+
+`low` (600 MHz pin) probe, 2000 chars = 415 tokens, n_predict=16 (tag `low600_probe`):
+prefill 55.5 t/s, decode 2.83 t/s, PPT mean 21.6 W. Versus `auto` (255.8 / 11.87 t/s baseline):
+**prefill 78% slower, decode 76% slower, ~4.5x slower overall**. Rejected — the whole team runs
+on this endpoint. It does confirm the power drop at low clocks is real (21.6 W vs 117 W), but
+the price is unacceptable. `pp_num_states` = "states: 1 / 0 default", `pp_force_state` empty
+(no additional surface).
+
+**Runtime-surface decision (final): keep `auto`.** No writable knob on this driver build can cut
+sustained power while holding speed within 20%. The effective mitigation must be
+restart/reboot-level (staged under "Staged, awaiting user approval") or host/BIOS-level
+(out of scope for this task). Everything is reverted to `auto` (verified after each experiment).
+
+Starting now: the decisive ~201k cold-prefill repro under `auto` on a fresh chip.
+- Launch: `nohup bash /tmp/run_test.sh repro201k_auto 951423 1 5 3600 &` (951,423-char payload,
+  same size as the checkpoint 3.1 repro = ~200,784-201,549 tokens on the same model; n_predict=1;
+  5 s sampling; pid in `/tmp/repro_pid_auto`).
+- Artifacts: `/tmp/run_end_repro201k_auto.txt` (completion marker + summary),
+  `/tmp/gpu_samples_repro201k_auto.csv` (ts busy edge PPT sclk hwmon_sclk wedges),
+  `/tmp/run_resp_repro201k_auto.json`, `/tmp/repro_log_auto.txt`.
+- Expected duration ~25-30 min (previous-boot wedges fired at 27.3-28.4 min of the same prompt
+  at 123-146 t/s; a fresh chip may be faster).
+- Outcomes: (a) completes, 0 wedges -> a fresh chip survives a 201k prefill under auto, i.e. the
+  wedges need accumulated stress (refines the characterization); (b) wedge -> first fresh-chip
+  201k wedge point + live sensor profile through the failure; the manual llama-server (pid 1852)
+  dies and is NOT auto-restarted (unit inactive), and this session dies at its next inference;
+  restore with the checkpoint 3.2 command. All artifacts survive on EVO-X2 either way.
+- If the wait call below times out (~48 min): re-check the end marker; data is safe on EVO-X2.
 
 ---
 

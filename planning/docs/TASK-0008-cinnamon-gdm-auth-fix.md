@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 11:10 UTC): item 2c re-scoped into three small-context phases (2c-1/2/3);
+safe-regime operating rule in force.** From the TASK-0010 record (attempt 3, checkpoints
+3.1–3.4): the wedge cascade is only lethal when a session's context approaches ~200k (the dead
+2c session was at ~201k; the 2a/2b delta-prompt regime ran 4.5 h with zero in-window wedges),
+and no runtime GPU mitigation exists on this driver build. Item 2c therefore runs as 2c-1
+(Xorg + GDM config in the guest), 2c-2 (login run + evidence), 2c-3 (doc completion +
+commit), each a fresh small-context dispatch with a single deliverable; briefs name the exact
+doc sections to read and never the whole doc.
+
 **Now (2026-08-27 02:45 UTC): 2c session lost to a Q4 GPU wedge at 02:33 UTC; harness
 checkpoint pushed as `959d01d`.** opencode.log (run `4408203b`): session
 `ses_fc000ab1fffeaWBIiIQoN0mi5V` ran 01:08–02:33 UTC, survived one `Loading model` reload
@@ -334,11 +343,18 @@ the PM reads.*
 - [x] `Robotnik` (2026-08-27 02:45 UTC): 2c post-mortem (record: Status); dead session's
       harness edits committed + pushed as `959d01d`; re-sequenced: TASK-0010 runtime
       mitigation (Tails, attempt 3) before the 2c re-dispatch.
-- [ ] `Tails` (item 2c, attempt 9, after the TASK-0010 mitigation verdict): resume from
-      `959d01d` plus the `### Item 2 — attempt 7` / `attempt 8` sections; Xorg-forced
-      greeter per the plan's decision doc; run the login flow with `gdmtest`; write the
-      `### Item 2` completion in `## Implementation` + a completion entry here; commit +
-      push harness fixes to `task-0008-gdm-auth`.
+- [ ] `Tails` (item 2c-1, dispatched 2026-08-27): in the guest (192.168.122.15, ssh root,
+      `~/.ssh/cinnamon-test-key`), install `xorg-x11-server-Xorg` and switch GDM to an X11
+      greeter per the attempt 7 finding, restart GDM, verify the greeter runs on Xorg; write
+      checkpoint `### Item 2 — 2c-1` in `## Implementation`. Read only `## Status`, `## Next
+      Actions`, and the `### Item 2 — attempt 7` / `attempt 8` sections; keep the session
+      small (tail logs, never cat them; never read the doc in full); end with a non-empty
+      final message.
+- [ ] `Tails` (item 2c-2, after 2c-1): run the GDM login flow with `gdmtest`, capture
+      evidence in the guest `/root/evidence/`, checkpoint `### Item 2 — 2c-2`.
+- [ ] `Tails` (item 2c-3, after 2c-2): write the `### Item 2` completion in `##
+      Implementation` + a completion entry here; commit + push harness fixes to
+      `task-0008-gdm-auth`.
 - [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
       (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
