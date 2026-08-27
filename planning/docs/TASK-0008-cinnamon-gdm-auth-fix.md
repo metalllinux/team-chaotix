@@ -12,6 +12,18 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 02:45 UTC): 2c session lost to a Q4 GPU wedge at 02:33 UTC; harness
+checkpoint pushed as `959d01d`.** opencode.log (run `4408203b`): session
+`ses_fc000ab1fffeaWBIiIQoN0mi5V` ran 01:08–02:33 UTC, survived one `Loading model` reload
+(01:08:17), died 02:33:18 with "The socket connection was closed unexpectedly". EVO-X2 kernel
+journal: **5** `device wedged` events since the 2026-08-26 12:25 UTC boot (0 at 12:50 UTC) —
+the Q4 endpoint is **not** wedge-immune; the TASK-0010 problem is live on Q4 (~1 wedge per
+4.7 h). The dead session left uncommitted harness edits (`tasks/lib/gdm-drive.sh`,
+`tasks/lib/ukey.c`, `vm-test/test-gdm-login.sh`); `Robotnik` committed + pushed them as
+`959d01d` on `origin/task-0008-gdm-auth`. Decision: dispatch the TASK-0010 runtime
+mitigation (Tails, attempt 3) **before** re-dispatching 2c — cheap protection before the
+long dispatch.
+
 **Now (2026-08-26 19:55 UTC): item 2a (attempt 7) complete — and my orphan/reboot misread is
 corrected.** `Tails` finished 2a with a non-empty final message (record: its `### Item 2 —
 attempt 7` checkpoint in `## Implementation`, commit `425afa7`). **Correction (AGENTS.md §5):**
@@ -316,9 +328,18 @@ the PM reads.*
       Deliverable: live, ssh-verified, libvirt-managed VM + inventory checkpoint. Read only
       the `### Item 2 — attempt 5` section (line ~1016) plus `## Status` and `## Next
       Actions`; end with a **non-empty final message**.
-- [ ] `Robotnik`: after 2a, dispatch 2b (install the remaining RPMs in the VM, checkpoint),
-      then 2c (run the GDM harness, write the `### Item 2` completion + this section's
-      completion entry). Then the rest of the chain: 9a (Tails, Sparrow suite), Amy
+- [x] `Tails` (item 2b, attempt 8): complete — 14 cinnamon-family packages, zero dependency
+      errors, ldd sweep of 43 binaries + 6 libs clean, VM left untouched; checkpoint `###
+      Item 2 — attempt 8`, commit `bf8c623` (record: Status).
+- [x] `Robotnik` (2026-08-27 02:45 UTC): 2c post-mortem (record: Status); dead session's
+      harness edits committed + pushed as `959d01d`; re-sequenced: TASK-0010 runtime
+      mitigation (Tails, attempt 3) before the 2c re-dispatch.
+- [ ] `Tails` (item 2c, attempt 9, after the TASK-0010 mitigation verdict): resume from
+      `959d01d` plus the `### Item 2 — attempt 7` / `attempt 8` sections; Xorg-forced
+      greeter per the plan's decision doc; run the login flow with `gdmtest`; write the
+      `### Item 2` completion in `## Implementation` + a completion entry here; commit +
+      push harness fixes to `task-0008-gdm-auth`.
+- [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
       (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
 ---

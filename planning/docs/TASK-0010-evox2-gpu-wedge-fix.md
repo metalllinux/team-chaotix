@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 02:45 UTC): Q4 wedges too — 5 events since the 2026-08-26 12:25 UTC boot;
+the TASK-0008 2c dispatch died to one at 02:33 UTC.** Kernel journal shows 5 `device wedged`
+events since boot (0 at 12:50 UTC on Aug 26; 11:42 UTC now, uptime 14:17). The 2c session
+(opencode run `4408203b`) survived one `Loading model` reload (01:08:17 UTC) and died
+02:33:18 UTC with "socket connection was closed unexpectedly". Rate ≈ 1 wedge per 4.7 h: the
+"measurably stable" decision (2026-08-26 12:50 UTC) is **withdrawn**. Tails attempt 3
+(runtime mitigation, the user-approved scope in `## Definition of Done`) dispatches now,
+resuming from any attempt 2 checkpoint in `## Implementation` / `## Test Results`. First
+usable load-correlation data now exists: 5 wedge timestamps vs the known dispatch activity
+windows (2a/2b ~20:00–00:30 UTC, 2c 01:08–02:33 UTC, Aug 26/27).
+
 **Now (2026-08-26 12:50 UTC): host rebooted; Q5 no longer served; team runs Q4 only; zero
 wedges since boot.** EVO-X2 uptime 1:25 at 12:50 UTC (boot ~12:25 UTC / 21:25 JST); kernel
 journal shows **zero** `device wedged` events since boot (monitoring command above). `ss -ltnp`
@@ -122,8 +133,23 @@ the PM reads.*
       resumes from them.
 - [x] `Robotnik` (2026-08-26 12:50 UTC): recorded the host reboot (~12:25 UTC, no approval in
       this doc, provenance unverified), Q5 down (8084 no listener), team on Q4 only, zero wedges
-      since boot, orphan `gdm-login-vm` dead. Endpoint-stability decision made: sufficient to
+      since boot, orphan `gdm-login-vm` dead (corrected 2026-08-26 19:55 UTC in the
+      TASK-0008 doc: the unsuffixed `virsh` check; the domain had run since 14:51 UTC).
+      Endpoint-stability decision made: sufficient to
       resume TASK-0008 item 2, with wedge-count monitoring before/after (record: `## Status`).
+- [x] `Robotnik` (2026-08-27 02:45 UTC): Q4 wedge record (record: `## Status`): 5 events
+      since the 2026-08-26 12:25 UTC boot; the TASK-0008 2c dispatch died to one at 02:33 UTC;
+      the 2026-08-26 12:50 UTC stability decision is withdrawn.
+- [ ] `Tails` (attempt 3, dispatched 2026-08-27): on EVO-X2 (`ssh howard@192.168.1.106`),
+      resume from the last attempt 2 checkpoint in `## Implementation` / `## Test Results` if
+      any (do not redo it). Then: record current sysfs values, apply the safest runtime
+      mitigation to lower the wedge rate (`power_dpm_force_performance_level`; currently
+      `auto` at 2699 MHz) and **measure the inference-speed impact** — the whole team runs on
+      this endpoint, so a level that is too slow gets reverted; measure the wedge count under
+      load; keep what works, revert what does not; characterize the trigger by correlating
+      the 5 kernel-journal wedge timestamps against the dispatch activity windows recorded in
+      `## Status`. Restart/reboot-level options: stage only, do not execute. Checkpoint early
+      and often; end with a non-empty final message.
 - [ ] `Tails` (attempt 2, dispatched 2026-08-25 10:25 UTC): on EVO-X2 (`ssh
       howard@192.168.1.106`), resume from the last checkpoint (do not redo it). First action:
       pull the kernel-journal wedge timestamps with surrounding context and write that
