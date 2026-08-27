@@ -12,6 +12,21 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 13:38 UTC): 2c-1 blocked as specified — RHEL 10 does not ship Xorg;
+decision: re-scope 2c-2 to the Wayland greeter (option D).** `Tails` completed 2c-1 with the
+full evidence chain (checkpoint `### Item 2 — 2c-1`): `xorg-x11-server-Xorg` exists in no
+Rocky 10.2 repo (no binary, no drivers, no SRPM in the AppStream source tree), GDM 47 ships
+`gdm-wayland-session` but no `gdm-x-session` (flipping `WaylandEnable=false` would break the
+greeter — deliberately not touched; guest left unchanged). This contradicts the plan's
+decision doc (X11-forced greeter, option A), which assumed Xorg was available on the target
+OS; that premise is disproven by in-guest evidence and the deviation is recorded here per
+AGENTS.md §5. **Decision (Robotnik): option D — 2c-2 tests the Wayland greeter.** Rationale:
+the Cinnamon install added a launchable `cinnamon-wayland.desktop` entry; the harness's
+pyatspi2 a11y and ukey uinput drivers are display-protocol independent; the "Authentication
+Error" is a PAM failure in the greeter; and the user's real failure was on a Rocky 10.2
+Wayland greeter, so this is the faithful reproduction. No external release-note confirmation
+of the Xorg removal was obtainable (docs.redhat.com 403); the in-guest evidence stands alone.
+
 **Now (2026-08-27 11:10 UTC): item 2c re-scoped into three small-context phases (2c-1/2/3);
 safe-regime operating rule in force.** From the TASK-0010 record (attempt 3, checkpoints
 3.1–3.4): the wedge cascade is only lethal when a session's context approaches ~200k (the dead
@@ -343,15 +358,21 @@ the PM reads.*
 - [x] `Robotnik` (2026-08-27 02:45 UTC): 2c post-mortem (record: Status); dead session's
       harness edits committed + pushed as `959d01d`; re-sequenced: TASK-0010 runtime
       mitigation (Tails, attempt 3) before the 2c re-dispatch.
-- [ ] `Tails` (item 2c-1, dispatched 2026-08-27): in the guest (192.168.122.15, ssh root,
-      `~/.ssh/cinnamon-test-key`), install `xorg-x11-server-Xorg` and switch GDM to an X11
-      greeter per the attempt 7 finding, restart GDM, verify the greeter runs on Xorg; write
-      checkpoint `### Item 2 — 2c-1` in `## Implementation`. Read only `## Status`, `## Next
-      Actions`, and the `### Item 2 — attempt 7` / `attempt 8` sections; keep the session
-      small (tail logs, never cat them; never read the doc in full); end with a non-empty
-      final message.
-- [ ] `Tails` (item 2c-2, after 2c-1): run the GDM login flow with `gdmtest`, capture
-      evidence in the guest `/root/evidence/`, checkpoint `### Item 2 — 2c-2`.
+- [x] `Tails` (item 2c-1, 2026-08-27): **blocked as specified** — `xorg-x11-server-Xorg`
+      does not exist in any Rocky 10.2 repo (no binary, no drivers, no SRPM; GDM 47 ships
+      no X session launcher; full evidence chain in checkpoint `### Item 2 — 2c-1`). No
+      guest state change; VM left running at the Wayland greeter. Bonus finding: the
+      Cinnamon install added a launchable `cinnamon-wayland.desktop` session entry.
+- [x] `Robotnik` (2026-08-27 13:38 UTC): 2c-1 blocker resolved — option D approved: 2c-2
+      tests the Wayland greeter (record: Status; the plan decision doc's X11 premise is
+      disproven by in-guest evidence).
+- [ ] `Tails` (item 2c-2, Wayland re-scope, dispatched 2026-08-27): adapt the harness for
+      the Wayland greeter (session selection via the greeter menu; the pyatspi2/ukey drivers
+      in `tasks/lib/` are display-protocol independent) and run the login flow with
+      `gdmtest`, selecting the `cinnamon-wayland.desktop` session. Success: the Cinnamon
+      session starts. Failure: capture the PAM/greeter evidence (that is the
+      Authentication-Error reproduction). Evidence in the guest `/root/evidence/`;
+      checkpoint `### Item 2 — 2c-2`.
 - [ ] `Tails` (item 2c-3, after 2c-2): write the `### Item 2` completion in `##
       Implementation` + a completion entry here; commit + push harness fixes to
       `task-0008-gdm-auth`.
@@ -1373,6 +1394,103 @@ attempt 7) stands: any 2c harness run needs a different `--name` or a destroy fi
 
 **Next:** 2c — decide the Wayland/Xorg question (attempt 7 finding: greeter is Wayland-only,
 the committed harness drives X11 GDM with Ctrl+Alt+Down), then run the login attempt.
+
+---
+
+### Item 2 — 2c-1 (item 2c-1: Xorg install + GDM X11 switch, 2026-08-27, Q4 endpoint)
+
+*Single-deliverable dispatch 2c-1 per `## Next Actions` (2026-08-27 11:10 UTC). **The
+deliverable as specified is not achievable on Rocky 10.2: RHEL 10 does not ship the Xorg
+X server** (no binary package, no driver packages, no source RPM, and the installed GDM
+47 has no X session launcher). Blocker recorded first, per the dispatch brief. **No state
+change was left in the guest** (no config edit, no GDM restart, no re-provisioning; the one
+file created, a backup, was verified byte-identical and deleted). Guest left running at the
+Wayland greeter, exactly as left at the end of attempt 8. All guest commands ran over ssh
+(root, `~/.ssh/cinnamon-test-key`) to 192.168.122.15, 12:31–13:12 UTC.*
+
+**Contradicts the attempt 7 premise.** Attempt 7 (line 1281) recorded: "2c must either
+install `xorg-x11-server-Xorg` and set `WaylandEnable=false` in `/etc/gdm/custom.conf`
+before the Cinnamon login attempt, or extend the driver for the Wayland greeter's session
+menu. Decision belongs to 2c." The install path is closed on this platform: the package
+does not exist in any Rocky 10.2 repository. Evidence:
+
+1. `dnf install -y xorg-x11-server-Xorg` -> `Error: Unable to find a match:
+   xorg-x11-server-Xorg`, rc=1. No transaction created (failed at package resolution).
+2. `dnf repolist enabled` -> appstream, baseos, cinnamon-rocky10 (local), crb, extras.
+   `dnf search xorg` -> the only server package offered is `xorg-x11-server-Xwayland`.
+3. `dnf --refresh repoquery "xorg-x11-server*"` (mirror metadata force-refetched
+   2026-08-27 ~12:37 UTC) -> only `xorg-x11-server-Xwayland` (24.1.9) + `-devel`
+   (appstream/crb). Stale metadata ruled out.
+4. `dnf repoquery "xorg-x11-drv-*"` -> **zero** packages (no X drivers either).
+5. `dnf provides "*/bin/Xorg"` -> `Error: No matches found` (file-provides, fresh
+   metadata).
+6. Installed `gdm-47.0-22.el10_2` contents (`rpm -ql gdm`): ships
+   `/usr/libexec/gdm-wayland-session`, **no `/usr/libexec/gdm-x-session`**. Repo query
+   `dnf repoquery "gdm*"` -> only `gdm`, `gdm-devel`, `gdm-pam-extensions-devel` exist —
+   no X-session subpackage to install.
+7. `strings /usr/sbin/gdm`: the GDM 47 daemon still parses `WaylandEnable` (string also
+   present in `/usr/libexec/gdm-runtime-config`), and for the X11 display execs
+   `/usr/libexec/gdm-x-session` (absent per item 6); built-in failure message:
+   `GdmLocalDisplayFactory: Both Wayland and Xorg are unavailable`. Flipping
+   `WaylandEnable=false` on this guest would break the greeter (no X server binary and no
+   X session launcher), which is why the config change was **not** made.
+8. Source tree: `http://dl.rockylinux.org/pub/rocky/10.2/AppStream/source/tree/`
+   `repomd.xml` -> primary.xml.gz (fetched 13:00 UTC, 564800 B) contains exactly one
+   `xorg-x11-server*` package name: `xorg-x11-server-Xwayland`. Building from an
+   RHEL-10 SRPM is also impossible.
+
+External confirmation (RHEL 10 release notes / deprecation list) was not obtained
+(docs.redhat.com returned 403 from this host); the in-guest evidence 1–8 stands on its
+own.
+
+**New fact for 2c-2 (attempt 8 under-recorded):** the Cinnamon install added
+`/usr/share/wayland-sessions/cinnamon-wayland.desktop` (owner `cinnamon-6.7.4-1.el10`):
+`Name=Cinnamon (Wayland)`, `Exec=cinnamon-session-cinnamon --wayland`. The Wayland
+greeter's session menu now offers GNOME (Wayland) plus Cinnamon in two entries (Wayland
+and the X11 entry from `/usr/share/xsessions/cinnamon.desktop`). The Cinnamon Wayland
+session (muffin 6.7, experimental) is potentially launchable on this guest — relevant to
+the re-scope below.
+
+**State left (as found at end of attempt 8):** GDM active; greeter session `c1` on
+seat0/tty1, Type=wayland, State=active, Timestamp=2026-08-26 15:18:04 UTC (boot; running
+continuously since boot — the `loginctl list-sessions` "11h ago" column is a display
+artifact, `show-session` properties are authoritative); `rpm -q xorg-x11-server-Xorg`
+-> not installed; `/etc/gdm/custom.conf` unmodified (`#WaylandEnable=false` still
+commented; the pre-edit backup made at 12:35 UTC was md5-identical `48e4c1ca7d728f4180d2abf8791bd14a`
+and was deleted); no dnf transactions from this attempt; ssh OK; guest running under
+libvirt.
+
+**Revert:** nothing to revert — no persistent guest change was made (the temporary
+`/etc/gdm/custom.conf.bak-2c1` was deleted; the original file is untouched). Any later
+dispatch that does make changes must define its own revert.
+
+**Alternatives considered:**
+
+- **A. Install Xorg from Rocky 10.2 repos + `WaylandEnable=false` (dispatch as written):
+  closed.** Evidence items 1–8.
+- **B. Mix Fedora Xorg RPMs into the guest: rejected.** An X 21.x server pulls a
+  mismatched libX11/mesa/wayland/libinput set against the RHEL 10 userland; fragile and
+  unsupported, and it would be a *less* faithful reproduction — the user's failure report
+  is on Rocky Linux 10.2, where the stock greeter is likewise Wayland-only (RHEL 10 ships
+  no X server, per items 1–8).
+- **C. Re-provision a RHEL 9 / Rocky 9 guest: rejected.** Violates the no-re-provisioning
+  constraint (attempt 7 landmine, `provision-vm.sh:163` clobbers the disk under the same
+  name), destroys the attempts 5/6/8 guest state (Cinnamon install, harness, evidence),
+  and diverges from the user's Rocky 10.2 environment.
+- **D. Re-scope 2c to the Wayland greeter (attempt 7's second option): recommended.** The
+  harness already has pyatspi2 a11y access to this greeter (attempt 7 evidence
+  `/root/evidence/greeter-ui-tree.log` captured its a11y tree, "Login code:" prompt
+  present) and a uinput raw-input driver (`ukey`) whose events reach the Wayland greeter
+  through kernel input (attempts 5/7 already drove this greeter). 2c-2 would drive the
+  greeter's session menu (Cinnamon entries now present, see new fact above) instead of
+  the X11-only Ctrl+Alt+Down shortcut. The failure mode being reproduced ("Authentication
+  Error") is a PAM failure in the greeter's auth stage, which is display-protocol
+  independent (inference, well-grounded: gdm auth runs in the greeter process for both
+  backends).
+
+**Decision requested (Robotnik):** approve re-scoping 2c-2 to the Wayland greeter
+(option D) or direct otherwise (options B/C carry the stated costs). No guest work is
+blocked on the decision; the guest is stable for either path.
 
 ---
 
