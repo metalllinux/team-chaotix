@@ -23,13 +23,17 @@ The decisive ~201k cold-prefill repro on a fresh chip: **FAILED — rc=52, 0→1
 1760 s (29.3 min)** (`/tmp/run_end_repro201k_auto.txt`): a single ~201k prefill at the 120 W
 cap is itself the trigger; no accumulated stress needed. The session then died in the wedge
 burst (10:46:26 + 10:46:39 UTC, both "recovered through reset"); the "Staged, awaiting user
-approval" section was never filled (still "none yet"). **Operational note: llama-server is now
-a manual process** (unit `llama-server-qwen3.8-27b-q4.service` inactive; pid 13071 since
-10:41 UTC) — a wedge kills it and **nothing restarts it**; the recovery command of record is
-in checkpoint 3.2. `Robotnik` decision (recorded): the team operates in the **safe regime** —
-small-context dispatches; the 2a/2b delta-prompt regime ran 4.5 h with zero in-window wedges,
-and the cascade is only lethal when a session's context approaches ~200k. Restart/reboot-level
-options await the user's decision.
+approval" section was never filled (still "none yet"). **Operational note (corrected
+2026-08-27 12:13 UTC): llama-server is NOT a manual process.**
+`llama-server-qwen3.8-27b-q4.service` exists as a **user-level** unit (`~/.config/systemd/user/`;
+the earlier `systemctl` checks ran system-level and saw nothing): **enabled, active, running**,
+parent of pid 13071. Auto-restart demonstrated: pid 1852 → 13071 within ~5 s at 10:41 UTC, and
+~11 s restarts on the previous boot. The checkpoint 3.2 "manual process / nothing restarts it"
+claim (and this entry's amplification of it) is withdrawn. **User decision (2026-08-27 12:13
+UTC): accept the wedge risk; the enabled user-level unit stays as-is (no re-enable needed); no
+kernel-upgrade window.** `Robotnik` decision (recorded): the team operates in the **safe
+regime** — small-context dispatches; the 2a/2b delta-prompt regime ran 4.5 h with zero
+in-window wedges, and the cascade is only lethal when a session's context approaches ~200k.
 
 **Now (2026-08-27 02:45 UTC): Q4 wedges too — 5 events since the 2026-08-26 12:25 UTC boot;
 the TASK-0008 2c dispatch died to one at 02:33 UTC.** Kernel journal shows 5 `device wedged`
@@ -164,12 +168,14 @@ the PM reads.*
       exhausted, `auto` kept, `low` rejected with numbers (3.3/3.4); 201k repro executed on a
       fresh chip: wedged at 29.3 min (end marker on EVO-X2). Session died in the 10:46 UTC
       wedge burst; staged options NOT written (section still "none yet").
-- [ ] `Robotnik`: user decision on the remaining options (accept risk / re-enable the systemd
-      unit / kernel-upgrade window); record the decision in `## Status`.
-- [ ] `Tails` (only if the user picks a kernel-upgrade window): research + stage the exact
-      commands and revert under "Staged, awaiting user approval" (research-only, nothing
-      executes).
-- [ ] `Shadow` → `Omega`: review the applied/staged changes once Tails checkpoints them.
+- [x] `Robotnik` (2026-08-27 12:13 UTC): user decision recorded (accept risk; the unit is
+      already enabled user-level — nothing to re-enable; no kernel-upgrade window); the
+      unit-management misread is corrected (record: `## Status`).
+- [ ] `Tails`: update `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md` with the
+      Q4 findings (characterization, exhausted runtime surface, 201k fresh-chip repro, user
+      decision) — short dispatch after the TASK-0008 2c chain.
+- [ ] `Shadow` → `Omega`: review the record (machine changes applied: none — all sysfs
+      reverted to `auto`; unit untouched).
 - [ ] `Tails` (attempt 2, dispatched 2026-08-25 10:25 UTC): on EVO-X2 (`ssh
       howard@192.168.1.106`), resume from the last checkpoint (do not redo it). First action:
       pull the kernel-journal wedge timestamps with surrounding context and write that
