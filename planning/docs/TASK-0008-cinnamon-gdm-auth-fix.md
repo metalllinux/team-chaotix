@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-27 19:09 UTC): 2c-2 session lost at 18:42:04 UTC (third wedge in an hour);
+Wayland harness adaptation checkpointed as `456ce71`.** The 2c-2 session ran ~5 h (~13:4x–
+18:42 UTC), survived two wedges (17:41:22, 18:11:38 — the user-level unit auto-restarted
+llama-server in seconds and opencode retried), and died on the third (18:42:04, "Connection
+reset by server"; 5 wedges since the 08:01 UTC boot). Progress: Wayland harness adaptation in
+`tasks/lib/gdm-a11y.py`, `tasks/lib/gdm-drive.sh`, `vm-test/test-gdm-login.sh` (173 lines
+added) — uncommitted at death; `Robotnik` committed + pushed it as `456ce71` on
+`origin/task-0008-gdm-auth`. No doc checkpoint written (died first). Lesson reinforcing the
+safe-regime rule: the 5 h run kept the GPU under sustained load and accumulated stress (3
+wedges in its final hour); 2c-2b must finish inside ~60 min.
+
 **Now (2026-08-27 13:38 UTC): 2c-1 blocked as specified — RHEL 10 does not ship Xorg;
 decision: re-scope 2c-2 to the Wayland greeter (option D).** `Tails` completed 2c-1 with the
 full evidence chain (checkpoint `### Item 2 — 2c-1`): `xorg-x11-server-Xorg` exists in no
@@ -366,13 +377,18 @@ the PM reads.*
 - [x] `Robotnik` (2026-08-27 13:38 UTC): 2c-1 blocker resolved — option D approved: 2c-2
       tests the Wayland greeter (record: Status; the plan decision doc's X11 premise is
       disproven by in-guest evidence).
-- [ ] `Tails` (item 2c-2, Wayland re-scope, dispatched 2026-08-27): adapt the harness for
-      the Wayland greeter (session selection via the greeter menu; the pyatspi2/ukey drivers
-      in `tasks/lib/` are display-protocol independent) and run the login flow with
-      `gdmtest`, selecting the `cinnamon-wayland.desktop` session. Success: the Cinnamon
-      session starts. Failure: capture the PAM/greeter evidence (that is the
-      Authentication-Error reproduction). Evidence in the guest `/root/evidence/`;
-      checkpoint `### Item 2 — 2c-2`.
+- [x] `Tails` (item 2c-2, dispatched 2026-08-27 ~13:4x UTC): ran ~5 h, survived two wedges
+      (17:41:22, 18:11:38 UTC), died on the third (18:42:04; record: Status). Progress:
+      Wayland harness adaptation in `tasks/lib/gdm-a11y.py`, `tasks/lib/gdm-drive.sh`,
+      `vm-test/test-gdm-login.sh` (173 lines added), no doc checkpoint; committed + pushed
+      by Robotnik as `456ce71`.
+- [ ] `Tails` (item 2c-2b, dispatched 2026-08-27): resume from `456ce71` (Wayland harness
+      adaptation in progress). Read only `## Status`, `## Next Actions`, and the `### Item 2 —
+      2c-1` section. Finish the adaptation, run the login flow with `gdmtest` selecting
+      `cinnamon-wayland.desktop`, record success (session active) or failure (PAM/greeter
+      evidence = the Authentication-Error reproduction) in the guest `/root/evidence/`, and
+      write checkpoint `### Item 2 — 2c-2`. **Finish inside ~60 min** (safe regime: the 5 h
+      2c-2 run accumulated 3 wedges in its final hour). End with a non-empty final message.
 - [ ] `Tails` (item 2c-3, after 2c-2): write the `### Item 2` completion in `##
       Implementation` + a completion entry here; commit + push harness fixes to
       `task-0008-gdm-auth`.
