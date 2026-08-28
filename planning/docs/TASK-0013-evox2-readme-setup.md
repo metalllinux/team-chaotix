@@ -20,9 +20,12 @@ guidance. `Vector` turn complete 2026-08-28: section written (new `## EVO-X2 mod
 README lines ~398-601, plus a cross-reference sentence in `## Model`), `## Docs` filled, unverified
 items marked (unit file beyond `ExecStart`, live firewalld state, ryzenadj purpose, binary
 provenance — all settle via `ssh howard@192.168.1.106`, which Vector's loaded bash set blocks;
-see TASK-0014). Pending in this session: Shadow → Omega review of the README section, then
-`Knuckles` commits + pushes the uncommitted work and verifies remote HEAD. The ssh verification
-channel opens for `Vector` after the next opencode restart.
+see TASK-0014). The uncommitted work was shipped by Tails on the TASK-0014 turn in commit
+`9e1f0c9` (mixed-scope commit, stated in the message), pushed to main; verification in
+`ad9632c`, local HEAD == remote main. Pending: Shadow → Omega review of the README section
+against the pushed state; if findings need a fix, Tails fixes + pushes, then `Knuckles` verifies
+the DONE checklist and records `## Release`. The ssh verification channel opens for `Vector`
+after the next opencode restart.
 
 **Environment / scope:**
 - Files in scope: `README.md` (team-chaotix repo, `/home/howard/AI/projects/team-chaotix/`)
@@ -102,9 +105,9 @@ the PM reads.*
 - [ ] `Omega` (after Shadow): security pass on the same section — no credentials or tokens in
       the README, firewall guidance least-privilege, documented commands safe to copy. Findings
       to `## Security`.
-- [ ] `Knuckles` (after both reviews clean, or findings fixed): commit + push the uncommitted
-      `README.md` + this planning doc to main, verify local HEAD == remote HEAD with
-      `git ls-remote`, record in `## Release`.
+- [ ] `Knuckles` (after both reviews clean, or after the fix commit if findings required one):
+      work already shipped as `9e1f0c9`; verify the DONE checklist, confirm local HEAD == remote
+      HEAD with `git ls-remote`, record in `## Release`.
 
 ---
 

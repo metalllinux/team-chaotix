@@ -31,7 +31,7 @@ Robotnik (PM) ── delegates to ──┬── Amy (Task Planner)
 | **Shadow (Reviewer)** | Code quality and correctness review | all | Read-only code, writes Review section, linters, git inspection |
 | **Omega (Security)** | Attack surface analysis, secrets, license compliance | subagent | Read-only code, writes Security section, gitleaks, trufflehog |
 | **Amy (Task Planner)** | Planning docs, decision docs, CI/CD strategy | subagent | Read/write docs, read-only bash |
-| **Vector (Documentation)** | README, changelog, user-facing content | subagent | Read/write docs, git read + add/commit/push/ls-remote, ssh to 192.168.1.106 |
+| **Vector (Documentation)** | README, changelog, user-facing content | subagent | Read/write docs, git read + add + commit -m + push origin main + ls-remote, exact ssh verification commands to 192.168.1.106 |
 | **Espio (Context Curator)** | Planning doc pruning and context hygiene | subagent | File operations only, no bash |
 | **Knuckles (Release Manager)** | Releases, PRs, branching, deployment | subagent | Full bash for git operations |
 

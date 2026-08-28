@@ -19,10 +19,14 @@ permission:
   bash:
     "*": deny
     "git add*": allow
-    "git commit*": allow
-    "git push*": allow
-    "git ls-remote*": allow
-    "ssh howard@192.168.1.106*": allow
+    "git commit -m*": allow
+    "git push origin main": allow
+    "git push -u origin main": allow
+    "git ls-remote": allow
+    "git ls-remote origin*": allow
+    "ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'": allow
+    "ssh howard@192.168.1.106 'sudo firewall-cmd --list-all'": allow
+    "ssh howard@192.168.1.106 'systemctl cat ryzenadj.service'": allow
     "git diff*": allow
     "git log*": allow
     "git status": allow
