@@ -12,6 +12,21 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-28 02:13 UTC): 2c-3 session lost to the context hard limit (263,315 > 262,144
+tokens) after ~5 h; progress checkpointed as `097702e`; the time bound was not self-enforced.**
+Session ran ~21:0x (Aug 27) → 02:07:19 UTC, 91+ steps; the fatal request followed a 21-min
+command (01:46→02:07 UTC). No new GPU wedges during the run (count stable at 5 since the
+08:01 UTC boot) — this death is a context overflow, compaction off. Progress: textofext probe +
+caps pre-pass work + ukey updates (388 lines added) in `tasks/lib/gdm-a11y.py`,
+`tasks/lib/gdm-drive.sh`, `tasks/lib/ukey.c`; uncommitted at death; `Robotnik` committed +
+pushed as `097702e`. **Structural lesson: subagents cannot self-enforce wall-clock bounds**
+(the ~90-min bound / 70-min stop instruction was not honored; the model has no time sense),
+and unbounded command output (a11y tree dumps) is what grows the context to the wall. 2c-3b
+safeguards: (a) every command output truncated before it enters context (`tail -c 2000`; the
+a11y probe returns only the targeted readback, never a tree dump), (b) a prescribed minimal
+step sequence with a hard stop after two failures of any step, (c) explicit `date -u`
+bookkeeping — record the start, re-check after every VM command, stop + checkpoint at 80 min.
+
 **Now (2026-08-27 19:09 UTC): 2c-2 session lost at 18:42:04 UTC (third wedge in an hour);
 Wayland harness adaptation checkpointed as `456ce71`.** The 2c-2 session ran ~5 h (~13:4x–
 18:42 UTC), survived two wedges (17:41:22, 18:11:38 — the user-level unit auto-restarted
@@ -389,6 +404,19 @@ the PM reads.*
       guest `/root/evidence/cinnamon-attempt-2c2b/`; checkpoint `### Item 2 — 2c-2`.
       (Ran ~82 min vs the ~60 min bound; the time-bound deviation is recorded in the
       checkpoint.)
+- [x] `Tails` (item 2c-3, dispatched 2026-08-27 ~21:0x UTC): ran 91+ steps to 02:07:19 UTC,
+      died on a 263,315-token request (context hard limit; record: Status). No new wedges.
+      Progress: textofext probe + caps pre-pass + ukey updates (388 lines), no doc checkpoint;
+      committed + pushed by Robotnik as `097702e`.
+- [ ] `Tails` (item 2c-3b, dispatched 2026-08-28): resume from `097702e` + the `### Item 2 —
+      2c-2` "For 2c-3" note. Read only `## Status`, `## Next Actions`, and the `### Item 2 —
+      2c-2` section. Prescribed sequence: (1) `date -u` start; (2) verify/finish the textofext
+      probe + caps pre-pass against the VM; (3) ONE login run with `gdmtest` selecting Cinnamon
+      (Wayland) — PASS = session active (loginctl), FAIL = capture PAM evidence; (4) checkpoint
+      `### Item 2 — 2c-3` + commit + push. Every command output truncated before it enters the
+      context (`tail -c 2000`; the a11y probe returns only the targeted readback, never a tree
+      dump); `date -u` after each VM command; **stop immediately with checkpoint + summary if
+      elapsed > 80 min or any step fails twice**. End with a non-empty final message.
 - [ ] `Tails` (item 2c-3, after 2c-2): per the 2c-2 checkpoint's "For 2c-3": add
       `gdm-a11y.py textofext`, add the probe-typed caps pre-pass to `gdm_login`, re-run
       the flow (PASS closes the input-layer suspect; a second FAIL with a verified
