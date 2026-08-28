@@ -12,6 +12,19 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-28 05:41 UTC): item 2 complete — 2c-3b PASS; the Authentication Error
+root-caused to the harness, not to Cinnamon.** 2c-3b (02:21–03:21 UTC, VM work 43 min, all
+safeguards held): `gdmtest` logged in and Cinnamon (Wayland) session 512 is active (loginctl +
+process verified), zero new PAM failures. The 2c-2 failures are explained by the `ukey.c`
+keycode corruption — the old `KEY_A + (c - 'a')` mapping mistypes every letter except `a`
+(Linux keycode space is non-contiguous: a=30…l=38, z=44, x=45, c=46, v=47, b=48); the 2c-2
+caps-lock theory was a red herring (record: checkpoint `### Item 2 — 2c-3`). With a correct
+input layer the VM does **not** reproduce the user's failure; no RPM fix is indicated by VM
+evidence. Consequence (plan risk R2): the fix path (items 4–6) is gated on the user's
+real-machine logs (`journalctl -u gdm`, `/var/log/secure`), requested from the user this
+session. Meanwhile the chain proceeds with 9a (Tails, Sparrow suite) and Amy (TASK-0009 plan),
+both independent of the fix path.
+
 **Now (2026-08-28 02:13 UTC): 2c-3 session lost to the context hard limit (263,315 > 262,144
 tokens) after ~5 h; progress checkpointed as `097702e`; the time bound was not self-enforced.**
 Session ran ~21:0x (Aug 27) → 02:07:19 UTC, 91+ steps; the fatal request followed a 21-min
@@ -420,6 +433,15 @@ the PM reads.*
       record: checkpoint `### Item 2 — 2c-3`. The checkpoint's consequence note
       (VM no longer reproduces the user's failure; route on the user's machine logs
       per plan risk R2) awaits `Robotnik`'s call on the next dispatch.
+- [x] `Robotnik` (2026-08-28 05:41 UTC): 2c-3b PASS recorded (Status); item 2 (harness)
+      complete. Fix path (items 4–6) gated on the user's real-machine logs (plan risk R2);
+      requested. Meanwhile: 9a and Amy (TASK-0009 plan) dispatch — both independent of the fix
+      path.
+- [ ] `Tails` (item 9a, dispatched 2026-08-28): the Sparrow (Raku) task suite for the GDM
+      login scenario per the item 9a row in `## Plan` (grep the row; do not read the doc in
+      full); checkpoint `### Item 9a` in `## Implementation`.
+- [ ] `Robotnik`: after 9a, Amy (TASK-0009 plan); the fix path (4 → 5 → 6) waits on the
+      user's logs; then Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 - [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
       (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
