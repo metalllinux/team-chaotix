@@ -31,7 +31,7 @@ Robotnik (PM) ── delegates to ──┬── Amy (Task Planner)
 | **Shadow (Reviewer)** | Code quality and correctness review | all | Read-only code, writes Review section, linters, git inspection |
 | **Omega (Security)** | Attack surface analysis, secrets, license compliance | subagent | Read-only code, writes Security section, gitleaks, trufflehog |
 | **Amy (Task Planner)** | Planning docs, decision docs, CI/CD strategy | subagent | Read/write docs, read-only bash |
-| **Vector (Documentation)** | README, changelog, user-facing content | subagent | Read/write docs, read-only git |
+| **Vector (Documentation)** | README, changelog, user-facing content | subagent | Read/write docs, git read + add/commit/push/ls-remote, ssh to 192.168.1.106 |
 | **Espio (Context Curator)** | Planning doc pruning and context hygiene | subagent | File operations only, no bash |
 | **Knuckles (Release Manager)** | Releases, PRs, branching, deployment | subagent | Full bash for git operations |
 
@@ -392,7 +392,212 @@ maintain independent working directories.
 
 All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 1`).
 The endpoint has a single inference slot, so exactly one agent runs at a time and every dispatch
-is strictly sequential.
+is strictly sequential. The machine that serves this endpoint, a GMKtec EVO-X2, is documented in
+the EVO-X2 model host setup section below.
+
+## EVO-X2 model host setup
+
+The agents run on `Qwen3.8-27B-UD-Q4_K_XL`, which a dedicated GMKtec EVO-X2 at 192.168.1.106
+serves through llama.cpp. This section documents the reference setup. Every value below is
+verified against the reference machine or the team's records of it.
+
+### Hardware and software
+
+The reference machine is a GMKtec EVO-X2 with an AMD Ryzen AI MAX+ 395 (Strix Halo) and the
+integrated Radeon 8060S GPU (gfx1151). It has 92 GB of unified memory, roughly 91 GB of which
+is visible to the Vulkan device. The model runs with all layers on that iGPU.
+
+| Component | Reference value |
+|---|---|
+| OS | Rocky Linux 10.2 |
+| Kernel | `7.0.12-1.el10.elrepo.x86_64`. The stock `6.12.0-211.49.1.el10_2` carries an older amdgpu driver and is not used |
+| llama.cpp | Vulkan build at `/usr/local/bin/llama-server`, version 9671 (commit `c1304d7b2`), built with GNU 14.3.1 |
+| Firewall | firewalld |
+| Model download | `hf` CLI (`pip install huggingface_hub`) |
+
+The team artifacts do not record whether this binary is an upstream release or a local build.
+The version and commit are the working identifier.
+
+### Model files
+
+The model lives in `/mnt/data/models/qwen3.8-27b-q4/` with two files.
+
+| File | Role |
+|---|---|
+| `Qwen3.8-27B-UD-Q4_K_XL.gguf` | the 27B model, UD-Q4_K_XL quantization |
+| `mmproj-F16.gguf` | the vision projector |
+
+Both come from the Hugging Face repo `unsloth/Qwen3.8-27B-GGUF`. The team's `add-ai-model`
+skill (`~/.config/opencode/skills/add-ai-model/SKILL.md`) is the standing procedure for adding
+models to this box. For this model the download is
+
+```bash
+mkdir -p /mnt/data/models/qwen3.8-27b-q4
+cd /mnt/data/models/qwen3.8-27b-q4
+
+# Weights first, then the vision projector
+hf download unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q4_K_XL.gguf --local-dir .
+hf download unsloth/Qwen3.8-27B-GGUF mmproj-F16.gguf --local-dir .
+```
+
+Verify the result by file size and the GGUF magic header. The first line of `xxd` should start
+with `4747 5546`.
+
+Model endpoints on this box take ports in the 8080-8099 range, and this endpoint takes 8092.
+The reference machine also serves the sibling quantizations on 8080-8088 and 8090.
+
+### The systemd unit
+
+The server runs under a user-level systemd unit, not a system one. Inspect it with
+`systemctl --user`, because bare `systemctl` sees nothing. The wedge investigation in TASK-0010
+wasted time on exactly that mixup.
+
+The file is `~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service`.
+
+```ini
+[Unit]
+Description=Llama server for Qwen3.8-27B-UD-Q4_K_XL
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+LimitMEMLOCK=infinity
+ExecStart=/usr/local/bin/llama-server --model /mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf --mmproj /mnt/data/models/qwen3.8-27b-q4/mmproj-F16.gguf --alias Qwen3.8-27B-UD-Q4_K_XL --host 0.0.0.0 --port 8092 --n-gpu-layers 99 -fa on --parallel 1 -t 32 -tb 32 -ub 2048 -ctk q8_0 -ctv q8_0 --mlock -c 262144
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+The `ExecStart` line is the one verified on the live process (TASK-0010 record). The remaining
+lines match the team's standard unit template in the `add-ai-model` skill.
+
+The flags worth knowing. `--n-gpu-layers 99` pins every layer to the iGPU. `-fa on` turns on
+flash attention, which the quantized KV cache (`-ctk q8_0 -ctv q8_0`) requires at startup.
+`--mlock` pins the weights in RAM. `--parallel 1` serves a single 262144-token slot, which is
+the measured ceiling on this hardware. With four slots the llama.cpp fit step silently degrades
+the context to 4 x 65536 per slot instead of failing (measured on the sibling Q5 model), so
+check the effective context in the startup log (`new slot, n_ctx = 262144`) or in `/v1/models`
+rather than trusting the command line.
+
+The `add-ai-model` skill defaults its template to `--parallel 4` and warns that one slot queues
+every client behind a single generation. That warning is real. A 2026-08-21 fan-out died on
+request timeouts against a one-slot endpoint. The reference machine takes the trade anyway,
+because only one full-context slot fits and the team's dispatch is strictly sequential (see
+Model).
+
+The unit is enabled at the user level, and the reference machine has come back up under it
+after host reboots. On any crash, including a GPU wedge, `Restart=on-failure` brings it back
+after `RestartSec=5`. The measured restart after a wedge is about 5-11 seconds, most of it the
+model reload.
+
+On a fresh setup, enable the unit with
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now llama-server-qwen3.8-27b-q4.service
+systemctl --user status llama-server-qwen3.8-27b-q4.service
+```
+
+Run one active model at a time. A sibling 27B endpoint held about 40 GB of the 92 GB pool while
+running (measured), so when a different quantization becomes the team's endpoint, stop and
+disable the other `llama-server-*.service` user units.
+
+### Firewall
+
+```bash
+sudo firewall-cmd --zone=public --add-port=8092/tcp --permanent
+sudo firewall-cmd --reload
+sudo firewall-cmd --list-all
+```
+
+The reference machine runs firewalld with the `public` zone on `eno1`. The verified open ports
+include 8092/tcp for this endpoint plus 8080-8088 and 8090 for the sibling endpoints, and the
+enabled services are cockpit, dhcpv6-client, and ssh.
+
+### The opencode client
+
+The provider entry in `~/.config/opencode/opencode.json`, verified on the reference workstation.
+
+```json
+"evo-x2-qwen3.8-q4": {
+  "npm": "@ai-sdk/openai-compatible",
+  "name": "EVO-X2 Qwen3.8-27B-UD-Q4_K_XL (llama.cpp)",
+  "options": {
+    "baseURL": "http://192.168.1.106:8092/v1",
+    "timeout": 3600000
+  },
+  "models": {
+    "Qwen3.8-27B-UD-Q4_K_XL": {
+      "name": "Qwen3.8-27B-UD-Q4_K_XL (EVO-X2)",
+      "limit": {
+        "context": 262144,
+        "output": 131072
+      }
+    }
+  }
+}
+```
+
+The model id must match the unit's `--alias`. The one-hour request timeout is the team standard
+for large models.
+
+### The GPU wedge
+
+The Strix Halo iGPU wedges under sustained compute load. The kernel journal reports
+`amdgpu ... ring comp_1.x.0 timeout ... device wedged, but recovered through reset`, the
+compute-ring reset kills the Vulkan device, llama-server dies, and every in-flight agent
+session is lost, because opencode does not retry the model stream. In early August 2026 the
+reference machine logged 26 wedge events in about two days of Q5 load.
+
+**The trigger.** Sustained full-power load accumulates chip-level stress that a compute-ring
+reset does not clear. In the failing workloads the chip sits at the roughly 120 W package power
+cap with the clock oscillating between 2500 and 2900 MHz, edge temperature drifting from 84 to
+92 C, and zero throttle events. This is operation at the power cap, not thermal throttling. A
+single cold prefill of about 201k tokens wedges even a fresh chip in about 29 minutes. Hours of
+small delta-prompt work (4.5 h measured) produce no in-window wedges, but they do accumulate
+stress.
+
+**The cascade.** A wedge destroys the KV cache. When a session's context is near 200k tokens,
+the retry must cold re-prefill the entire context, which wedges again in 27-29 minutes, and the
+loop repeats until the session dies. That loop, not any single wedge, is what killed the
+TASK-0008 2c dispatch at 02:33 UTC on 2026-08-27.
+
+**What works.** The auto-restarting unit bounds the cost of a single wedge to about 5-11
+seconds of downtime. That is the 5-second restart delay plus the roughly 5.1-second model
+reload, and the reload is fast because `--mlock` keeps the weights in RAM and the model store
+is NVMe-backed. Keeping requests and session sizes moderate keeps the retry after any wedge
+small enough to survive, which is why the team operates in the safe regime of small-context
+dispatches. The wedge count is checked before and after runs with the command below. A delta
+plus a dead session means a wedge took the session.
+
+```bash
+ssh howard@192.168.1.106 'journalctl -k --no-pager | grep -cE "device wedged"'
+```
+
+**What does not work.** The runtime sysfs surface is exhausted on the elrepo 7.0.12 driver
+build. The performance level file accepts only auto, low, high, and manual (medium is
+rejected), manual mode rejects every clock write, there is no hwmon power cap entry, and the
+`ppfeaturemask` file does not exist. No knob cuts sustained power while holding speed within
+20%. Pinning `low` (600 MHz) measured about 4.5x slower overall (prefill 55.5 vs 255.8 t/s,
+decode 2.83 vs 11.87 t/s) and was rejected, because the whole team runs on this endpoint. The
+standing decision is to keep `auto`.
+
+**The context window was not reduced.** The unit still requests `-c 262144` and the endpoint
+serves it. Wedge avoidance is the auto-restarting unit, `--mlock`, moderate request and
+session sizes, and the monitoring command above. The user decision of 2026-08-27 12:13 UTC
+accepts the residual risk, leaves the enabled unit as is, and rules out a kernel upgrade
+window.
+
+### Verification after setup
+
+1. `systemctl --user status llama-server-qwen3.8-27b-q4.service` shows active and enabled.
+2. `curl http://192.168.1.106:8092/v1/models` returns the model with `n_ctx` 262144. Poll it,
+   because the list is empty during the roughly 12-second load window after each (re)start.
+3. The startup log shows `new slot, n_ctx = 262144` with no `n_ctx_seq` warning.
+4. `sudo firewall-cmd --list-all` lists 8092/tcp in the public zone.
 
 ## Updating the team
 

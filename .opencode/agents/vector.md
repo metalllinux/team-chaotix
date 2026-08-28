@@ -18,6 +18,11 @@ permission:
   todowrite: allow
   bash:
     "*": deny
+    "git add*": allow
+    "git commit*": allow
+    "git push*": allow
+    "git ls-remote*": allow
+    "ssh howard@192.168.1.106*": allow
     "git diff*": allow
     "git log*": allow
     "git status": allow
