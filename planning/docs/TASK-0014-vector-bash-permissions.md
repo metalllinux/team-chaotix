@@ -255,8 +255,16 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 - `git ls-remote origin main` after the push, actual output:
   `15f6c29313e139d08676c309204cf104db778834	refs/heads/main`.
   Local HEAD (`git rev-parse HEAD`) `15f6c29313e139d08676c309204cf104db778834` == remote HEAD. PASS.
-- This follow-up commit records the above; its own push + `git ls-remote` output line are recorded
-  in the next follow-up commit.
+- Follow-up commit 1 (planning doc only, +9): `152a068` (full
+  `152a068a6cbb4ea1956f0e470b3a718ee248d990`), pushed with `git push origin main` →
+  `15f6c29..152a068  main -> main`.
+- `git ls-remote origin main` after that push, actual output:
+  `152a068a6cbb4ea1956f0e470b3a718ee248d990	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `152a068a6cbb4ea1956f0e470b3a718ee248d990` == remote HEAD. PASS.
+- After this follow-up commit's push, local HEAD == remote HEAD is re-verified with
+  `git ls-remote origin main` against this commit's sha; the output line for that final state is
+  quoted in `## Release` when Knuckles re-verifies (Next Actions item; the resolution path Shadow
+  named in round 1 for the missing-output nit).
 
 ---
 
