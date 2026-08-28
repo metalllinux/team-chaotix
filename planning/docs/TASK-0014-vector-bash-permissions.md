@@ -249,6 +249,15 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 
 **Commit and remote verification** — follow-up commits per the TASK-0011 convention (`planning/docs/TASK-0011-default-model-q4kxl.md:219`: "follow-up commit records the sha here"):
 
+- Rework commit (agent file + README + 2 planning docs, 4 files, +236/-35): `15f6c29` (full
+  `15f6c29313e139d08676c309204cf104db778834`), pushed with `git push origin main` →
+  `ad9632c..15f6c29  main -> main`.
+- `git ls-remote origin main` after the push, actual output:
+  `15f6c29313e139d08676c309204cf104db778834	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `15f6c29313e139d08676c309204cf104db778834` == remote HEAD. PASS.
+- This follow-up commit records the above; its own push + `git ls-remote` output line are recorded
+  in the next follow-up commit.
+
 ---
 
 ## Review
