@@ -154,8 +154,13 @@ No other file in `.opencode/agents/` was touched. `git status --short` after the
 
 **Commit and remote verification** — recorded in the follow-up commit, per the TASK-0011 convention (`planning/docs/TASK-0011-default-model-q4kxl.md:219`: "follow-up commit records the sha here"):
 
-- Commit 1 (agent file + README + planning docs): sha pending below.
-- `git ls-remote` verification of local HEAD == remote HEAD: pending below.
+- Commit 1 (agent file + README + planning docs, 5 files, +531/-17): `9e1f0c9` (full
+  `9e1f0c91579a3f9b17ec5c490041b2bb4146e3ae`), pushed with
+  `git push origin main` → `d476221..9e1f0c9  main -> main`.
+- `git ls-remote origin main` after the push: `9e1f0c91579a3f9b17ec5c490041b2bb4146e3ae refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `9e1f0c91579a3f9b17ec5c490041b2bb4146e3ae` == remote HEAD. PASS.
+- This follow-up commit records the above; after its push, local HEAD == remote HEAD is re-verified
+  by `git ls-remote origin main` against the follow-up sha.
 
 ---
 
