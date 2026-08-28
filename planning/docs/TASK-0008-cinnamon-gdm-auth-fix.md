@@ -408,21 +408,18 @@ the PM reads.*
       died on a 263,315-token request (context hard limit; record: Status). No new wedges.
       Progress: textofext probe + caps pre-pass + ukey updates (388 lines), no doc checkpoint;
       committed + pushed by Robotnik as `097702e`.
-- [ ] `Tails` (item 2c-3b, dispatched 2026-08-28): resume from `097702e` + the `### Item 2 —
-      2c-2` "For 2c-3" note. Read only `## Status`, `## Next Actions`, and the `### Item 2 —
-      2c-2` section. Prescribed sequence: (1) `date -u` start; (2) verify/finish the textofext
-      probe + caps pre-pass against the VM; (3) ONE login run with `gdmtest` selecting Cinnamon
-      (Wayland) — PASS = session active (loginctl), FAIL = capture PAM evidence; (4) checkpoint
-      `### Item 2 — 2c-3` + commit + push. Every command output truncated before it enters the
-      context (`tail -c 2000`; the a11y probe returns only the targeted readback, never a tree
-      dump); `date -u` after each VM command; **stop immediately with checkpoint + summary if
-      elapsed > 80 min or any step fails twice**. End with a non-empty final message.
-- [ ] `Tails` (item 2c-3, after 2c-2): per the 2c-2 checkpoint's "For 2c-3": add
-      `gdm-a11y.py textofext`, add the probe-typed caps pre-pass to `gdm_login`, re-run
-      the flow (PASS closes the input-layer suspect; a second FAIL with a verified
-      lowercase password promotes the PAM hypotheses H1–H4); then write the `### Item 2`
-      completion in `## Implementation` + a completion entry here; commit + push harness
-      fixes to `task-0008-gdm-auth`.
+- [x] `Tails` (item 2c-3b, dispatched 2026-08-28): **complete 2026-08-28 ~03:05 UTC,
+      PASS** — Cinnamon (Wayland) session 512 active for gdmtest (loginctl + process
+      verified), zero new PAM failures; the Authentication Error root-caused to the
+      harness `ukey.c` keycode corruption (letters non-contiguous in keycode space),
+      not the Cinnamon RPMs; ~43 min, all safeguards held; record: checkpoint
+      `### Item 2 — 2c-3`.
+- [x] `Tails` (item 2c-3, after 2c-2): complete via 2c-3b — textofext probe +
+      probe-typed caps pre-pass + ukey fix committed at `097702e`, re-run PASS (the
+      input-layer suspect is closed; no PAM defect found, so H1–H4 are not promoted);
+      record: checkpoint `### Item 2 — 2c-3`. The checkpoint's consequence note
+      (VM no longer reproduces the user's failure; route on the user's machine logs
+      per plan risk R2) awaits `Robotnik`'s call on the next dispatch.
 - [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
       (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
 
@@ -1660,6 +1657,123 @@ it back, and toggles `Caps_Lock` until the readback is lowercase (max 3);
 re-run the flow. A PASS then closes the input-layer suspect and points the fix
 work at PAM/session launch (H1–H4); a second FAIL with a verified-lowercase
 password promotes the PAM hypotheses.
+
+---
+
+### Item 2 — 2c-3 (item 2c-3b: resume + discrimination run, 2026-08-28, Q4 endpoint)
+
+*Resume dispatch from `097702e` per `## Next Actions` (2026-08-28). Ran
+02:21:31–03:05 UTC (~43 min), inside the 80-min bound. All guest commands over
+ssh (root, `~/.ssh/cinnamon-test-key`) to 192.168.122.15; every command output
+truncated before context entry (`tail -c` ≤ 2000); a11y probes returned only
+targeted readbacks (tree/text dumps went to in-VM evidence files, never to
+context). **Outcome: PASS — the Cinnamon (Wayland) session logged in with the
+correct password (this run 02:45 UTC; a second independent PASS by the dead
+2c-3 session at 01:39:26 UTC), and the greeter Authentication Error is
+root-caused to the harness input driver (`ukey.c`), not to the Cinnamon RPMs.***
+
+**Root cause (found by the dead 2c-3 session via strace + readback, re-verified
+end-to-end by 2c-3b):** `ukey.c` mapped letters as `KEY_A + (c - 'a')`. Letters
+are not contiguous in Linux keycode space (home row a=30…l=38, then bottom row
+z=44, x=45, c=46, v=47, b=48, n=49, m=50), so every letter except `a` was
+mistyped in the greeter: `ukey type abc` sent KEY_A/KEY_S/KEY_D (strace) and
+the a11y Text readback of the username entry showed "asd" for typed "abc".
+With the test password's hex charset (0-9, a-f) the corruption was b→s, e→g,
+f→h — exactly the minimal alteration both 2c-2 `pam_unix` rejections were
+consistent with. 2c-2's caps-lock diagnosis was a misattribution: the caps
+machinery was a red herring (record: `tasks/lib/ukey.c:133-143`, the
+evidence-chain comment; fix at `tasks/lib/ukey.c:145`, `letter_to_key()`).
+The fix, the `textofext` probe (`tasks/lib/gdm-a11y.py:456`), and the
+probe-typed caps pre-pass (`tasks/lib/gdm-drive.sh:381`,
+`gdm_caps_probe_normalize`, wired into `gdm_login` at
+`tasks/lib/gdm-drive.sh:582`) were already committed at `097702e`; 2c-3b
+verified them against the live greeter and ran the login.
+
+**Verification (step 2, 02:42–02:44 UTC):** greeter state confirmed clean
+(face list up, `gdmtest` face visible, no dialog, no gdmtest session, caps
+LED 0). Harness synced from clone `097702e` (scp of `gdm-a11y.py`,
+`gdm-drive.sh`, `ukey.c`); `ukey` rebuilt in the VM (`gcc -O2 -Wall -Wextra`,
+02:41 UTC, no warnings) because the in-VM binary predated the fix and
+`gdm_build_driver` skips when the binary exists. `gdm_caps_probe_normalize
+gdmtest` rc=0: entry @(489,465 302x20), **typed 'abc', readback 'abc'** (the
+pre-fix binary reads back 'asd'), compositor caps verified LOWERCASE by
+readback, 0 toggles, password stage up. `bash -n gdm-drive.sh` and
+`python3 -m py_compile gdm-a11y.py` clean on the host.
+
+**Login run (step 3, t0 = 2026-08-28 02:45:02 UTC):** `gdm_login gdmtest
+/root/gdmtest.pass cinnamon-wayland` rc=0 (pre-pass re-verified lowercase;
+'Login Options' clicked @(1160,744) → 'Cinnamon (Wayland)' @(1162,638);
+password typed; Return). `gdm_wait_session` rc=0: **VERIFIED session 512
+type=wayland state=active proc='cinnamon'**; `loginctl list-sessions`:
+session 512, UID 1000 `gdmtest`, seat0, tty2, class user. Desktop processes
+(`pgrep -u gdmtest -af cinnamon`): `gdm-wayland-session --handle-registration
+cinnamon-session-cinnamon --wayland` (26185), `cinnamon-session-binary
+--session cinnamon-wayland` (26195), `/usr/bin/cinnamon --replace` (26256).
+PAM view: **zero new `authentication failure` lines** in `/var/log/secure`
+(count stayed 2, both the Aug 27 2c-2 attempts at 17:38:01 and 20:30:10) and
+`pam_unix(gdm-password:session): session opened for user gdmtest(uid=1000)`
+at 02:46:25. `pam_unix` does not log auth successes by default on RHEL, so
+no-new-failures + session-opened + active desktop is the success evidence.
+SELinux Permissive. Evidence: VM `/root/evidence/cinnamon-attempt-2c3/`
+(journal-gdm, journal-uid, secure-tail, loginctl-sessions,
+loginctl-session-512, getenforce, sessions-available, a11y-tree, a11y-text).
+
+**Reproducibility:** the dead 2c-3 session had already run this same flow to
+PASS at 01:39:26 UTC (session 498) before dying at 02:07 UTC; its `run.log`
+in the evidence dir records `PHASE_RESULT VERDICT cinnamon login PASS (session
++ cinnamon-session process verified; password verified lowercase by probe
+readback; logged out to greeter)`, and its `01-pre-*`, `04-loginctl-detail.log`,
+`05-post-logout-*` files are from that run (this run's capture appended the
+journal/secure/loginctl/a11y set). Two PASSes, same code, no reboot between.
+
+**VM left as found:** after the run, `loginctl terminate-session 512`; greeter
+back on tty1 (session c4), face list up, `gdmtest` face visible, no gdmtest
+session, caps LED 0, ssh OK, SELinux permissive. No guest reboot, no
+re-provision. Evidence dirs `/root/evidence/cinnamon-attempt-2c2/`,
+`cinnamon-attempt-2c2b/`, `cinnamon-attempt-2c3/` in place.
+
+**What this establishes (hypothesis routing, per the 2c-2 "For 2c-3" note):**
+PASS closes the input-layer suspect — the VM's Authentication Error was a
+harness artifact (`ukey.c` keycode corruption), and the pre-fix Cinnamon RPMs
+do not break GDM Wayland login in this configuration (GDM+GNOME baseline,
+SELinux permissive, live install, no reboot). H1–H4, as explanations of the
+VM failure, are closed with no PAM or packaging defect found. **Consequence
+for the task (AGENTS.md §5, stated plainly):** the user's real failure was
+typed by a human on a real keyboard, so this VM configuration does not
+reproduce it, and no RPM fix is indicated by the VM evidence. The remaining
+discriminating path is the user's own machine logs (plan risk R2: ask the
+user for `journalctl -u gdm` + `/var/log/secure` from the real machine). This
+changes the shape of item 2 from "reproduce, then fix the RPMs" to
+"reproduction not achievable in-VM with a correct input layer; route on the
+user's logs", and is recorded here for `Robotnik` to sequence the next
+dispatch accordingly.
+
+**Changes this run:**
+
+| File | Change | Why |
+|---|---|---|
+| VM `/root/gdm-harness/{gdm-a11y.py,gdm-drive.sh,ukey.c}` | re-synced from clone `097702e` (scp, byte-identical to the committed files) | the committed textofext probe + caps pre-pass + ukey fix had to be in the VM |
+| VM `/root/gdm-harness/ukey` | rebuilt (`gcc -O2 -Wall -Wextra`, 02:41 UTC, no warnings) | the in-VM binary predated the `ukey.c` fix; `gdm_build_driver` skips an existing binary, so the rebuild was manual |
+| VM `/root/evidence/cinnamon-attempt-2c3/` | this run's evidence set appended to the dead session's pre/post files | always-capture per the harness design; the PASS evidence |
+
+**Alternatives considered:** (a) trust the in-VM `ukey` binary (mtime 01:21
+UTC, set by the dead session) without rebuilding — rejected: mtime cannot
+distinguish a pre- from a post-fix build, and the functional readback would
+then have tested an unknown binary; rebuilding from the committed source is
+deterministic and one second. (b) run the login directly from the password
+stage, skipping the pre-pass, to save time — rejected: the committed
+`gdm_login` flow is the flow under test, and the pre-pass is the verification
+that the password is not corrupted; skipping it would have weakened the PASS.
+(c) leave the `gdmtest` session active after the run — rejected: "leave the
+VM as found" means the greeter face list up; `loginctl terminate-session`
+restored it and the greeter came back cleanly (session c4).
+
+**Safeguard compliance:** 80-min bound met with ~37 min to spare (02:21:31 →
+03:05 UTC); no step failed even once (no two-failure stop triggered); every
+command output was truncated before entering context (`tail -c` ≤ 2000 on all
+ssh commands); a11y probes printed only targeted readbacks (the `textofext`
+value, visibility checks as exit codes); no large log was cat'd into context
+(evidence files were grepped in the VM, ≤ 2 lines per grep).
 
 ---
 
