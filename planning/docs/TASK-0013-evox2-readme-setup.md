@@ -606,6 +606,13 @@ item below.
   (`ef884e468614944e8ec4e75050622115d6447645`) is an ancestor of `c4cbf63` on `main` (`git
   merge-base --is-ancestor ef884e4 c4cbf63` → exit 0, 2026-08-29), so the pushed main HEAD
   confirms the TASK-0014 final state on the remote.
+- **Release record commit (follow-up per the TASK-0011 convention):** this `## Release` record
+  shipped in commit `2678b28` (full `2678b2853916b2f3095b0bc6755192ccdde76709`), pushed with
+  `git push origin main` → `c4cbf63..2678b28  main -> main`. `git ls-remote origin main` after
+  that push, actual output, quoted verbatim:
+  `2678b2853916b2f3095b0bc6755192ccdde76709	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `2678b2853916b2f3095b0bc6755192ccdde76709` == remote HEAD.
+  PASS (2026-08-29, Knuckles).
 
 ---
 

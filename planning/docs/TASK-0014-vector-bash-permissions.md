@@ -557,6 +557,13 @@ runs until the box is ticked.
   tool-output files (2026-08-29, grep of `~/.local/share/opencode/tool-output/` for the full
   sha, no hits). The live line above plus the ancestry check is the closing verification, and
   the gap is stated here per AGENTS.md §5.
+- **Release record commit (follow-up per the TASK-0011 convention):** this `## Release` record
+  shipped in commit `2678b28` (full `2678b2853916b2f3095b0bc6755192ccdde76709`), pushed with
+  `git push origin main` → `c4cbf63..2678b28  main -> main`. `git ls-remote origin main` after
+  that push, actual output, quoted verbatim:
+  `2678b2853916b2f3095b0bc6755192ccdde76709	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `2678b2853916b2f3095b0bc6755192ccdde76709` == remote HEAD.
+  PASS (2026-08-29, Knuckles).
 
 ---
 
