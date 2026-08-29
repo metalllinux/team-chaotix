@@ -73,8 +73,12 @@ diff and stays open with fix owner = user; the Omega DoD box is not ticked until
 round 2 clean (round-1 nit resolved); Omega round 2: H-2 + H-3 resolved against `ef884e4`,
 residuals low. All DoD boxes ticked except the Omega box, which is blocked on the user's H-1
 decision. **Task is Blocked on the user (H-1 PAT).** `Knuckles` recorded `## Release` 2026-08-29
-(DONE = no, missing item = user H-1 decision; final state `ef884e4`). After the decision: tick
-the Omega box, commit + push, `Espio` prunes.
+(DONE = no, missing item = user H-1 decision; final state `ef884e4`).
+
+**User decision (2026-08-29):** rotate + de-embed (the recommended option). Awaiting the
+machine-side action. Then Robotnik verifies the rewrite is gone (value-free check, the token is
+never transcribed), records the rotation as user-reported, ticks the Omega box with the decision
+in the H-1 resolution line, commits + pushes, `Espio` prunes. Task stays Blocked until then.
 
 **Unknowns:** none load-bearing.
 
@@ -119,9 +123,10 @@ the PM reads.*
       `ef884e4`; `## Implementation` round 2.
 - [x] `Shadow` round 2 (complete 2026-08-28): no blockers, no should-fix; round-1 nit resolved.
 - [x] `Omega` round 2 (complete 2026-08-29): H-2 + H-3 resolved against `ef884e4`; residuals low.
-- [ ] **User (escalation, H-1):** rotate the PAT in `~/.gitconfig:3` and de-embed it from the
-      `url.insteadOf` rewrite, or accept it as documented residual risk. Unblocks the Omega DoD
-      box and the task.
+- [ ] **User (in progress; decision 2026-08-29: rotate + de-embed):** rotate the PAT in GitHub
+      (revoke the token used by the `url.insteadOf` rewrite) and remove that rewrite block from
+      `~/.gitconfig`; then tell Robotnik so the value-free verification runs. Unblocks the Omega
+      DoD box and the task.
 - [x] `Knuckles` (complete 2026-08-29): `## Release` recorded — DONE = no, missing item = user
       H-1 decision; final state `ef884e4` confirmed on the remote.
 - [ ] After the user's H-1 decision: Robotnik ticks the Omega box (recording the decision in
