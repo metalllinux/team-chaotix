@@ -107,8 +107,16 @@ the PM reads.*
 
 - [x] `Knuckles` (complete 2026-08-29): DONE verified yes; `## Release` recorded (`2678b28` +
       `0d45aca`); final remote state `0d45aca`; deferred `ef884e4` verification carried.
-- [ ] `Espio`: prune superseded round-1/2 narration into `## Archive` (findings are resolved and
-      shipped; keep decisions, verified facts, and Resolution lines).
+- [x] `Espio` (pruning complete 2026-08-29): superseded `## Docs` "Could not verify" list +
+      "Commit status" paragraph and the full text of the resolved round-1/2 `## Review` findings
+      moved to `## Archive`; `## Review` now carries one-liners with the fixing shas (`1da994a`,
+      `0a58642`). Decisions, verified facts, and source pointers untouched.
+- [ ] Ship the pruning (both TASK-0013 and TASK-0014 docs): commit with prefix `TASK-0013:`
+      stating scope, push to main, verify local HEAD == remote HEAD with `git ls-remote`, and
+      record the commit sha in both docs' pruning logs. Espio's loaded permission set is
+      `bash: deny` (`.opencode/agents/espio.md:17`), so the dispatch's ship step cannot run from
+      this role; a bash-capable agent (Tails or Knuckles) must ship under the standing push
+      permission (user, 2026-08-21).
 
 ---
 
@@ -260,29 +268,26 @@ other line of the README touched.
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### "serves" on the sibling endpoint ports overstates the verified facts
-**Severity:** should-fix
-**Where:** `README.md:447`
-**Problem:** the sentence asserts active serving on 8080-8088 and 8090, but the verified facts establish only that those ports are open in the firewall (this doc `## Status` lines 46-47, Robotnik ssh 2026-08-27/28) and that client entries exist (`~/.config/opencode/opencode.json:5-120`), while the newest verified listener state shows 8084, inside that range, has no listener and the team runs Q4 only (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:49-54` 2026-08-26 12:50 UTC entry, `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:498-502` checkpoint 3.2).
-**Failure scenario:** a new team member reads the present-tense "also serves the sibling quantizations on 8080-8088 and 8090", expects sibling endpoints to be up, points a client at 8084 and gets connection refused, and cannot reconcile the sentence with the section's own "Run one active model at a time" rule two subsections later (`README.md:504-506`) or with the section intro's "Every value below is verified against the reference machine or the team's records of it" (`README.md:401-402`), which this unmarked claim does not meet.
-**Suggested direction:** state only what is verified. The firewall keeps 8080-8088 and 8090 open for the sibling model endpoints, the opencode client carries entries for them, and per the newest verified state only the Q4 endpoint on 8092 is active. Alternatively mark the current listener state explicitly as unverified. The firewall subsection (`README.md:516-518`) already phrases this correctly and needs no change.
-**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). The sentence now states only verified facts. The firewall keeps 8080-8088 and 8090 open, the opencode client carries entries for them, and as of 2026-08-29 the only listener in the 8080-8099 range is this endpoint on 8092 (`ss -tln`, `## Implementation` remote record item 5), with the one-active-model rule cross-referenced. The current listener state is now machine-verified rather than merely sourced from the newest team record.
+### Round-1 findings (all resolved and shipped; full text in `## Archive`)
 
-### Memory unit differs between the README and the ssh-verified Status
-**Severity:** nit
-**Where:** `README.md:407`
-**Problem:** the README says "92 GB of unified memory" (following `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`, "92 GB unified memory") while the ssh-verified Status says "92 GiB RAM" (this doc `## Status` lines 37-38).
-**Failure scenario:** a reader cross-referencing the planning Status against the README sees two unit spellings for the same machine fact and cannot tell which is the measured reading without going to the machine.
-**Suggested direction:** pick one unit, preferably the ssh-verified Status's, and note the source, or settle it with a `free -h` reading on 192.168.1.106 when the ssh channel opens.
-**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). Settled with the `free -h` reading Shadow offered. `free -h` on 192.168.1.106 (2026-08-29) reports `Mem: 92Gi total`, so the README now says "92 GiB of unified memory" with the source and date, matching the ssh-verified Status. The same fact in the "Run one active model at a time" paragraph ("92 GB pool") was aligned to "92 GiB pool". The "~91 GB visible to the Vulkan device" figure is a different quantity (device-visible memory, from the team incident record `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`) and keeps the unit as recorded there.
-
-### "the measured ceiling on this hardware" lacks the Q5 attribution the next sentence carries
-**Severity:** nit
-**Where:** `README.md:479-481`
-**Problem:** the fit table behind the claim was measured on the Q5 sibling only (`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`, heading "Measured memory ceiling (2026-08-23, Q5 alone, Q6 stopped)"), and the "(measured on the sibling Q5 model)" attribution at `README.md:481` attaches only to the 4 x 65536 sentence, leaving "which is the measured ceiling on this hardware" at `README.md:479` unqualified.
-**Failure scenario:** a reader setting up this Q4 endpoint, whose weights are smaller than Q5's, concludes that `--parallel 2` will silently degrade context on Q4, when the only fit measurement is the heavier Q5 model and the Q4 ceiling is unmeasured.
-**Suggested direction:** extend the Q5 attribution to the ceiling claim as well, or reword the ceiling as the measured Q5 ceiling or the team's operating point rather than a hardware-wide fact.
-**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). Both suggested directions combined. The sentence now reads that `--parallel 1` at 262144 is the team's operating point and, per the fit table, the measured ceiling on this hardware, and the next sentence states the fit table was measured on the heavier sibling Q5 model (2026-08-23, `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`) so the Q4 ceiling is unmeasured, though the Q4 weights are smaller. The 4 x 65536 degradation sentence keeps its Q5 attribution, now phrased "same Q5 measurement".
+- **should-fix — "serves" on the sibling endpoint ports overstates the verified facts** (former
+  `README.md:447`): fixed in `1da994a`. The sentence now states only verified facts. The firewall
+  keeps 8080-8088 and 8090 open, the opencode client carries entries for them, and as of
+  2026-08-29 the only listener in the 8080-8099 range is this endpoint on 8092 (`ss -tln`,
+  `## Implementation` remote record item 5), machine-verified rather than sourced from the
+  newest team record.
+- **nit — memory unit differs between the README and the ssh-verified Status** (former
+  `README.md:407`): fixed in `1da994a`. Settled with the `free -h` reading on 192.168.1.106
+  (2026-08-29, `Mem: 92Gi total`). The README now says "92 GiB of unified memory" with the
+  source and date; the "92 GB pool" mention in the one-active-model paragraph was aligned to
+  "92 GiB pool". The "~91 GB visible to the Vulkan device" figure is a different quantity
+  (device-visible memory) and keeps the unit as recorded in its source.
+- **nit — "the measured ceiling on this hardware" lacks the Q5 attribution the next sentence
+  carries** (former `README.md:479-481`): fixed in `1da994a`. Both suggested directions
+  combined. `--parallel 1` at 262144 is now stated as the team's operating point and, per the
+  fit table, the measured ceiling on this hardware, and the next sentence states the fit table
+  was measured on the heavier sibling Q5 model (2026-08-23) so the Q4 ceiling is unmeasured,
+  though the Q4 weights are smaller.
 
 **Verified clean (2026-08-28, `Shadow`):**
 - The user-requested correction is present and unambiguous at `README.md:588-589` ("The context window was not reduced. The unit still requests `-c 262144` and the endpoint serves it."), and the user decision of 2026-08-27 12:13 UTC is accurately restated at `README.md:590-592` against `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:32-34`.
@@ -324,13 +329,15 @@ Resolution lines carry that sha, completed by follow-up `109ee7c`, per the diff
 - No self-contradiction introduced. The port set, the three memory figures (each with its own source and date), the unit name, the model name, the IP, and the `(see the systemd unit subsection)` cross-reference are consistent across the section and the `## Model` cross-reference.
 - Commit scope matches the record. `git diff --stat ef884e4 1da994a` = 3 files, +284/-78, exactly as recorded; `git diff --stat 1da994a 109ee7c` = planning docs only, exactly as recorded.
 
-### The 100 W fast limit and the ~120 W sustained cap are adjacent without a bridge
-**Severity:** nit
-**Where:** `README.md:574-586` (trigger paragraph and the new power-limits paragraph)
-**Problem:** the trigger paragraph says the chip "sits at the roughly 120 W package power cap" under the failing workloads (sourced from `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:471-475`, PPT pinned 119-120 W), and the new paragraph two paragraphs later says the ryzenadj unit sets "a 100 W fast power limit". Both are correct and both are sourced, but the section never states that the unit sets only the fast (transient) limit and the TCTL threshold and does not touch the sustained cap that the failing workloads actually run against.
-**Failure scenario:** a new team member reads the power-limits paragraph to understand why the chip wedges at the power cap, or to lower the power to avoid wedges. They see the 100 W figure, scroll up to the 120 W figure, and cannot tell which one governs sustained load. They either conclude the section contradicts itself and discount the rest of it, or assume the box is capped at 100 W and cannot later explain monitoring that shows sustained PPT at ~120 W.
-**Suggested direction:** add one bridging clause to the ryzenadj paragraph. The unit sets the fast limit and the TCTL threshold only, and the ~120 W figure in the trigger paragraph is the measured sustained PPT cap at which the failing workloads operate. If the team has not confirmed on the machine which limit governs sustained operation, say that the relationship is unverified rather than leaving it implicit.
-**Resolution:** fixed in `0a58642` (pushed, main at `c4cbf63`; the push and `git ls-remote` lines are recorded in `## Implementation`). One bridging sentence appended to the ryzenadj paragraph (now `README.md:586-589`), using the "mark the relationship unverified" option. The ~120 W figure is identified as the sustained PPT cap measured in the TASK-0010 stress run, the 100 W fast limit as what `ryzenadj` configures on the reference machine, and whether the fast limit is in effect under sustained load as unverified. No claim about which limit governs sustained load.
+### Round-2 nit (resolved and shipped; full text in `## Archive`)
+
+- **nit — the 100 W fast limit and the ~120 W sustained cap are adjacent without a bridge**
+  (`README.md:574-586`): fixed in `0a58642`. One bridging sentence appended to the ryzenadj
+  paragraph (now `README.md:586-589`), using the "mark the relationship unverified" option. The
+  ~120 W figure is identified as the sustained PPT cap measured in the TASK-0010 stress run, the
+  100 W fast limit as what `ryzenadj` configures on the reference machine, and whether the fast
+  limit is in effect under sustained load as unverified. No claim about which limit governs
+  sustained load.
 
 ### Round 3 (targeted check of fix `0a58642`, 2026-08-29, `Shadow`)
 
@@ -550,26 +557,12 @@ to `Tails`) or a harness bug (stays with `Big`).
   template is explained in the README with the measured fit ceiling and the accepted queuing
   trade
 
-**Could not verify (and what would settle it):**
-- Unit file text beyond `ExecStart` (Description, After/Wants, Type, LimitMEMLOCK, WantedBy).
-  Vector's bash permission set (exact `git status`, `git log*`, `git diff*`, `rg *` only) blocks
-  `ssh howard@192.168.1.106`, so the file could not be read on the machine. The README marks
-  `ExecStart` as the verified line and the rest as the team template. Settled by
-  `ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'`
-- Current live firewalld state. Cited from Robotnik's 2026-08-27/28 verification in `## Status`.
-  Settled by `sudo firewall-cmd --list-all` on the machine
-- `ryzenadj.service` purpose. Omitted from the README per the task instruction (document only if
-  verifiable); no team artifact records its purpose. Settled by
-  `systemctl cat ryzenadj.service` plus its config file on the machine
-- llama.cpp binary provenance (upstream release or local build). Not claimed in the README.
-  Settled by asking the user or inspecting the build host
-
-**Commit status:** the README change is written but uncommitted. Vector's permission set also
-denies `git commit`, `git push`, and `git ls-remote`, so the commit + push + remote-HEAD
-verification in `## Definition of Done` could not run from this role. `git status` shows the
-working tree dirty with `README.md` and this planning doc modified, and `git log --oneline -1`
-shows HEAD at `d476221` (unchanged, up to date with `origin/main`). Knuckles or the user must
-commit both files, push, and verify the remote HEAD.
+**Could not verify:** all four items (unit file text beyond `ExecStart`, current live firewalld
+state, `ryzenadj.service` purpose, llama.cpp binary provenance) were settled by the 2026-08-29
+read-only ssh record in `## Implementation` (see the Settlement block there, record items 1-4).
+The `Commit status` paragraph that followed (work uncommitted, `git` ship blocked by Vector's
+permission set) is superseded by the ship in commit `9e1f0c9`. Full text of both blocks:
+`## Archive`.
 
 ---
 
@@ -626,4 +619,72 @@ the user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-08-29 | Superseded `## Docs` "Could not verify" list (4 items, all settled by the 2026-08-29 read-only ssh record in `## Implementation`) and "Commit status" paragraph (work shipped as `9e1f0c9`) moved here, `## Docs` left with a pointer | ~22 lines |
+| 2026-08-29 | Round-1 `## Review` findings (1 should-fix, 2 nits, all fixed in `1da994a`) and round-2 nit (fixed in `0a58642`) compressed to one-liners in `## Review`; full finding text moved here | ~38 lines |
+| 2026-08-29 | Ship of this pruning (commit + push + `git ls-remote`) pending: Espio's loaded set is `bash: deny` (`.opencode/agents/espio.md:17`). Commit sha to be recorded here by the shipping commit | n/a |
+
+### Superseded `## Docs` "Could not verify" list (Vector, 2026-08-28)
+
+**Could not verify (and what would settle it):**
+- Unit file text beyond `ExecStart` (Description, After/Wants, Type, LimitMEMLOCK, WantedBy).
+  Vector's bash permission set (exact `git status`, `git log*`, `git diff*`, `rg *` only) blocks
+  `ssh howard@192.168.1.106`, so the file could not be read on the machine. The README marks
+  `ExecStart` as the verified line and the rest as the team template. Settled by
+  `ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'`
+- Current live firewalld state. Cited from Robotnik's 2026-08-27/28 verification in `## Status`.
+  Settled by `sudo firewall-cmd --list-all` on the machine
+- `ryzenadj.service` purpose. Omitted from the README per the task instruction (document only if
+  verifiable); no team artifact records its purpose. Settled by
+  `systemctl cat ryzenadj.service` plus its config file on the machine
+- llama.cpp binary provenance (upstream release or local build). Not claimed in the README.
+  Settled by asking the user or inspecting the build host
+
+All four items settled 2026-08-29 by the read-only ssh record in `## Implementation` (record
+items 1-4, plus the "Settlement of `## Docs` 'Could not verify'" block).
+
+### Superseded `## Docs` "Commit status" paragraph (Vector, 2026-08-28)
+
+**Commit status:** the README change is written but uncommitted. Vector's permission set also
+denies `git commit`, `git push`, and `git ls-remote`, so the commit + push + remote-HEAD
+verification in `## Definition of Done` could not run from this role. `git status` shows the
+working tree dirty with `README.md` and this planning doc modified, and `git log --oneline -1`
+shows HEAD at `d476221` (unchanged, up to date with `origin/main`). Knuckles or the user must
+commit both files, push, and verify the remote HEAD.
+
+Superseded: the uncommitted work shipped in commit `9e1f0c9` (see `## Status` and TASK-0014).
+
+### Superseded `## Review` round-1 finding: "serves" on the sibling endpoint ports overstates the verified facts (Shadow, 2026-08-29)
+
+**Severity:** should-fix
+**Where:** `README.md:447`
+**Problem:** the sentence asserts active serving on 8080-8088 and 8090, but the verified facts establish only that those ports are open in the firewall (this doc `## Status` lines 46-47, Robotnik ssh 2026-08-27/28) and that client entries exist (`~/.config/opencode/opencode.json:5-120`), while the newest verified listener state shows 8084, inside that range, has no listener and the team runs Q4 only (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:49-54` 2026-08-26 12:50 UTC entry, `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:498-502` checkpoint 3.2).
+**Failure scenario:** a new team member reads the present-tense "also serves the sibling quantizations on 8080-8088 and 8090", expects sibling endpoints to be up, points a client at 8084 and gets connection refused, and cannot reconcile the sentence with the section's own "Run one active model at a time" rule two subsections later (`README.md:504-506`) or with the section intro's "Every value below is verified against the reference machine or the team's records of it" (`README.md:401-402`), which this unmarked claim does not meet.
+**Suggested direction:** state only what is verified. The firewall keeps 8080-8088 and 8090 open for the sibling model endpoints, the opencode client carries entries for them, and per the newest verified state only the Q4 endpoint on 8092 is active. Alternatively mark the current listener state explicitly as unverified. The firewall subsection (`README.md:516-518`) already phrases this correctly and needs no change.
+**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). The sentence now states only verified facts. The firewall keeps 8080-8088 and 8090 open, the opencode client carries entries for them, and as of 2026-08-29 the only listener in the 8080-8099 range is this endpoint on 8092 (`ss -tln`, `## Implementation` remote record item 5), with the one-active-model rule cross-referenced. The current listener state is now machine-verified rather than merely sourced from the newest team record.
+
+### Superseded `## Review` round-1 finding: Memory unit differs between the README and the ssh-verified Status (Shadow, 2026-08-29)
+
+**Severity:** nit
+**Where:** `README.md:407`
+**Problem:** the README says "92 GB of unified memory" (following `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`, "92 GB unified memory") while the ssh-verified Status says "92 GiB RAM" (this doc `## Status` lines 37-38).
+**Failure scenario:** a reader cross-referencing the planning Status against the README sees two unit spellings for the same machine fact and cannot tell which is the measured reading without going to the machine.
+**Suggested direction:** pick one unit, preferably the ssh-verified Status's, and note the source, or settle it with a `free -h` reading on 192.168.1.106 when the ssh channel opens.
+**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). Settled with the `free -h` reading Shadow offered. `free -h` on 192.168.1.106 (2026-08-29) reports `Mem: 92Gi total`, so the README now says "92 GiB of unified memory" with the source and date, matching the ssh-verified Status. The same fact in the "Run one active model at a time" paragraph ("92 GB pool") was aligned to "92 GiB pool". The "~91 GB visible to the Vulkan device" figure is a different quantity (device-visible memory, from the team incident record `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`) and keeps the unit as recorded there.
+
+### Superseded `## Review` round-1 finding: "the measured ceiling on this hardware" lacks the Q5 attribution the next sentence carries (Shadow, 2026-08-29)
+
+**Severity:** nit
+**Where:** `README.md:479-481`
+**Problem:** the fit table behind the claim was measured on the Q5 sibling only (`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`, heading "Measured memory ceiling (2026-08-23, Q5 alone, Q6 stopped)"), and the "(measured on the sibling Q5 model)" attribution at `README.md:481` attaches only to the 4 x 65536 sentence, leaving "which is the measured ceiling on this hardware" at `README.md:479` unqualified.
+**Failure scenario:** a reader setting up this Q4 endpoint, whose weights are smaller than Q5's, concludes that `--parallel 2` will silently degrade context on Q4, when the only fit measurement is the heavier Q5 model and the Q4 ceiling is unmeasured.
+**Suggested direction:** extend the Q5 attribution to the ceiling claim as well, or reword the ceiling as the measured Q5 ceiling or the team's operating point rather than a hardware-wide fact.
+**Resolution:** fixed in `1da994a` (this turn's fix commit; the push and ls-remote lines are recorded in the `## Implementation` follow-up below). Both suggested directions combined. The sentence now reads that `--parallel 1` at 262144 is the team's operating point and, per the fit table, the measured ceiling on this hardware, and the next sentence states the fit table was measured on the heavier sibling Q5 model (2026-08-23, `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`) so the Q4 ceiling is unmeasured, though the Q4 weights are smaller. The 4 x 65536 degradation sentence keeps its Q5 attribution, now phrased "same Q5 measurement".
+
+### Superseded `## Review` round-2 nit: The 100 W fast limit and the ~120 W sustained cap are adjacent without a bridge (Shadow, 2026-08-29)
+
+**Severity:** nit
+**Where:** `README.md:574-586` (trigger paragraph and the new power-limits paragraph)
+**Problem:** the trigger paragraph says the chip "sits at the roughly 120 W package power cap" under the failing workloads (sourced from `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:471-475`, PPT pinned 119-120 W), and the new paragraph two paragraphs later says the ryzenadj unit sets "a 100 W fast power limit". Both are correct and both are sourced, but the section never states that the unit sets only the fast (transient) limit and the TCTL threshold and does not touch the sustained cap that the failing workloads actually run against.
+**Failure scenario:** a new team member reads the power-limits paragraph to understand why the chip wedges at the power cap, or to lower the power to avoid wedges. They see the 100 W figure, scroll up to the 120 W figure, and cannot tell which one governs sustained load. They either conclude the section contradicts itself and discount the rest of it, or assume the box is capped at 100 W and cannot later explain monitoring that shows sustained PPT at ~120 W.
+**Suggested direction:** add one bridging clause to the ryzenadj paragraph. The unit sets the fast limit and the TCTL threshold only, and the ~120 W figure in the trigger paragraph is the measured sustained PPT cap at which the failing workloads operate. If the team has not confirmed on the machine which limit governs sustained operation, say that the relationship is unverified rather than leaving it implicit.
+**Resolution:** fixed in `0a58642` (pushed, main at `c4cbf63`; the push and `git ls-remote` lines are recorded in `## Implementation`). One bridging sentence appended to the ryzenadj paragraph (now `README.md:586-589`), using the "mark the relationship unverified" option. The ~120 W figure is identified as the sustained PPT cap measured in the TASK-0010 stress run, the 100 W fast limit as what `ryzenadj` configures on the reference machine, and whether the fast limit is in effect under sustained load as unverified. No claim about which limit governs sustained load.

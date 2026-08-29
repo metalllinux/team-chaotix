@@ -175,21 +175,12 @@ the PM reads.*
 
 No other file in `.opencode/agents/` was touched. `git status --short` after the edits shows exactly the five files above, nothing else.
 
-**Final `permission.bash` block** (`.opencode/agents/vector.md:19-29`, read back after the edit):
-
-```yaml
-  bash:
-    "*": deny
-    "git add*": allow
-    "git commit*": allow
-    "git push*": allow
-    "git ls-remote*": allow
-    "ssh howard@192.168.1.106*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git status": allow
-    "rg *": allow
-```
+**Final `permission.bash` block (round 1, superseded):** the round-1 10-rule block (original 5
+rules plus the five allow globs `git add*`, `git commit*`, `git push*`, `git ls-remote*`,
+`ssh howard@192.168.1.106*`) was replaced by the round-2 tightened 14-rule set (full block in
+the round-2 section below). The five-glob set is a rejected option; the reasons it was rejected
+(full remote shell on the model host, git exfil pipeline, force-push and destructive ref
+operations) live in `## Security` (Omega H-2/H-3). Full round-1 block: `## Archive`.
 
 **Checks run**
 
@@ -580,4 +571,26 @@ user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-08-29 | Minimal pass (task still Blocked on user H-1 decision): round-1 `Final permission.bash` block (10-rule state, superseded by the round-2 14-rule block) compressed to a pointer in `## Implementation`, full block moved here. No decisions or finding text touched | ~15 lines |
+| 2026-08-29 | Ship of this pass (same commit as the TASK-0013 pruning, prefix `TASK-0013:`) pending: Espio's loaded set is `bash: deny` (`.opencode/agents/espio.md:17`). Commit sha to be recorded here by the shipping commit | n/a |
+
+### Superseded round-1 `permission.bash` block (`.opencode/agents/vector.md:19-29`, read back after the round-1 edit, 2026-08-28)
+
+```yaml
+  bash:
+    "*": deny
+    "git add*": allow
+    "git commit*": allow
+    "git push*": allow
+    "git ls-remote*": allow
+    "ssh howard@192.168.1.106*": allow
+    "git diff*": allow
+    "git log*": allow
+    "git status": allow
+    "rg *": allow
+```
+
+Superseded by the round-2 tightened 14-rule set (full block in the round-2 section of
+`## Implementation`, shipped in `15f6c29`, final `ef884e4`). The five-glob ruleset is a
+rejected option; the rejection reasons live in `## Security` (Omega H-2: full remote shell;
+H-3: exfil pipeline plus force-push).
