@@ -539,47 +539,63 @@ to `Tails`) or a harness bug (stays with `Big`).
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** no. This stops here. Missing item: the user's H-1 decision
-(rotate the live GitHub PAT in `~/.gitconfig:3` and de-embed it from the `url.insteadOf`
-rewrite, or accept it as documented residual risk). Six of seven boxes are ticked. The Omega
-box stays unticked because H-1 is the only permitted unresolved item per the amended DoD. H-1
-is user-owned per AGENTS.md §4 (fix owner: user), escalated 2026-08-28 and re-verified open
-by Omega round 2 (2026-08-29, `## Security` H-1 Resolution line). Task status per `## Status`:
-Blocked on the user. After the decision, the Omega box is ticked and `Espio` prunes. This
-record is written at the user's dispatch while the task is blocked, so no further release step
-runs until the box is ticked.
+**DONE checklist verified:** yes (2026-08-29, Knuckles re-verification against the resolved
+state; supersedes the pre-decision "no" record retained below). All seven DoD boxes are
+ticked, re-checked box by box this turn against the resolved state: box 1 the final 14-rule
+block as pushed at `ef884e4` (`## Review` round 2 items 1-2, `## Security` round 2); box 2
+the 14-rule PyYAML parse PASS with order assert (`## Implementation` round 2, re-read by
+Shadow item 3); box 3 `README.md:34` (`## Review` round 2 item 6); box 4 re-verified live
+this turn (the quoted `git ls-remote` line below plus the `ef884e4` ancestry check); box 5
+Shadow round 2 clean, both nits resolved; box 6 Omega round 2 with nothing above `low` and
+H-1 resolved per its `## Security` resolution line; box 7 Big N/A recorded in the box per
+the DoD. H-1 resolved 2026-08-29 by the user decision (rotate + de-embed): `## Security`
+"RESOLVED 2026-08-29 (user + Robotnik)" line, `## Status` "Closed 2026-08-29". Re-verified
+against the live host this turn, value-free: `~/.gitconfig` contains no `insteadOf` (grep,
+no hits) and no `ghp_`-form credential (grep, 0 hits). The auth path changed: git now
+authenticates to github.com via a credential helper scoped to that host, `[credential
+"https://github.com"]` with helper `/home/howard/.local/bin/git-cred-token-md`, a script
+that emits the username and reads the user's token file `/home/howard/token.md` (mode 600;
+token value not transcribed per AGENTS.md §4). The `git ls-remote` in this re-verification
+succeeded through that helper. Open user follow-ups, outside task scope: the gh CLI still
+authenticates via the session `GH_TOKEN`, which holds the revoked old value and is rejected
+by GitHub until the user refreshes it (or uses a full-scope token); `~/token.md` is to be
+deleted once the auth path is confirmed working.
 
 - **Branch:** `main`. Direct push to `metalllinux/team-chaotix` under the standing 2026-08-21
   user permission for `metalllinux` repos. No feature branch, no PR. Internal repo, AGENTS.md
   §8.
-- **Commits:** final state `ef884e4` (`ef884e468614944e8ec4e75050622115d6447645`), the rework
-  `15f6c29` plus follow-ups `152a068` and `ef884e4` on top of `ad9632c`, full chain in `##
-  Implementation`. GPG-signed: no. `commit.gpgsign` is not set in this repo and the history
-  is unsigned (same verification, TASK-0013 `## Release`).
+- **Commits:** task-final state `ef884e4` (`ef884e468614944e8ec4e75050622115d6447645`): the
+  rework `15f6c29` plus follow-ups `152a068` and `ef884e4` on top of `ad9632c`, full chain
+  in `## Implementation`; then the pre-decision release record `2678b28` and the Robotnik
+  closure commits `8821e63` (H-1 decision recorded) and `fda39dd` (all DoD boxes ticked,
+  TASKS.md row Done). GPG-signed: no. `commit.gpgsign` is not set in this repo and the
+  history is unsigned (re-checked this turn; same verification, TASK-0013 `## Release`).
 - **PR:** n/a. Internal repo shipped by direct push under the standing permission. No PR
   required, AGENTS.md §8.
 - **Deploy:** n/a. Team config change (`.opencode/agents/vector.md`), no deployment to
   dispatch. The new Vector rules take effect on the next opencode restart (documented in
   `## Status`). Config load, not a deployment.
-- **Remote HEAD confirmation (2026-08-29, Knuckles):** `git ls-remote origin main`, actual
-  output, quoted verbatim:
-  `c4cbf63cf6334325797430e988a6054fe6eacf2a	refs/heads/main`.
-  Local HEAD (`git rev-parse HEAD`) `c4cbf63cf6334325797430e988a6054fe6eacf2a` == remote HEAD.
-  PASS. The final state `ef884e4` is an ancestor of that HEAD on `main` (`git merge-base
-  --is-ancestor ef884e4 c4cbf63` → exit 0, 2026-08-29), so the remote carries it. This item
-  also closes the deferral in `## Implementation` (the ls-remote output line for the terminal
-  sha, per the round-1 nit resolution path). The line for the exact moment main was at
-  `ef884e4` was not captured at push time and is not recoverable from this host's session
-  tool-output files (2026-08-29, grep of `~/.local/share/opencode/tool-output/` for the full
-  sha, no hits). The live line above plus the ancestry check is the closing verification, and
-  the gap is stated here per AGENTS.md §5.
-- **Release record commit (follow-up per the TASK-0011 convention):** this `## Release` record
-  shipped in commit `2678b28` (full `2678b2853916b2f3095b0bc6755192ccdde76709`), pushed with
-  `git push origin main` → `c4cbf63..2678b28  main -> main`. `git ls-remote origin main` after
-  that push, actual output, quoted verbatim:
-  `2678b2853916b2f3095b0bc6755192ccdde76709	refs/heads/main`.
-  Local HEAD (`git rev-parse HEAD`) `2678b2853916b2f3095b0bc6755192ccdde76709` == remote HEAD.
-  PASS (2026-08-29, Knuckles).
+- **Remote HEAD re-verification (2026-08-29, Knuckles, post-H-1-resolution):** `git
+  ls-remote origin main`, actual output, quoted verbatim:
+  `fda39dd8432876deb94f865151e34892780dbc46	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `fda39dd8432876deb94f865151e34892780dbc46` == remote
+  HEAD. PASS. `ef884e4` is an ancestor of that HEAD on `main` (`git merge-base
+  --is-ancestor ef884e4 fda39dd` → exit 0, 2026-08-29), so the remote carries the
+  task-final state. Closes the `## Implementation` deferral (the ls-remote output line for
+  the terminal sha, per the round-1 nit resolution path), with the gap note carried over
+  from the pre-decision record: the line for the exact moment main was at `ef884e4` was not
+  captured at push time and is not recoverable from this host's session tool-output files;
+  the live line plus the ancestry check is the closing verification.
+- **Pre-decision record (2026-08-29, Knuckles; superseded by the re-verification above,
+  retained as the verified-facts chain):** DONE = no at the time, missing item = the user's
+  H-1 decision (rotate the live GitHub PAT in `~/.gitconfig:3` and de-embed it from the
+  `url.insteadOf` rewrite, or accept it as documented residual risk); six of seven boxes
+  ticked. Remote HEAD confirmation then: `git ls-remote origin main` →
+  `c4cbf63cf6334325797430e988a6054fe6eacf2a	refs/heads/main`, local == remote, PASS;
+  `ef884e4` ancestor of `c4cbf63` (exit 0). That record shipped in commit `2678b28` (full
+  `2678b2853916b2f3095b0bc6755192ccdde76709`), pushed `c4cbf63..2678b28`, and re-verified
+  after that push: `git ls-remote origin main` →
+  `2678b2853916b2f3095b0bc6755192ccdde76709	refs/heads/main`, local == remote, PASS.
 
 ---
 
