@@ -583,7 +583,10 @@ stress.
 `active`, read 2026-08-29), a oneshot unit at `/etc/systemd/system/ryzenadj.service` with the
 description "Set RyzenAdj APU power limits". It runs `/usr/bin/ryzenadj --fast-limit=100000
 --tctl-temp=88` at boot, a 100 W fast power limit and an 88 C TCTL temperature limit, with
-`RemainAfterExit=yes` so the unit stays active after the boot run.
+`RemainAfterExit=yes` so the unit stays active after the boot run. The roughly 120 W figure
+in the trigger paragraph is the sustained PPT cap measured in the TASK-0010 stress run, the
+100 W fast limit is what `ryzenadj` configures on the reference machine, and whether the
+fast limit is in effect under sustained load is unverified.
 
 **The cascade.** A wedge destroys the KV cache. When a session's context is near 200k tokens,
 the retry must cold re-prefill the entire context, which wedges again in 27-29 minutes, and the
