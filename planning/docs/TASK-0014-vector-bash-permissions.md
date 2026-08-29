@@ -69,6 +69,12 @@ rules); Tails reworks and pushes; re-run Shadow → Omega until clean. H-1 is ou
 diff and stays open with fix owner = user; the Omega DoD box is not ticked until the user decides
 (rotate + de-embed, or accept as documented residual risk).
 
+**Review chain complete 2026-08-29:** Tails rework pushed (`15f6c29`, final `ef884e4`); Shadow
+round 2 clean (round-1 nit resolved); Omega round 2: H-2 + H-3 resolved against `ef884e4`,
+residuals low. All DoD boxes ticked except the Omega box, which is blocked on the user's H-1
+decision. **Task is Blocked on the user (H-1 PAT).** After the decision: tick the Omega box,
+`Knuckles` records `## Release`, `Espio` prunes.
+
 **Unknowns:** none load-bearing.
 
 ---
@@ -78,7 +84,7 @@ diff and stays open with fix owner = user; the Omega DoD box is not ticked until
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] `.opencode/agents/vector.md` `permission.bash` block contains the original five rules
+- [x] `.opencode/agents/vector.md` `permission.bash` block contains the original five rules
       unchanged, plus exactly these allow rules (amended 2026-08-28 to resolve Omega findings
       H-2/H-3 in `## Security`), appended after `"*": deny` so they win: `"git add*"` (residual
       sweep/`--force` risk recorded low), `"git commit -m*"` (drops `-F`), `"git push origin main"`,
@@ -87,19 +93,19 @@ if a box cannot be verified by looking at something, rewrite it.*
       user unit file, `sudo firewall-cmd --list-all`, `systemctl cat ryzenadj.service`). Exact
       rules fail closed on quoting variation; further ssh commands need a new rule per task.
       No other rule added, removed, or reordered; no other file in `.opencode/agents/` touched.
-- [ ] Frontmatter still parses as YAML and keeps the existing block's shape (quoted pattern keys,
+- [x] Frontmatter still parses as YAML and keeps the existing block's shape (quoted pattern keys,
       `allow` values); verified by a parse check and by reading the final block.
-- [ ] README.md agent-catalogue row (line ~34) matches the final tightened rule set (pinned push
+- [x] README.md agent-catalogue row (line ~34) matches the final tightened rule set (pinned push
       forms, exact ssh commands); Tails records the outcome in `## Implementation`.
-- [ ] Committed + pushed to `metalllinux/team-chaotix` main; local HEAD == remote HEAD
-      (verified with `git ls-remote`).
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
+- [x] Committed + pushed to `metalllinux/team-chaotix` main; local HEAD == remote HEAD
+      (verified with `git ls-remote`; final state `ef884e4`).
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
 - [ ] `Omega`: no unresolved findings above `low` in `## Security`; a least-privilege assessment
       of the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned
       push forms) is recorded there. H-1 (live PAT in `~/.gitconfig:3`) is a user-owned
       escalation, out of scope of this diff, and stays open until the user decides; it is the
       only permitted unresolved item and keeps this box unticked until then.
-- [ ] `Big`: N/A — config-only change, no executable code (recorded here).
+- [x] `Big`: N/A — config-only change, no executable code (recorded here).
 
 ---
 
@@ -517,12 +523,40 @@ to `Tails`) or a harness bug (stays with `Big`).
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** no. This stops here. Missing item: the user's H-1 decision
+(rotate the live GitHub PAT in `~/.gitconfig:3` and de-embed it from the `url.insteadOf`
+rewrite, or accept it as documented residual risk). Six of seven boxes are ticked. The Omega
+box stays unticked because H-1 is the only permitted unresolved item per the amended DoD. H-1
+is user-owned per AGENTS.md §4 (fix owner: user), escalated 2026-08-28 and re-verified open
+by Omega round 2 (2026-08-29, `## Security` H-1 Resolution line). Task status per `## Status`:
+Blocked on the user. After the decision, the Omega box is ticked and `Espio` prunes. This
+record is written at the user's dispatch while the task is blocked, so no further release step
+runs until the box is ticked.
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** `main`. Direct push to `metalllinux/team-chaotix` under the standing 2026-08-21
+  user permission for `metalllinux` repos. No feature branch, no PR. Internal repo, AGENTS.md
+  §8.
+- **Commits:** final state `ef884e4` (`ef884e468614944e8ec4e75050622115d6447645`), the rework
+  `15f6c29` plus follow-ups `152a068` and `ef884e4` on top of `ad9632c`, full chain in `##
+  Implementation`. GPG-signed: no. `commit.gpgsign` is not set in this repo and the history
+  is unsigned (same verification, TASK-0013 `## Release`).
+- **PR:** n/a. Internal repo shipped by direct push under the standing permission. No PR
+  required, AGENTS.md §8.
+- **Deploy:** n/a. Team config change (`.opencode/agents/vector.md`), no deployment to
+  dispatch. The new Vector rules take effect on the next opencode restart (documented in
+  `## Status`). Config load, not a deployment.
+- **Remote HEAD confirmation (2026-08-29, Knuckles):** `git ls-remote origin main`, actual
+  output, quoted verbatim:
+  `c4cbf63cf6334325797430e988a6054fe6eacf2a	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `c4cbf63cf6334325797430e988a6054fe6eacf2a` == remote HEAD.
+  PASS. The final state `ef884e4` is an ancestor of that HEAD on `main` (`git merge-base
+  --is-ancestor ef884e4 c4cbf63` → exit 0, 2026-08-29), so the remote carries it. This item
+  also closes the deferral in `## Implementation` (the ls-remote output line for the terminal
+  sha, per the round-1 nit resolution path). The line for the exact moment main was at
+  `ef884e4` was not captured at push time and is not recoverable from this host's session
+  tool-output files (2026-08-29, grep of `~/.local/share/opencode/tool-output/` for the full
+  sha, no hits). The live line above plus the ancestry check is the closing verification, and
+  the gap is stated here per AGENTS.md §5.
 
 ---
 

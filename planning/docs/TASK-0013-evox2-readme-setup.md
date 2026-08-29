@@ -22,10 +22,14 @@ items marked (unit file beyond `ExecStart`, live firewalld state, ryzenadj purpo
 provenance — all settle via `ssh howard@192.168.1.106`, which Vector's loaded bash set blocks;
 see TASK-0014). The uncommitted work was shipped by Tails on the TASK-0014 turn in commit
 `9e1f0c9` (mixed-scope commit, stated in the message), pushed to main; verification in
-`ad9632c`, local HEAD == remote main. Pending: Shadow → Omega review of the README section
-against the pushed state; if findings need a fix, Tails fixes + pushes, then `Knuckles` verifies
-the DONE checklist and records `## Release`. The ssh verification channel opens for `Vector`
-after the next opencode restart.
+`ad9632c`, local HEAD == remote main. Review chain complete 2026-08-29: Shadow round 1 (1
+should-fix, 2 nits) + Omega round 1 (3 lows) all fixed in `1da994a`; Shadow round 2 (1 nit)
+fixed in `0a58642`; rounds verified clean (Shadow r3, Omega r2). The four "Could not verify"
+items were settled by read-only ssh on the fix turn (unit file line-for-line, live firewalld
+state, ryzenadj purpose self-evident and now documented, binary provenance partly settled).
+Final pushed state `c4cbf63`. All DoD boxes ticked 2026-08-29; awaiting `Knuckles` `## Release`
+record, then `Espio` pruning. The exact ssh verification commands are pinned rules in
+`Vector`'s bash set (TASK-0014), usable from the next opencode restart.
 
 **Environment / scope:**
 - Files in scope: `README.md` (team-chaotix repo, `/home/howard/AI/projects/team-chaotix/`)
@@ -70,7 +74,7 @@ build (ask/verify; record what is found, mark the rest unverified).
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] `README.md` has a new section on setting up a GMKtec EVO-X2 model host with
+- [x] `README.md` has a new section on setting up a GMKtec EVO-X2 model host with
       `Qwen3.8-27B-UD-Q4_K_XL`, covering: hardware/OS/kernel requirements; the llama-server
       binary (Vulkan build, the verified version); downloading the model from Hugging Face per
       the team skills; the model directory layout; the user-level systemd unit (exact file +
@@ -80,16 +84,18 @@ if a box cannot be verified by looking at something, rewrite it.*
       moderate request sizes, the monitoring command — what does not — the exhausted runtime
       sysfs surface — and the correction that the context window was **not** reduced,
       `-c 262144` stays).
-- [ ] Every factual claim in the section verified against the reference machine
+- [x] Every factual claim in the section verified against the reference machine
       (`ssh howard@192.168.1.106`) or cited from a team artifact (planning doc, skills,
       opencode.json); no invented paths, flags, or versions; unverified items marked as such.
-- [ ] AGENTS.md §10 writing style applied (no em/en dashes, no colons introducing an
+      (Four read-only ssh verifications run 2026-08-29 on the fix turn; remaining marked item:
+      pristine-vs-modified build tree state.)
+- [x] AGENTS.md §10 writing style applied (no em/en dashes, no colons introducing an
       explanation, prose over bullets for explanation, take a position).
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`.
-- [ ] `Big`: N/A — docs-only change, no executable code (recorded here).
-- [ ] Committed + pushed to `metalllinux/team-chaotix` main; local HEAD == remote HEAD
-      (verified with `git ls-remote`).
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
+- [x] `Omega`: no unresolved findings above `low` in `## Security`.
+- [x] `Big`: N/A — docs-only change, no executable code (recorded here).
+- [x] Committed + pushed to `metalllinux/team-chaotix` main; local HEAD == remote HEAD
+      (verified with `git ls-remote`; final state `c4cbf63`, Knuckles re-verifies in `## Release`).
 
 ---
 
@@ -98,21 +104,11 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Tails` (2026-08-29): fix Shadow's should-fix (README:447 "serves" overstatement) and two
-      nits (line 407 GB/GiB unit, lines 479-481 Q5 attribution), and Omega's three lows (one
-      sentence on the unauthenticated `--host 0.0.0.0` endpoint in the Firewall subsection, pin
-      `huggingface_hub` to the version read from the reference machine, record SHA-256 of both
-      weight files + add to the verification list). Also run the four read-only ssh verifications
-      from `## Docs` "Could not verify" (unit file `cat`, `sudo firewall-cmd --list-all`,
-      `systemctl cat ryzenadj.service`, binary provenance inspection) and upgrade the README's
-      marked-unverified items where they verify; document ryzenadj only if its purpose is
-      self-evident from the unit. Read-only on the host, no changes. Commit README + planning-doc
-      bookkeeping (state the mixed scope), push, verify remote HEAD; record all in `## Implementation`.
-- [ ] `Shadow`: targeted re-review of the fix diff → append round 2 to `## Review`.
-- [ ] `Omega`: targeted re-review → append round 2 to `## Security`.
-- [ ] `Knuckles`: final — verify the DONE checklist, confirm local HEAD == remote HEAD with
-      `git ls-remote` (also carrying the deferred `ef884e4` line from TASK-0014), record in
-      `## Release`.
+- [ ] `Knuckles`: verify the DONE checklist (all boxes ticked), run `git ls-remote origin main`,
+      quote the line, confirm local HEAD == remote HEAD (also carrying the deferred `ef884e4`
+      verification from TASK-0014), record in `## Release`.
+- [ ] `Espio`: prune superseded round-1/2 narration into `## Archive` (findings are resolved and
+      shipped; keep decisions, verified facts, and Resolution lines).
 
 ---
 
@@ -334,6 +330,23 @@ Resolution lines carry that sha, completed by follow-up `109ee7c`, per the diff
 **Problem:** the trigger paragraph says the chip "sits at the roughly 120 W package power cap" under the failing workloads (sourced from `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:471-475`, PPT pinned 119-120 W), and the new paragraph two paragraphs later says the ryzenadj unit sets "a 100 W fast power limit". Both are correct and both are sourced, but the section never states that the unit sets only the fast (transient) limit and the TCTL threshold and does not touch the sustained cap that the failing workloads actually run against.
 **Failure scenario:** a new team member reads the power-limits paragraph to understand why the chip wedges at the power cap, or to lower the power to avoid wedges. They see the 100 W figure, scroll up to the 120 W figure, and cannot tell which one governs sustained load. They either conclude the section contradicts itself and discount the rest of it, or assume the box is capped at 100 W and cannot later explain monitoring that shows sustained PPT at ~120 W.
 **Suggested direction:** add one bridging clause to the ryzenadj paragraph. The unit sets the fast limit and the TCTL threshold only, and the ~120 W figure in the trigger paragraph is the measured sustained PPT cap at which the failing workloads operate. If the team has not confirmed on the machine which limit governs sustained operation, say that the relationship is unverified rather than leaving it implicit.
+**Resolution:** fixed in `0a58642` (pushed, main at `c4cbf63`; the push and `git ls-remote` lines are recorded in `## Implementation`). One bridging sentence appended to the ryzenadj paragraph (now `README.md:586-589`), using the "mark the relationship unverified" option. The ~120 W figure is identified as the sustained PPT cap measured in the TASK-0010 stress run, the 100 W fast limit as what `ryzenadj` configures on the reference machine, and whether the fast limit is in effect under sustained load as unverified. No claim about which limit governs sustained load.
+
+### Round 3 (targeted check of fix `0a58642`, 2026-08-29, `Shadow`)
+
+**Scope and method.** Checked the pushed text at `c4cbf63` (working tree clean, up to date with
+`origin/main`, `git status`) on the three dispatch points. The reviewed text is the pushed text,
+because `git diff 0a58642 c4cbf63 --stat` shows the follow-up commit touched only this planning
+doc.
+
+- **(a) Factual consistency.** The ~120 W clause traces to `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:471-475`, which records PPT pinned 119-120 W for the entire 32.7 min with the chip at the package power cap, "consistent with sustained at-power-cap operation" under `auto`. The 100 W clause traces to the verified `ryzenadj.service` `ExecStart` (`## Implementation` remote record item 3, `--fast-limit=100000`, read 2026-08-29, 100000 mW = 100 W). The sentence makes no claim about which limit governs sustained load; its third clause marks that relationship unverified, which is the option `## Implementation` records as chosen.
+- **(b) AGENTS.md §10.** Zero em or en dashes in `README.md` (grep, no matches), zero banned words (word-boundary grep, no matches), no colon in the new sentence (commas only), prose rather than bullets.
+- **(c) Scope.** `git diff 109ee7c 0a58642 -- README.md` is a single hunk, one line modified (the sentence appended inside the `**The power limits.**` paragraph), no other README line changed.
+
+**Outcome.** Round-2 nit resolved in `0a58642`. No new findings. Every finding in this section now
+carries a Resolution line with its fixing sha; no unresolved blocker or should-fix remains, so the
+DoD box "`Shadow`: no unresolved blockers or should-fix findings in `## Review`" is satisfiable
+from this section.
 
 ---
 
@@ -564,12 +577,35 @@ commit both files, push, and verify the remote HEAD.
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** yes. All seven boxes in `## Definition of Done` ticked 2026-08-29.
+The underlying evidence is in this doc. README section and verified claims per `## Docs` and
+the `## Implementation` remote verification record (2026-08-29, read-only ssh), §10 style per
+Shadow's round-2 and round-3 clean statements, Shadow box per `## Review` round 3 outcome
+(no unresolved blocker or should-fix), Omega box per `## Security` round 2 outcome (no
+unresolved findings above `low`), Big N/A recorded in the box itself, and box 7 (committed +
+pushed, local HEAD == remote HEAD at `c4cbf63`) re-verified in the Remote HEAD verification
+item below.
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** `main`. Direct push to `metalllinux/team-chaotix` under the standing 2026-08-21
+  user permission for `metalllinux` repos. No feature branch, no PR. Internal repo, AGENTS.md
+  §8.
+- **Commits:** `9e1f0c9` (`9e1f0c91579a3f9b17ec5c490041b2bb4146e3ae`, initial ship, mixed
+  scope stated in the message) → `109ee7c` (`109ee7c970b49565a107e2c6668fb927b381ebdb`, fix
+  follow-up, planning docs) → `c4cbf63` (`c4cbf63cf6334325797430e988a6054fe6eacf2a`, final
+  follow-up, current main). GPG-signed: no. `commit.gpgsign` is not set in this repo (`git
+  config --get commit.gpgsign` → empty, 2026-08-29) and the recent history is unsigned (`git
+  log --format='%h %G?' -12` → `N` on every line).
+- **PR:** n/a. Internal repo shipped by direct push under the standing permission. No PR
+  required, AGENTS.md §8.
+- **Deploy:** n/a. Docs-only change (README + team config). No deployment to dispatch.
+- **Remote HEAD verification (2026-08-29, Knuckles):** `git ls-remote origin main`, actual
+  output, quoted verbatim:
+  `c4cbf63cf6334325797430e988a6054fe6eacf2a	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `c4cbf63cf6334325797430e988a6054fe6eacf2a` == remote HEAD.
+  PASS. This line also carries the deferred `ef884e4` verification from TASK-0014. `ef884e4`
+  (`ef884e468614944e8ec4e75050622115d6447645`) is an ancestor of `c4cbf63` on `main` (`git
+  merge-base --is-ancestor ef884e4 c4cbf63` → exit 0, 2026-08-29), so the pushed main HEAD
+  confirms the TASK-0014 final state on the remote.
 
 ---
 
