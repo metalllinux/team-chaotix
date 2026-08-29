@@ -318,7 +318,7 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 **Problem:** DoD item 6 asks for a "least-privilege assessment of the five new patterns, including the blast radius of `ssh howard@192.168.1.106*`", but the rework replaced the five patterns with nine and the ssh glob no longer exists.
 **Failure scenario:** a reader (or Omega's round-2 pass) working from the box alone assesses the blast radius of a rule that no longer exists, instead of the three exact ssh rules.
 **Suggested direction:** Robotnik (DoD owner; Tails cannot edit that section) rewords the box to name the final tightened set. Does not affect the Shadow DoD box and does not block.
-**Resolution:** fixed in `<sha>` (the first commit of this turn ships Robotnik's reworded box; the sha is recorded in the TASK-0013 `## Implementation` follow-up per the TASK-0011 convention). The DoD item now names the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned push forms) and records H-1 as the only permitted unresolved item, exactly the rewording suggested.
+**Resolution:** fixed in `1da994a` (that commit ships Robotnik's reworded box; the push and ls-remote lines are recorded in the TASK-0013 `## Implementation` follow-up). The DoD item now names the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned push forms) and records H-1 as the only permitted unresolved item, exactly the rewording suggested.
 
 ---
 
