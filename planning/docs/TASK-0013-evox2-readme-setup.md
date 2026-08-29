@@ -27,9 +27,10 @@ should-fix, 2 nits) + Omega round 1 (3 lows) all fixed in `1da994a`; Shadow roun
 fixed in `0a58642`; rounds verified clean (Shadow r3, Omega r2). The four "Could not verify"
 items were settled by read-only ssh on the fix turn (unit file line-for-line, live firewalld
 state, ryzenadj purpose self-evident and now documented, binary provenance partly settled).
-Final pushed state `c4cbf63`. All DoD boxes ticked 2026-08-29; awaiting `Knuckles` `## Release`
-record, then `Espio` pruning. The exact ssh verification commands are pinned rules in
-`Vector`'s bash set (TASK-0014), usable from the next opencode restart.
+Final pushed state `c4cbf63`. All DoD boxes ticked 2026-08-29; `Knuckles` verified DONE = yes and
+recorded `## Release` 2026-08-29 (`2678b28` + `0d45aca`, final remote state `0d45aca`). `Espio`
+pruning is the last step. The exact ssh verification commands are pinned rules in `Vector`'s bash
+set (TASK-0014), usable from the next opencode restart.
 
 **Environment / scope:**
 - Files in scope: `README.md` (team-chaotix repo, `/home/howard/AI/projects/team-chaotix/`)
@@ -104,9 +105,8 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Knuckles`: verify the DONE checklist (all boxes ticked), run `git ls-remote origin main`,
-      quote the line, confirm local HEAD == remote HEAD (also carrying the deferred `ef884e4`
-      verification from TASK-0014), record in `## Release`.
+- [x] `Knuckles` (complete 2026-08-29): DONE verified yes; `## Release` recorded (`2678b28` +
+      `0d45aca`); final remote state `0d45aca`; deferred `ef884e4` verification carried.
 - [ ] `Espio`: prune superseded round-1/2 narration into `## Archive` (findings are resolved and
       shipped; keep decisions, verified facts, and Resolution lines).
 
