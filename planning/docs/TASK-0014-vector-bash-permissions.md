@@ -596,6 +596,17 @@ deleted once the auth path is confirmed working.
   `2678b2853916b2f3095b0bc6755192ccdde76709`), pushed `c4cbf63..2678b28`, and re-verified
   after that push: `git ls-remote origin main` →
   `2678b2853916b2f3095b0bc6755192ccdde76709	refs/heads/main`, local == remote, PASS.
+- **Release record commit for this re-verification (follow-up per the TASK-0011
+  convention):** the DONE = yes update above shipped in commit `5cdde47` (full
+  `5cdde47a74c80310a8567d4517bd6b2f04f8c543`), pushed with `git push origin main` →
+  `fda39dd..5cdde47  main -> main`. `git ls-remote origin main` after that push, actual
+  output, quoted verbatim:
+  `5cdde47a74c80310a8567d4517bd6b2f04f8c543	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `5cdde47a74c80310a8567d4517bd6b2f04f8c543` == remote
+  HEAD. PASS (2026-08-29, Knuckles). After this recording commit's own push, local HEAD ==
+  remote HEAD is re-verified with `git ls-remote origin main`; that output line is quoted
+  in the dispatch response and is backfillable in a later bookkeeping commit (precedent
+  `55a4056`).
 
 ---
 
