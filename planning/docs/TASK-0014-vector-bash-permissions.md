@@ -572,7 +572,7 @@ user said are never deleted.*
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
 | 2026-08-29 | Minimal pass (task still Blocked on user H-1 decision): round-1 `Final permission.bash` block (10-rule state, superseded by the round-2 14-rule block) compressed to a pointer in `## Implementation`, full block moved here. No decisions or finding text touched | ~15 lines |
-| 2026-08-29 | Ship of this pass (same commit as the TASK-0013 pruning, prefix `TASK-0013:`) pending: Espio's loaded set is `bash: deny` (`.opencode/agents/espio.md:17`). Commit sha to be recorded here by the shipping commit | n/a |
+| 2026-08-29 | Ship of this pass (same commit as the TASK-0013 pruning, prefix `TASK-0013:`) | shipped as `4610cdf` by Robotnik bookkeeping (Espio's loaded set is `bash: deny`, `.opencode/agents/espio.md:17`); local HEAD == remote HEAD verified | n/a |
 
 ### Superseded round-1 `permission.bash` block (`.opencode/agents/vector.md:19-29`, read back after the round-1 edit, 2026-08-28)
 

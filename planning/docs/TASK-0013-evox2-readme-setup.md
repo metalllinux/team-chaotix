@@ -111,12 +111,10 @@ the PM reads.*
       "Commit status" paragraph and the full text of the resolved round-1/2 `## Review` findings
       moved to `## Archive`; `## Review` now carries one-liners with the fixing shas (`1da994a`,
       `0a58642`). Decisions, verified facts, and source pointers untouched.
-- [ ] Ship the pruning (both TASK-0013 and TASK-0014 docs): commit with prefix `TASK-0013:`
-      stating scope, push to main, verify local HEAD == remote HEAD with `git ls-remote`, and
-      record the commit sha in both docs' pruning logs. Espio's loaded permission set is
-      `bash: deny` (`.opencode/agents/espio.md:17`), so the dispatch's ship step cannot run from
-      this role; a bash-capable agent (Tails or Knuckles) must ship under the standing push
-      permission (user, 2026-08-21).
+- [x] Ship the pruning (complete 2026-08-29): shipped as `4610cdf` (prefix `TASK-0013:`, scope
+      stated), pushed, local HEAD == remote HEAD verified; sha backfilled in both pruning logs.
+      Shipped by Robotnik bookkeeping (Espio's loaded set is `bash: deny`,
+      `.opencode/agents/espio.md:17`), under the standing push permission (user, 2026-08-21).
 
 ---
 
@@ -621,7 +619,7 @@ the user said are never deleted.*
 |---|---|---|
 | 2026-08-29 | Superseded `## Docs` "Could not verify" list (4 items, all settled by the 2026-08-29 read-only ssh record in `## Implementation`) and "Commit status" paragraph (work shipped as `9e1f0c9`) moved here, `## Docs` left with a pointer | ~22 lines |
 | 2026-08-29 | Round-1 `## Review` findings (1 should-fix, 2 nits, all fixed in `1da994a`) and round-2 nit (fixed in `0a58642`) compressed to one-liners in `## Review`; full finding text moved here | ~38 lines |
-| 2026-08-29 | Ship of this pruning (commit + push + `git ls-remote`) pending: Espio's loaded set is `bash: deny` (`.opencode/agents/espio.md:17`). Commit sha to be recorded here by the shipping commit | n/a |
+| 2026-08-29 | Ship of this pruning (commit + push + `git ls-remote`) | shipped as `4610cdf` by Robotnik bookkeeping (Espio's loaded set is `bash: deny`, `.opencode/agents/espio.md:17`); local HEAD == remote HEAD verified | n/a |
 
 ### Superseded `## Docs` "Could not verify" list (Vector, 2026-08-28)
 
