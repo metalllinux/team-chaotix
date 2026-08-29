@@ -75,10 +75,13 @@ residuals low. All DoD boxes ticked except the Omega box, which is blocked on th
 decision. **Task is Blocked on the user (H-1 PAT).** `Knuckles` recorded `## Release` 2026-08-29
 (DONE = no, missing item = user H-1 decision; final state `ef884e4`).
 
-**User decision (2026-08-29):** rotate + de-embed (the recommended option). Awaiting the
-machine-side action. Then Robotnik verifies the rewrite is gone (value-free check, the token is
-never transcribed), records the rotation as user-reported, ticks the Omega box with the decision
-in the H-1 resolution line, commits + pushes, `Espio` prunes. Task stays Blocked until then.
+**Closed 2026-08-29:** user decision was rotate + de-embed. The user rotated the token in
+GitHub; Robotnik removed the rewrite block from `~/.gitconfig` (value-free; masked re-read shows
+no credential left) and the rotation is corroborated by the old `GH_TOKEN` being rejected by
+GitHub. All DoD boxes ticked; H-1 resolution recorded in `## Security`. Remaining: `Knuckles`
+re-verifies and updates `## Release` (its "no" record reflects the pre-decision state), then
+`Espio` prunes. User follow-ups recorded outside task scope: refresh `GH_TOKEN` with the new
+token, delete `~/token.md` once the auth path is confirmed.
 
 **Unknowns:** none load-bearing.
 
@@ -105,11 +108,11 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [x] Committed + pushed to `metalllinux/team-chaotix` main; local HEAD == remote HEAD
       (verified with `git ls-remote`; final state `ef884e4`).
 - [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`; a least-privilege assessment
+- [x] `Omega`: no unresolved findings above `low` in `## Security`; a least-privilege assessment
       of the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned
-      push forms) is recorded there. H-1 (live PAT in `~/.gitconfig:3`) is a user-owned
-      escalation, out of scope of this diff, and stays open until the user decides; it is the
-      only permitted unresolved item and keeps this box unticked until then.
+      push forms) is recorded there. H-1 (live PAT in `~/.gitconfig:3`) was a user-owned
+      escalation, out of scope of this diff; resolved 2026-08-29 by user rotation + de-embed,
+      verified value-free (see the H-1 resolution line in `## Security`).
 - [x] `Big`: N/A — config-only change, no executable code (recorded here).
 
 ---
@@ -123,14 +126,18 @@ the PM reads.*
       `ef884e4`; `## Implementation` round 2.
 - [x] `Shadow` round 2 (complete 2026-08-28): no blockers, no should-fix; round-1 nit resolved.
 - [x] `Omega` round 2 (complete 2026-08-29): H-2 + H-3 resolved against `ef884e4`; residuals low.
-- [ ] **User (in progress; decision 2026-08-29: rotate + de-embed):** rotate the PAT in GitHub
-      (revoke the token used by the `url.insteadOf` rewrite) and remove that rewrite block from
-      `~/.gitconfig`; then tell Robotnik so the value-free verification runs. Unblocks the Omega
-      DoD box and the task.
+- [x] **User (complete 2026-08-29):** token rotated in GitHub (user); rewrite block removed
+      from `~/.gitconfig` (Robotnik, value-free); rotation corroborated by `GH_TOKEN` rejection.
 - [x] `Knuckles` (complete 2026-08-29): `## Release` recorded — DONE = no, missing item = user
       H-1 decision; final state `ef884e4` confirmed on the remote.
-- [ ] After the user's H-1 decision: Robotnik ticks the Omega box (recording the decision in
-      `## Security`'s H-1 resolution line), commits + pushes; `Espio` prunes the doc.
+- [x] After the user's H-1 decision (complete 2026-08-29): Robotnik ticked the Omega box
+      (decision + verification in `## Security`'s H-1 resolution line), committed + pushed.
+- [ ] `Knuckles`: re-verify the DONE checklist against the resolved state, run `git ls-remote
+      origin main`, quote the line, update `## Release` (DONE = yes, with the H-1 resolution
+      referenced), commit + push, verify HEAD.
+- [ ] `Espio`: full pruning pass (task closed): round-1/2 findings are resolved and shipped,
+      compress with fixing shas; keep decisions, verified facts, and the H-1 escalation +
+      resolution record.
 
 ---
 
@@ -347,6 +354,16 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 **Impact:** an account-level GitHub credential (read/write across all `metalllinux` repos; more if the scope is broader, unverified). Secondary exposure: the token lives in a URL, and the git transport child process is spawned with the rewritten URL in its argv, so every github.com fetch, push, or ls-remote (including the team's own shipping flow) exposes it in `ps` on the host (expected behavior, not live-verified).
 **Fix:** (1) User action, now: rotate the token and treat it as exposed. (2) Remove the credential from the `insteadOf` rewrite; use a scoped credential (a fine-grained PAT limited to the repos the agents must touch, or `gh`-based auth). Note: on a single-UID host every local credential file remains readable by every agent; scoping and rotation are the real controls. (3) `planning/docs/SETUP.md:143-146` documents this as standard setup; that deviation from AGENTS.md §4 (secrets in GitHub Environments only) should be revisited. This is a host-config change, not a repo change; outside Tails's scope, user action. No history rewrite needed (nothing to rewrite).
 **Resolution:** open as of 2026-08-29 (Tails). User-owned per AGENTS.md §4; no repo-side fix exists in any team commit, and none is attempted here. Omega round 2 re-verified it open (line 3 of `~/.gitconfig` still embeds the token, value not transcribed per §4). The user decision (rotate + de-embed, or accept as documented residual risk) is the only permitted unresolved item per the amended DoD and keeps the Omega box unticked.
+
+**RESOLVED 2026-08-29 (user + Robotnik):** user decision was rotate + de-embed. The user
+rotated the token in GitHub. Robotnik removed the `url.insteadOf` rewrite block (2 lines) from
+`~/.gitconfig` with a value-free edit and verified by masked re-read that the file now contains
+no credential (only the `[github]` and `[user]` sections remain). De-embed verified; rotation
+user-reported, corroborated by the session `GH_TOKEN` (holding the old value) being rejected by
+GitHub (`gh auth status`: "The token in GH_TOKEN is invalid"). No auth path uses the old token
+any more. Open user actions recorded, outside task scope: refresh `GH_TOKEN` with the new token
+(the session env still carries the revoked value, so `gh` CLI calls fail until then), and delete
+`~/token.md` (new token, user-provided, now mode 600) once the auth path is confirmed working.
 
 ### `ssh howard@192.168.1.106*` grants a full remote shell on the shared model host; the need is read-only fact verification
 **Severity:** high
