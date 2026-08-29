@@ -404,28 +404,38 @@ verified against the reference machine or the team's records of it.
 ### Hardware and software
 
 The reference machine is a GMKtec EVO-X2 with an AMD Ryzen AI MAX+ 395 (Strix Halo) and the
-integrated Radeon 8060S GPU (gfx1151). It has 92 GB of unified memory, roughly 91 GB of which
-is visible to the Vulkan device. The model runs with all layers on that iGPU.
+integrated Radeon 8060S GPU (gfx1151). It has 92 GiB of unified memory (`free -h` on the
+reference machine, 2026-08-29), roughly 91 GB of which is visible to the Vulkan device. The
+model runs with all layers on that iGPU.
 
 | Component | Reference value |
 |---|---|
 | OS | Rocky Linux 10.2 |
 | Kernel | `7.0.12-1.el10.elrepo.x86_64`. The stock `6.12.0-211.49.1.el10_2` carries an older amdgpu driver and is not used |
-| llama.cpp | Vulkan build at `/usr/local/bin/llama-server`, version 9671 (commit `c1304d7b2`), built with GNU 14.3.1 |
+| llama.cpp | Vulkan source install under `/usr/local`, version 9671 (commit `c1304d7b2`), built with GNU 14.3.1 |
 | Firewall | firewalld |
-| Model download | `hf` CLI (`pip install huggingface_hub`) |
+| Model download | `hf` CLI (`pip install "huggingface_hub==1.19.0"`, the version on the reference machine) |
 
-The team artifacts do not record whether this binary is an upstream release or a local build.
-The version and commit are the working identifier.
+The binary is a source install under `/usr/local`, not a package (`rpm -qf` reports it owned by
+none) and not an upstream release artifact. It is a 16 KB dynamically linked launcher, and
+`ldd` resolves the server and the Vulkan backend to shared libraries in `/usr/local/lib64`
+(`libllama-server-impl.so`, `libllama-common.so.0`, `libmtmd.so.0`, `libllama.so.0`,
+`libggml.so.0`, `libggml-cpu.so.0`, `libggml-vulkan.so.0`, `libggml-base.so.0`), all read on
+2026-08-29. The commit exists in upstream `ggml-org/llama.cpp` (checked 2026-08-29), and no
+source tree sits in `~/llama.cpp`, `/opt/llama.cpp`, or `/usr/local/src/llama.cpp` (checked the
+same day), so whether the build used a pristine upstream checkout or a locally modified one is
+not recorded. The working identifiers are the version and the commit, plus the binary's
+`BuildID[sha1]` `65396b8511b63de93334ac201f3ef65a75da7f08`.
 
 ### Model files
 
-The model lives in `/mnt/data/models/qwen3.8-27b-q4/` with two files.
+The model lives in `/mnt/data/models/qwen3.8-27b-q4/` with two files. The SHA-256 values were
+computed on the reference machine (2026-08-29).
 
-| File | Role |
-|---|---|
-| `Qwen3.8-27B-UD-Q4_K_XL.gguf` | the 27B model, UD-Q4_K_XL quantization |
-| `mmproj-F16.gguf` | the vision projector |
+| File | Role | SHA-256 |
+|---|---|---|
+| `Qwen3.8-27B-UD-Q4_K_XL.gguf` | the 27B model, UD-Q4_K_XL quantization | `3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e` |
+| `mmproj-F16.gguf` | the vision projector | `cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e` |
 
 Both come from the Hugging Face repo `unsloth/Qwen3.8-27B-GGUF`. The team's `add-ai-model`
 skill (`~/.config/opencode/skills/add-ai-model/SKILL.md`) is the standing procedure for adding
@@ -440,11 +450,14 @@ hf download unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q4_K_XL.gguf --local-dir .
 hf download unsloth/Qwen3.8-27B-GGUF mmproj-F16.gguf --local-dir .
 ```
 
-Verify the result by file size and the GGUF magic header. The first line of `xxd` should start
-with `4747 5546`.
+Verify the result by SHA-256 (`sha256sum` against the table above) and by the GGUF magic
+header. The first line of `xxd` should start with `4747 5546`.
 
 Model endpoints on this box take ports in the 8080-8099 range, and this endpoint takes 8092.
-The reference machine also serves the sibling quantizations on 8080-8088 and 8090.
+The firewall keeps 8080-8088 and 8090 open for the sibling model endpoints, and the opencode
+client carries entries for them, but as of 2026-08-29 the only listener in that range is this
+endpoint on 8092, and the team runs one active model at a time (see the systemd unit
+subsection).
 
 ### The systemd unit
 
@@ -471,15 +484,18 @@ RestartSec=5
 WantedBy=default.target
 ```
 
-The `ExecStart` line is the one verified on the live process (TASK-0010 record). The remaining
-lines match the team's standard unit template in the `add-ai-model` skill.
+The whole file was read back from the reference machine on 2026-08-29 and matches this block
+line for line. The `ExecStart` line additionally matches the live process (TASK-0010 record),
+and the remaining lines match the team's standard unit template in the `add-ai-model` skill.
 
 The flags worth knowing. `--n-gpu-layers 99` pins every layer to the iGPU. `-fa on` turns on
 flash attention, which the quantized KV cache (`-ctk q8_0 -ctv q8_0`) requires at startup.
 `--mlock` pins the weights in RAM. `--parallel 1` serves a single 262144-token slot, which is
-the measured ceiling on this hardware. With four slots the llama.cpp fit step silently degrades
-the context to 4 x 65536 per slot instead of failing (measured on the sibling Q5 model), so
-check the effective context in the startup log (`new slot, n_ctx = 262144`) or in `/v1/models`
+the team's operating point and, per the fit table, the measured ceiling on this hardware. The
+fit table was measured on the heavier sibling Q5 model (2026-08-23), so the Q4 ceiling is
+unmeasured, though the Q4 weights are smaller. With four slots the llama.cpp fit step silently
+degrades the context to 4 x 65536 per slot instead of failing (same Q5 measurement), so check
+the effective context in the startup log (`new slot, n_ctx = 262144`) or in `/v1/models`
 rather than trusting the command line.
 
 The `add-ai-model` skill defaults its template to `--parallel 4` and warns that one slot queues
@@ -501,9 +517,9 @@ systemctl --user enable --now llama-server-qwen3.8-27b-q4.service
 systemctl --user status llama-server-qwen3.8-27b-q4.service
 ```
 
-Run one active model at a time. A sibling 27B endpoint held about 40 GB of the 92 GB pool while
-running (measured), so when a different quantization becomes the team's endpoint, stop and
-disable the other `llama-server-*.service` user units.
+Run one active model at a time. A sibling 27B endpoint held about 40 GB of the 92 GiB pool
+while running (measured), so when a different quantization becomes the team's endpoint, stop
+and disable the other `llama-server-*.service` user units.
 
 ### Firewall
 
@@ -513,9 +529,12 @@ sudo firewall-cmd --reload
 sudo firewall-cmd --list-all
 ```
 
-The reference machine runs firewalld with the `public` zone on `eno1`. The verified open ports
-include 8092/tcp for this endpoint plus 8080-8088 and 8090 for the sibling endpoints, and the
-enabled services are cockpit, dhcpv6-client, and ssh.
+The reference machine runs firewalld. The live state read on 2026-08-29 is the `public` zone on
+`eno1`, with open ports 8092/tcp for this endpoint plus 8080-8088 and 8090 for the sibling
+endpoints, and enabled services cockpit, dhcpv6-client, and ssh. The llama-server HTTP API is
+unauthenticated, so the firewalld rule is the only access control, and on a network that is not
+fully trusted the port should be restricted to the team's segment instead of opened in the
+`public` zone.
 
 ### The opencode client
 
@@ -560,6 +579,12 @@ single cold prefill of about 201k tokens wedges even a fresh chip in about 29 mi
 small delta-prompt work (4.5 h measured) produce no in-window wedges, but they do accumulate
 stress.
 
+**The power limits.** The box also runs a system-level `ryzenadj.service` (`enabled` and
+`active`, read 2026-08-29), a oneshot unit at `/etc/systemd/system/ryzenadj.service` with the
+description "Set RyzenAdj APU power limits". It runs `/usr/bin/ryzenadj --fast-limit=100000
+--tctl-temp=88` at boot, a 100 W fast power limit and an 88 C TCTL temperature limit, with
+`RemainAfterExit=yes` so the unit stays active after the boot run.
+
 **The cascade.** A wedge destroys the KV cache. When a session's context is near 200k tokens,
 the retry must cold re-prefill the entire context, which wedges again in 27-29 minutes, and the
 loop repeats until the session dies. That loop, not any single wedge, is what killed the
@@ -594,10 +619,12 @@ window.
 ### Verification after setup
 
 1. `systemctl --user status llama-server-qwen3.8-27b-q4.service` shows active and enabled.
-2. `curl http://192.168.1.106:8092/v1/models` returns the model with `n_ctx` 262144. Poll it,
+2. `sha256sum` of both files in `/mnt/data/models/qwen3.8-27b-q4/` matches the SHA-256 table in
+   the Model files subsection.
+3. `curl http://192.168.1.106:8092/v1/models` returns the model with `n_ctx` 262144. Poll it,
    because the list is empty during the roughly 12-second load window after each (re)start.
-3. The startup log shows `new slot, n_ctx = 262144` with no `n_ctx_seq` warning.
-4. `sudo firewall-cmd --list-all` lists 8092/tcp in the public zone.
+4. The startup log shows `new slot, n_ctx = 262144` with no `n_ctx_seq` warning.
+5. `sudo firewall-cmd --list-all` lists 8092/tcp in the public zone.
 
 ## Updating the team
 

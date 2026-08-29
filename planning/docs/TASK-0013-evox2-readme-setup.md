@@ -98,16 +98,21 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Shadow` (dispatched 2026-08-28): review the new `## EVO-X2 model host setup` README
-      section (lines ~398-601) and the `## Model` cross-reference sentence against `## Status`
-      verified facts, `## Definition of Done`, and AGENTS.md §10 style; check the cited sources
-      actually say what the section claims. Findings to `## Review`.
-- [ ] `Omega` (after Shadow): security pass on the same section — no credentials or tokens in
-      the README, firewall guidance least-privilege, documented commands safe to copy. Findings
-      to `## Security`.
-- [ ] `Knuckles` (after both reviews clean, or after the fix commit if findings required one):
-      work already shipped as `9e1f0c9`; verify the DONE checklist, confirm local HEAD == remote
-      HEAD with `git ls-remote`, record in `## Release`.
+- [ ] `Tails` (2026-08-29): fix Shadow's should-fix (README:447 "serves" overstatement) and two
+      nits (line 407 GB/GiB unit, lines 479-481 Q5 attribution), and Omega's three lows (one
+      sentence on the unauthenticated `--host 0.0.0.0` endpoint in the Firewall subsection, pin
+      `huggingface_hub` to the version read from the reference machine, record SHA-256 of both
+      weight files + add to the verification list). Also run the four read-only ssh verifications
+      from `## Docs` "Could not verify" (unit file `cat`, `sudo firewall-cmd --list-all`,
+      `systemctl cat ryzenadj.service`, binary provenance inspection) and upgrade the README's
+      marked-unverified items where they verify; document ryzenadj only if its purpose is
+      self-evident from the unit. Read-only on the host, no changes. Commit README + planning-doc
+      bookkeeping (state the mixed scope), push, verify remote HEAD; record all in `## Implementation`.
+- [ ] `Shadow`: targeted re-review of the fix diff → append round 2 to `## Review`.
+- [ ] `Omega`: targeted re-review → append round 2 to `## Security`.
+- [ ] `Knuckles`: final — verify the DONE checklist, confirm local HEAD == remote HEAD with
+      `git ls-remote` (also carrying the deferred `ef884e4` line from TASK-0014), record in
+      `## Release`.
 
 ---
 
@@ -136,21 +141,70 @@ the PM reads.*
 
 *Owner: `Tails`.*
 
+**Fix turn 2026-08-29** (dispatch in `## Next Actions`): fixes Shadow's should-fix + two nits and
+Omega's three lows, runs the four read-only ssh verifications from `## Docs` "Could not verify"
+plus the supporting read-only checks the fix list requires, and upgrades the README's
+marked-unverified items where they now verify. Strict constraint honored. Every remote command
+was read-only, nothing on the host was created, modified, or restarted.
+
 **Alternatives considered**
 
-### Problem: <what needed solving>
-**Option A — <approach>** · How: · Pros: · Cons:
-**Option B — <approach>** · How: · Pros: · Cons:
-**Chosen:** , because .
-**Competing priorities:** what was traded away, explicitly.
+### Problem: the README's marked-unverified items and three Omega lows all need values read from the reference machine, and the should-fix needs the current listener state
+**Option A — run all four named verifications plus the supporting read-only checks in one turn (`sha256sum`, `pip show`, `free -h`, `ss -tln`, `ldd`/provenance follow-ups) and rewrite every affected README passage against the live output** · How: `ssh howard@192.168.1.106` with read-only commands only, each recorded below with its result. · Pros: every affected value is machine-verified as of 2026-08-29, the "Could not verify" list settles in one pass, and the GB/GiB nit gets the machine reading Shadow offered instead of a unit copy. · Cons: the turn runs more remote commands than the four named (mitigated. every extra command is read-only and directly settles a named finding, and each is listed below so the surface is auditable).
+**Option B — run only the four named verifications and leave the pin, the hashes, and the unit sourced from the 2026-08-27/28 Status** · How: skip `pip show`, `sha256sum`, `free -h`. · Pros: minimal remote surface. · Cons: Omega's fix list explicitly forbids guessing the pin ("Read the version from the reference machine ... rather than guessing, per AGENTS.md §5") and requires the hashes "computed once from the verified files on the reference machine", so two of the three lows would ship unfilled, and the nit would stay a unit copy.
+**Chosen:** A, because the fix list names the reference machine as the source of the pin and the hashes, and the extra commands are read-only under the task's strict constraint.
+**Competing priorities:** minimal remote surface was traded for settled values. The trade is bounded. every command is recorded below, none writes, and the host's standing state is unchanged.
+
+**Remote verification record** — all commands run 2026-08-29 as `ssh howard@192.168.1.106 '<cmd>'` (key auth, `BatchMode`), read-only. No command wrote, installed, stopped, or restarted anything on the host.
+
+1. `cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service` (named verification 1)
+   - Output: the file matches the README block line for line, all 14 lines (`Description`, `After`, `Wants`, `Type`, `LimitMEMLOCK`, `ExecStart`, `Restart`, `RestartSec`, `WantedBy` and the section headers).
+   - Settled. The whole file is verified on the machine, not just `ExecStart`. README upgraded (the note now says the whole file was read back and matches line for line).
+2. `sudo firewall-cmd --list-all` (named verification 2)
+   - Output. zone `public` (default, active), `interfaces: eno1`, `services: cockpit dhcpv6-client ssh`, `ports: 8080/tcp 8081/tcp 8082/tcp 8083/tcp 8087/tcp 8085/tcp 8086/tcp 8088/tcp 8090/tcp 8084/tcp 8092/tcp`, `protocols:` empty, `forward: yes`, `masquerade: no`, no rich rules, no source-ports.
+   - Settled. The live state matches the README's open-port set (8092 plus 8080-8088 plus 8090) and service set (cockpit, dhcpv6-client, ssh) exactly. README upgraded (the Firewall subsection now states the live state read 2026-08-29).
+3. `systemctl cat ryzenadj.service` (named verification 3)
+   - Output. unit at `/etc/systemd/system/ryzenadj.service` with `Description=Set RyzenAdj APU power limits`, `After=systemd-modules-load.service`, `Type=oneshot`, `ExecStart=/usr/bin/ryzenadj --fast-limit=100000 --tctl-temp=88`, `RemainAfterExit=yes`, `WantedBy=multi-user.target`.
+   - Follow-up (read-only). `systemctl is-enabled ryzenadj.service` → `enabled`; `systemctl is-active ryzenadj.service` → `active`.
+   - Settled. The purpose is self-evident from the unit (set APU power limits at boot), so per the task instruction it is documented. New `**The power limits.**` paragraph in the README's GPU-wedge subsection.
+4. Binary provenance inspection of `/usr/local/bin/llama-server` (named verification 4)
+   - `ls -l /usr/local/bin/llama-server` → `-rwxr-xr-x. 1 root root 16712 Jun 16 22:12 /usr/local/bin/llama-server`
+   - `file /usr/local/bin/llama-server` → `ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=65396b8511b63de93334ac201f3ef65a75da7f08, for GNU/Linux 3.2.0, not stripped`
+   - `rpm -qf /usr/local/bin/llama-server` → `file /usr/local/bin/llama-server is not owned by any package`
+   - `/usr/local/bin/llama-server --version` → `version: 9671 (c1304d7b2)` and `built with GNU 14.3.1 for Linux x86_64` (matches the recorded facts in `## Status`)
+   - `ldd /usr/local/bin/llama-server` → the server and backend code resolve to shared libraries in `/usr/local/lib64` (`libllama-server-impl.so`, `libllama-common.so.0`, `libmtmd.so.0`, `libllama.so.0`, `libggml.so.0`, `libggml-cpu.so.0`, `libggml-vulkan.so.0`, `libggml-base.so.0`); the 16 KB executable is the launcher
+   - `ls -d ~/llama.cpp /opt/llama.cpp /usr/local/src/llama.cpp` → none of the three exist (no source tree in the usual build locations)
+   - Running process. `pgrep -x llama-server` → pid 17168; `readlink /proc/17168/exe` → `/usr/local/bin/llama-server` (the serving process runs exactly this binary)
+   - Upstream commit check (local, web). `https://github.com/ggml-org/llama.cpp/commit/c1304d7b2` resolves; commit title "ui: add source toggle to mermaid and svg blocks (#24652)". The version identifier is anchored to an existing upstream commit.
+   - Settled in part. The binary is a source install under `/usr/local` (not package-owned, launcher plus shared libraries, not an upstream release artifact), built from a tree whose commit exists upstream. Whether the checkout was pristine or locally modified remains unrecorded, and the README says so (the provenance paragraph was upgraded from "not recorded whether release or local build" to the verified layout plus that one remaining unknown).
+5. Supporting checks (read-only) for the named findings
+   - `which hf` → `/home/howard/.local/bin/hf`; `pip show huggingface_hub` → `Version: 1.19.0`, `Location: /home/howard/.local/lib/python3.12/site-packages`. Settles the pin for Omega low 2. README row now reads `pip install "huggingface_hub==1.19.0"`.
+   - `sha256sum /mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf /mnt/data/models/qwen3.8-27b-q4/mmproj-F16.gguf` → `3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e` (weights) and `cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e` (mmproj). Settles Omega low 3. Both values are in the README's Model files table, and `sha256sum` is item 2 of the verification list.
+   - `free -h` → `Mem: 92Gi total` (37Gi used, 34Gi free, 21Gi buff/cache, 55Gi available). Settles Shadow's GB/GiB nit with the machine reading. README now says 92 GiB with the source and date; the "92 GB pool" mention in the unit subsection was aligned to 92 GiB.
+   - `ss -tln` → listeners `0.0.0.0:8092`, `0.0.0.0:22`, `[::]:22`, `*:9090`. In the 8080-8099 model range the only listener is 8092. Settles the current listener state for the should-fix. The README sentence now states only verified facts (firewall keeps the sibling ports open, client entries exist, only 8092 listens as of 2026-08-29, one active model at a time).
 
 **Changes**
 
 | File | What changed |
 |---|---|
-| | |
+| `README.md` (the `## EVO-X2 model host setup` section only) | Shadow should-fix. The "also serves the sibling quantizations on 8080-8088 and 8090" sentence (former `README.md:447`) now states only verified facts, per Shadow's suggested direction. Shadow nit 1. "92 GB of unified memory" (former `README.md:407`) → "92 GiB" with the `free -h` source and date; the same fact in the "Run one active model at a time" paragraph aligned to "92 GiB pool". Shadow nit 2. The ceiling claim (former `README.md:479-481`) now carries the Q5 attribution. The fit table is measured on the heavier Q5 sibling (2026-08-23), the Q4 ceiling is stated as unmeasured. Omega low 1. One sentence added to the Firewall subsection. the HTTP API is unauthenticated, the firewalld rule is the only access control, and on a network that is not fully trusted the port should be restricted to the team's segment. Omega low 2. `pip install huggingface_hub` pinned to `huggingface_hub==1.19.0`, read from the reference machine (not guessed). Omega low 3. SHA-256 column added to the Model files table (computed on the reference machine), the download-verification sentence now includes `sha256sum`, and a `sha256sum` item added to the verification list (now item 2). Upgrades. The unit note states the whole file was read back from the machine on 2026-08-29 and matches line for line; the Firewall subsection states the live firewalld state read 2026-08-29; the provenance paragraph records the verified install layout (16 KB launcher plus `/usr/local/lib64` shared libraries, not package-owned, commit confirmed to exist upstream, no source tree in the usual locations) and the one remaining unknown (pristine vs locally modified checkout); a new `**The power limits.**` paragraph documents `ryzenadj.service` because its purpose is self-evident from the unit |
+| `planning/docs/TASK-0013-evox2-readme-setup.md` | This `## Implementation` record; the six round-1 finding Resolution lines filled (the fix-sha reference is completed in the follow-up commit per the TASK-0011 convention). Also ships, unedited by Tails, Robotnik's `## Next Actions` bookkeeping and the `## Review` / `## Security` sections as written by Shadow and Omega |
+| `planning/docs/TASK-0014-vector-bash-permissions.md` | Ships, unedited by Tails, Robotnik's bookkeeping (amended DoD box, `## Next Actions`, `## Review` round 2, `## Security` round 2). Tails fills the eight outstanding Resolution lines in the same commit. H-1 stays open (user-owned, AGENTS.md §4), H-2 and H-3 are resolved against `ef884e4` per Omega round 2, the four low items are recorded as resolved or residual, and the DoD-box nit is fixed by the box rewording this commit ships |
 
-**Checks run:** compile · linter · harness
+**Checks run**
+
+- `git diff ef884e4 -- README.md` reviewed line by line. Only the `## EVO-X2 model host setup` section changed; the `## Model` cross-reference and every other part of the README are untouched.
+- AGENTS.md §10 on the file. `grep -n '—\|–' README.md` → no matches (exit 1); banned-word grep (`simply|just|obviously|easy|leverage|utilize|ensure|robust|seamless|Not only`) → no matches in `README.md`; colons inside the section (lines 398-627) appear only in the JSON block, timestamps, and URLs, all permitted technical contexts.
+- Cross-check. Every new factual claim in the section maps to a line in the remote verification record above (unit file, firewalld state, ryzenadj plus its enabled/active state, provenance chain, pip version, the two hashes, `free -h`, `ss -tln`, the upstream commit page).
+- Compile / linter / harness. n/a, docs-only change (`Big` is N/A per `## Definition of Done`).
+
+**Commit and remote verification** — recorded in the follow-up commit, per the TASK-0011 convention (`planning/docs/TASK-0011-default-model-q4kxl.md:219`. "follow-up commit records the sha here").
+
+**Settlement of `## Docs` "Could not verify"** — Vector's section is left untouched per the section rule; this record supersedes it.
+- Unit file text beyond `ExecStart` → settled, verified (record item 1).
+- Current live firewalld state → settled, verified (record item 2).
+- `ryzenadj.service` purpose → settled, self-evident from the unit, documented (record item 3).
+- llama.cpp binary provenance → settled in part (record item 4). The pristine-vs-locally-modified question stays marked as unrecorded in the README, per the task instruction to leave it marked if it stays unclear.
 
 ---
 
@@ -158,13 +212,38 @@ the PM reads.*
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### <short claim>
-**Severity:** blocker | should-fix | nit
-**Where:** `path/to/file:line`
-**Problem:** one sentence.
-**Failure scenario:** concrete inputs/state → the wrong outcome.
-**Suggested direction:** what to do instead.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+### "serves" on the sibling endpoint ports overstates the verified facts
+**Severity:** should-fix
+**Where:** `README.md:447`
+**Problem:** the sentence asserts active serving on 8080-8088 and 8090, but the verified facts establish only that those ports are open in the firewall (this doc `## Status` lines 46-47, Robotnik ssh 2026-08-27/28) and that client entries exist (`~/.config/opencode/opencode.json:5-120`), while the newest verified listener state shows 8084, inside that range, has no listener and the team runs Q4 only (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:49-54` 2026-08-26 12:50 UTC entry, `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:498-502` checkpoint 3.2).
+**Failure scenario:** a new team member reads the present-tense "also serves the sibling quantizations on 8080-8088 and 8090", expects sibling endpoints to be up, points a client at 8084 and gets connection refused, and cannot reconcile the sentence with the section's own "Run one active model at a time" rule two subsections later (`README.md:504-506`) or with the section intro's "Every value below is verified against the reference machine or the team's records of it" (`README.md:401-402`), which this unmarked claim does not meet.
+**Suggested direction:** state only what is verified. The firewall keeps 8080-8088 and 8090 open for the sibling model endpoints, the opencode client carries entries for them, and per the newest verified state only the Q4 endpoint on 8092 is active. Alternatively mark the current listener state explicitly as unverified. The firewall subsection (`README.md:516-518`) already phrases this correctly and needs no change.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). The sentence now states only verified facts. The firewall keeps 8080-8088 and 8090 open, the opencode client carries entries for them, and as of 2026-08-29 the only listener in the 8080-8099 range is this endpoint on 8092 (`ss -tln`, `## Implementation` remote record item 5), with the one-active-model rule cross-referenced. The current listener state is now machine-verified rather than merely sourced from the newest team record.
+
+### Memory unit differs between the README and the ssh-verified Status
+**Severity:** nit
+**Where:** `README.md:407`
+**Problem:** the README says "92 GB of unified memory" (following `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`, "92 GB unified memory") while the ssh-verified Status says "92 GiB RAM" (this doc `## Status` lines 37-38).
+**Failure scenario:** a reader cross-referencing the planning Status against the README sees two unit spellings for the same machine fact and cannot tell which is the measured reading without going to the machine.
+**Suggested direction:** pick one unit, preferably the ssh-verified Status's, and note the source, or settle it with a `free -h` reading on 192.168.1.106 when the ssh channel opens.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). Settled with the `free -h` reading Shadow offered. `free -h` on 192.168.1.106 (2026-08-29) reports `Mem: 92Gi total`, so the README now says "92 GiB of unified memory" with the source and date, matching the ssh-verified Status. The same fact in the "Run one active model at a time" paragraph ("92 GB pool") was aligned to "92 GiB pool". The "~91 GB visible to the Vulkan device" figure is a different quantity (device-visible memory, from the team incident record `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:4-5`) and keeps the unit as recorded there.
+
+### "the measured ceiling on this hardware" lacks the Q5 attribution the next sentence carries
+**Severity:** nit
+**Where:** `README.md:479-481`
+**Problem:** the fit table behind the claim was measured on the Q5 sibling only (`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`, heading "Measured memory ceiling (2026-08-23, Q5 alone, Q6 stopped)"), and the "(measured on the sibling Q5 model)" attribution at `README.md:481` attaches only to the 4 x 65536 sentence, leaving "which is the measured ceiling on this hardware" at `README.md:479` unqualified.
+**Failure scenario:** a reader setting up this Q4 endpoint, whose weights are smaller than Q5's, concludes that `--parallel 2` will silently degrade context on Q4, when the only fit measurement is the heavier Q5 model and the Q4 ceiling is unmeasured.
+**Suggested direction:** extend the Q5 attribution to the ceiling claim as well, or reword the ceiling as the measured Q5 ceiling or the team's operating point rather than a hardware-wide fact.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). Both suggested directions combined. The sentence now reads that `--parallel 1` at 262144 is the team's operating point and, per the fit table, the measured ceiling on this hardware, and the next sentence states the fit table was measured on the heavier sibling Q5 model (2026-08-23, `/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md:62-69`) so the Q4 ceiling is unmeasured, though the Q4 weights are smaller. The 4 x 65536 degradation sentence keeps its Q5 attribution, now phrased "same Q5 measurement".
+
+**Verified clean (2026-08-28, `Shadow`):**
+- The user-requested correction is present and unambiguous at `README.md:588-589` ("The context window was not reduced. The unit still requests `-c 262144` and the endpoint serves it."), and the user decision of 2026-08-27 12:13 UTC is accurately restated at `README.md:590-592` against `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:32-34`.
+- The `ExecStart` line at `README.md:466` matches the live-process record flag for flag (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:503-505`, `:513`), and the remaining unit lines match the `add-ai-model` skill template (`~/.config/opencode/skills/add-ai-model/SKILL.md:81-101`) and are marked as template-derived at `README.md:474-475`.
+- The provider entry at `README.md:525-541` is verbatim `~/.config/opencode/opencode.json:121-137` (baseURL, timeout 3600000, context 262144, output 131072).
+- All GPU-wedge numbers trace to their sources. 26 wedges in about two days of Q5 load (`qwen38-q5-fixes.md:116-117`), the 120 W cap with 0 throttle events and the 201k/29-min fresh-chip repro (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:466-480`, Status lines 15-27), the 27-29 min cascade and the TASK-0008 2c death at 02:33 UTC (`:458-464`), the 5-11 s restarts and 5.1 s reload (`:432-433`, Status lines 29-31), the exhausted sysfs surface and the `low` numbers 55.5/255.8 and 2.83/11.87 t/s at about 4.5x (`:582-598`, `:614-619`), the 12 s empty `/v1/models` window (`qwen38-q5-fixes.md:99-101`), the 40 GB sibling hold (`qwen38-q5-fixes.md:78-83`), and the monitoring command verbatim (`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:93-94`).
+- Unverified items are handled per the DoD. Binary provenance is marked at `README.md:418-419`, the unit file beyond `ExecStart` is marked at `README.md:474-475`, and `ryzenadj` is absent from the README (grep, no matches) per the omit-if-not-verifiable instruction.
+- AGENTS.md §10 holds for the whole file. No em or en dashes anywhere in `README.md` (grep, no matches), no banned words (grep, no matches), colons appear only inside the JSON block, timestamps, and URLs, all permitted technical contexts, explanations are prose rather than bullets (tables enumerate reference values, the numbered list is an ordered verification procedure), and the section takes positions ("takes the trade anyway", "The standing decision is to keep `auto`").
+- Internal consistency holds. Port 8092, IP 192.168.1.106, the model name `Qwen3.8-27B-UD-Q4_K_XL`, the unit name, and the model directory are identical across the `## Model` cross-reference (`README.md:393-396`), the new section, and `~/.config/opencode/opencode.json:121-137`. The port list 8092 plus 8080-8088 and 8090 is the complete verified open-port set from `## Status` lines 46-47 (8084 falls inside 8080-8088).
 
 ---
 
@@ -172,14 +251,41 @@ the PM reads.*
 
 *Owner: `Omega`. Read-only. Severity order.*
 
-### <short claim>
-**Severity:** critical | high | medium | low
-**Vector:** injection | authz | secrets | input-validation | crypto | supply-chain | actions | license
-**Where:** `path/to/file:line`
-**Attack:** who the attacker is, what they control, the concrete steps.
-**Impact:** what the attacker gains.
-**Fix:** the specific change.
-**Resolution:** *(filled by `Tails`)*
+### Unauthenticated inference API on all interfaces, exposure not stated in the README
+**Severity:** low
+**Vector:** authz
+**Where:** `README.md:466` (`--host 0.0.0.0` in `ExecStart`), `README.md:508-518` (Firewall)
+**Attack:** the llama-server OpenAI-compatible HTTP API has no authentication layer, and the unit binds it to `0.0.0.0`. Any host in the network segment covered by the `public` zone (on the reference machine the home LAN on `eno1`, this doc `## Status` lines 46-47) can reach 8092/tcp. The attacker needs no credential. A compromised LAN device, a guest laptop, or an IoT endpoint can send arbitrary prompts to `http://192.168.1.106:8092/v1` and query `/v1/models`. The README documents the firewall rule and the zone, but nowhere says the endpoint is unauthenticated or that the firewalld rule is the only access control. A reader who follows the section onto an untrusted segment (guest Wi-Fi, a borrowed network) sees the firewall rule as the whole picture and does not notice the box is serving anonymous inference.
+**Impact:** availability and compute, not confidentiality. The team runs on this single-slot endpoint (`--parallel 1`, `README.md:393`), so a hostile or malfunctioning client on the segment can saturate it and stall every agent dispatch, or burn GPU time on its own prompts. No credential is exposed, and the API does not return other sessions' context (single slot, per-request responses only).
+**Fix:** one sentence in the Firewall subsection (or the unit subsection). The HTTP API is unauthenticated, the firewalld rule is the only access control, and on a network that is not fully trusted the port should be restricted to the team's segment instead of opened in the `public` zone. Do not change the verified `ExecStart`.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). One sentence added to the Firewall subsection, exactly the fix named. "The llama-server HTTP API is unauthenticated, so the firewalld rule is the only access control, and on a network that is not fully trusted the port should be restricted to the team's segment instead of opened in the `public` zone." The verified `ExecStart` was not changed.
+
+### Download procedure installs `huggingface_hub` without a version pin
+**Severity:** low
+**Vector:** supply-chain
+**Where:** `README.md:416` (Hardware and software table, Model download row)
+**Attack:** the documented setup installs the `hf` CLI unpinned (`pip install huggingface_hub`). The attacker is the PyPI supply chain itself, a compromised or malicious future release of `huggingface_hub`. A reader who follows the README later installs whatever is current at that time and executes it on the model host at setup. The same CLI is the tool that fetches the model weights, so a malicious release can also serve tampered files in place of the download.
+**Impact:** code execution on the model host at setup time. That host serves the team's only inference endpoint, so a compromise reaches every agent session, but the window is setup time and the attacker must own the package name.
+**Fix:** pin the CLI to the version the team actually verified and record it, e.g. `pip install "huggingface_hub==<verified version>"`. Read the version from the reference machine (`pip show huggingface_hub` over the ssh channel that opens after the next opencode restart) rather than guessing, per AGENTS.md §5.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). The Hardware and software table row now reads `pip install "huggingface_hub==1.19.0"`, with the note that 1.19.0 is the version on the reference machine. The version was read from the machine via `pip show huggingface_hub` (2026-08-29, `## Implementation` remote record item 5), not guessed. The `hf` CLI sits at `/home/howard/.local/bin/hf` in the user site.
+
+### Downloaded weights are verified by format only, with no hash
+**Severity:** low
+**Vector:** supply-chain
+**Where:** `README.md:443-444`
+**Attack:** the only integrity check documented for the downloaded GGUF files is file size plus the GGUF magic header (`4747 5546`), which verifies the container format, not the content. An attacker who can redirect the model host's download (a compromised router or DNS on the LAN) serves a different model file that passes both checks, and the team runs it as the inference endpoint. This is the same supply-chain surface as the unpinned-CLI finding, one step further down the chain.
+**Impact:** a substituted or adversarial model becomes the team's endpoint and every agent session then runs on attacker-influenced weights. The precondition, LAN-level redirection of an HTTPS download, makes this unlikely on the reference network. Rated low on exploitability, not on impact.
+**Fix:** record a SHA-256 for each of the two files in the Model files subsection (computed once from the verified files on the reference machine) and add `sha256sum` to the verification list. If the team considers that overkill for a home LAN, say so in the section so the format-only check is a stated choice rather than an omission.
+**Resolution:** fixed in `<sha>` (this turn's fix commit; the sha is recorded in the `## Implementation` follow-up per the TASK-0011 convention). The Model files table gained a SHA-256 column with both hashes computed on the reference machine (2026-08-29, `## Implementation` remote record item 5. `3f227079...` for the weights, `cbb841a9...` for the projector). The download-verification sentence now leads with `sha256sum` against the table and keeps the GGUF magic-header check, and the Verification after setup list gained item 2, a `sha256sum` match of both files. The hash check is documented as the standard, not an optional extra, so the format-only check is no longer the only stated control.
+
+**Verified clean (2026-08-29, `Omega`):**
+- No credentials, tokens, or API keys in the section or introduced by `9e1f0c9`. Grep of the pushed README for credential patterns (`password|token|secret|api-key|Bearer|ghp_|hf_|AKIA`): the section's only hits are the word "token" in model token counts (`README.md:479`, `:559`, `:563`). The provider entry (`README.md:524-541`) carries no `apiKey` field, consistent with the unauthenticated endpoint. `hf download` is documented without an HF token. The LAN IP, the `howard` username (`README.md:577`), and the filesystem paths are not secrets per the task brief. `gitleaks` is not installed on this host (`command not found`), so the scanner of record for the pushed state is the CI `secret-scan-self.yml` workflow (gitleaks on push and weekly). The commit's non-README files contain no secret values; the PAT reference in `planning/docs/TASK-0014-vector-bash-permissions.md:334` is value-free and its absence from the repo and history was verified in that task's `## Security`.
+- The working tree matches the pushed section. `git diff 9e1f0c9 HEAD -- README.md` shows only the agent catalogue row (line 34, TASK-0014 follow-up) changed after `9e1f0c9`; lines 398-601 are byte-identical to the pushed state.
+- The firewall command (`README.md:510-514`) adds exactly `8092/tcp` in the `public` zone and nothing else. It does not ask the reader to open ssh, cockpit, or any other service. The statement of the reference machine's existing open ports and services (`README.md:516-518`) is a fact about the machine, not a setup instruction.
+- The systemd unit guidance does not weaken security. The unit is user-level, runs as the model host user, uses no `sudo`, no root, and no capability beyond the user's own. `LimitMEMLOCK=infinity` (`README.md:465`) is required by `--mlock` for a model of this size and is scoped to that user service. `Restart=on-failure` with `RestartSec=5` is availability, not a security property.
+- No metacharacter traps for copy-paste. Every code block in the section (lines 434-441, 457-472, 498-502, 510-514, 524-542, 576-578) and every inline command in the verification list (`README.md:596-600`) was inspected. All arguments are fixed literals, there is no variable, no leading-dash value, and no argument-injection surface. The only special characters anywhere are `|` and `"` inside the single-quoted ssh remote command (`README.md:577`), which paste literally (single quotes, no `!`, so no history expansion). A README-scoped grep for literal `$` returns only lines 188, 205, 247, 297, 299, 623, 624, all outside the section, and a README-scoped grep for `!` returns zero matches.
+- License: no misstatement and no missing attribution for a docs-only change. The section makes no license claim about llama.cpp, identifying it by version 9671, commit `c1304d7b2`, and binary path (`README.md:414`) with the provenance explicitly marked unrecorded (`README.md:418-419`), and it attributes the weights to the source repo `unsloth/Qwen3.8-27B-GGUF` (`README.md:430`). Neither the README nor the source skill (`~/.config/opencode/skills/add-ai-model/SKILL.md`) states a model license. If the team ever redistributes the weights instead of documenting a download, the upstream license must be named at that point.
+- The ssh monitoring command (`README.md:577`) uses plain key-based ssh, not the `sshpass -p` pattern from the source skill (`SKILL.md:31` and following). The README does not document the skill's plaintext password file (`~/ai_machine_pass.md`, `SKILL.md:10-11` and `:161`), which is correct. The agent-facing risk of the ssh channel itself is tracked as H-2 in `planning/docs/TASK-0014-vector-bash-permissions.md:353-360`, a Vector bash-set issue, not a README issue.
 
 ---
 
