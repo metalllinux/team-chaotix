@@ -248,10 +248,15 @@ other line of the README touched.
 
 **Commit and remote verification** — per the TASK-0011 convention (`planning/docs/TASK-0011-default-model-q4kxl.md:218`. "follow-up commit records the sha here"):
 
-- Fix commit (README + this planning doc, 2 files, mixed scope stated in the message, prefixed
-  `TASK-0013:`): the commit that ships this record. Its sha, the push output, and the
-  `git ls-remote origin main` line are completed by the follow-up commit below, and that final
-  output line is the state `Knuckles` re-verifies for `## Release`.
+- Fix commit (README + this planning doc, 2 files, +178/-1, mixed scope stated in the message,
+  prefixed `TASK-0013:`): `0a58642` (full `0a58642da8c5111102ed7efa978e3f90f36cbe76`), pushed
+  with `git push origin main` → `109ee7c..0a58642  main -> main`.
+- `git ls-remote origin main` after the push, actual output:
+  `0a58642da8c5111102ed7efa978e3f90f36cbe76	refs/heads/main`.
+  Local HEAD (`git rev-parse HEAD`) `0a58642da8c5111102ed7efa978e3f90f36cbe76` == remote HEAD. PASS.
+- This follow-up commit (planning doc only) completes this commit record. After its push, local
+  HEAD == remote HEAD is re-verified with `git ls-remote origin main`, and that final output line
+  is the state `Knuckles` re-verifies for `## Release`.
 
 ---
 
