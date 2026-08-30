@@ -12,6 +12,76 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-08-30, fourth entry): user instruction — merge all 13 branch commits to main now.**
+User directed (2026-08-30, second explicit ask) that **all** commits on `task-0008-gdm-auth` be
+pushed to main. Branch state: tip `f259dd5` = origin, 13 commits ahead of `main`
+(`b15dfcb`..`f259dd5`: 5 harness commits + 3 batch-A security fixes + 5 batch-B
+verdict-integrity fixes), tree clean. **DoD deviation recorded (AGENTS.md §5):** the Omega gate
+is satisfied (high + 2 medium fixed in batch A); the Shadow gate is **not** — should-fixes #2
+(ukey uppercase drop), #5 (prereq checks), #6 (hardcoded 48), #10 (provisioning dup) plus the
+vnc-grab question (batch C) and 7 nits remain, and the trio re-run + bare-metal interactive
+matrix have not run. The merge proceeds on explicit user instruction; `Knuckles` executes it
+via PR; the remaining items are tracked in `## Next Actions` and land on main as a follow-up
+merge after batches C/D + the clean re-run. The outstanding key evidence is the bare-metal
+interactive matrix (start GDM, log in as `howard`, no-glitch check) in Big's re-run.
+
+**Now (2026-08-30, third entry): trio complete (Shadow → Omega → Big); merge gate blocked;
+fixes sequenced as four small-context batches.** Big (12/12 checks run, none dropped): non-VM
+layers PASS with findings — `vnc-grab.py` proven **non-functional against any spec-conformant
+RFB server** (5 protocol defects; it never worked — 2c-3b's screenshots came from QMP
+`virsh screenshot`, so the 2c-3b login/PAM evidence stands); Shadow #3 false-PASS rc checks
+confirmed live. Bare-metal env prep PASS: dedicated key installed (alias `cinnamon-bm103`,
+`~/pass.txt` tightened to 600), baseline 674 packages with no DM / no X / no desktop, 48-RPM
+set (sha256-verified) installed cleanly pulling 157 packages with **no login manager and no X
+server** (mesa Wayland + X11 libs only), both session entries present, GDM 47 + gnome-shell
+49.4 installed, enabled, not started, Wayland-only. **Xorg re-confirmed absent from every repo
+on the machine; Xwayland is the X11-compat path** — that answers the user's Xorg question.
+Machine state: "Cinnamon+GDM installed and enabled, not started", at the getty; evidence
+`~/t0008-*.txt` on the machine. Observation channel decision (Robotnik): no VNC exists on the
+machine (vnc-grab inapplicable there by architecture) — primary channel for the interactive
+matrix is a11y + journal + ukey input, with the user at the physical console for visual
+"no glitches" confirmation; a cheap Wayland screenshot bridge is optional. The vnc-grab.py
+question (rewrite per RFB spec vs replace with the proven QMP `virsh screenshot` and delete)
+is Tails' call, recorded in `## Implementation`. Fix batches, single-deliverable per the safe
+regime: **A** = Omega high + 2 medium (known_hosts pinning — fingerprints in Big's checkpoint 2
+in `## Test Results` — key-permission checks, setup-repo.sh assertion); **B** = Shadow's five
+verdict-integrity fixes (#3, #4, #7, #8, #9); **C** = vnc-grab decision + implementation;
+**D** = remaining should-fixes (#5, #6, #10) + nits. Then the trio re-runs; Big's re-run = VM
+harness re-run + the bare-metal interactive matrix (start GDM, log in as `howard`, verify
+session, no-glitch evidence).
+
+**Now (2026-08-30, second entry): bare-metal test host available; fix path unblocked.** User
+provided a Rocky Linux 10.2 **minimal-server** bare-metal machine for real-hardware testing:
+`howard@192.168.1.103` (ssh port 22 open from the PM host; the user password is in
+`~/pass.txt` on the PM host — read it there, never write it to docs/logs/commits/transcripts;
+sudo on the machine is passwordless; no key authorized yet). Real-hardware scenario per the
+user: (a) deploy the latest Cinnamon RPMs and verify they install from a minimal state with no
+login manager and no windowing system, (b) Cinnamon (Wayland) login via GDM works and the
+desktop is navigable with no glitches or breakage, (c) check whether Xorg works. Plan risk R2
+(the fix path gated on the user's real-machine logs) is **unblocked**: the team tests the
+machine directly. Chain order holds (Shadow complete: 0 blockers / 10 should-fix / 7 nits); the
+bare-metal **interactive** matrix (login + navigation) runs in Big's re-run after Tails fixes
+the harness, because should-fix #1 (`vnc-grab.py` endianness) and #2 (`ukey.c` uppercase drop)
+directly affect screenshot and typed-input reliability. Big's first pass does env prep
+(one-time `ssh-copy-id` so later access is key-based) plus the non-interactive part: baseline
+minimal-state evidence, RPM install from the local DNF repo, what gets pulled in (any DM? any X
+server?), session entries, GDM install + enable. Xorg expectation: 2c-1 already verified in-guest
+that `xorg-x11-server-Xorg` is in no Rocky 10.2 repo — the machine re-verifies it; if absent
+there too, that is the recorded answer.
+
+**Now (2026-08-30): user decision — merge `task-0008-gdm-auth` to main now; new scope is
+TASK-0015.** User request (2026-08-30): as much of the branch as possible onto main, plus new
+scope (minimal-server install without any login manager or windowing system, and LightDM/SDDM
+support, both tested). Branch state verified: `task-0008-gdm-auth` = `097702e` = origin, 5
+commits ahead of `main` (`1f00da5`), all VM-test harness code that produced the 2c-3b PASS;
+working tree clean. Decision: the harness is verified (item 2 PASS), so the **whole branch is
+shippable**; it goes through the standard chain Shadow → Omega → Big → Tails fixes → Vector →
+Knuckles (PR + merge), then TASK-0015 starts from the updated main. The fix path (items 4–6)
+stays gated on the user's real-machine logs (`journalctl -u gdm`, `/var/log/secure`), requested
+again 2026-08-30; if the logs show an RPM defect, it proceeds on a new branch off the merged
+main. Item 9a (Sparrow suite) is deferred into TASK-0015, where the widened matrix lands; the
+TASK-0009 plan stays in Planning.
+
 **Now (2026-08-28 05:41 UTC): item 2 complete — 2c-3b PASS; the Authentication Error
 root-caused to the harness, not to Cinnamon.** 2c-3b (02:21–03:21 UTC, VM work 43 min, all
 safeguards held): `gdmtest` logged in and Cinnamon (Wayland) session 512 is active (loginctl +
@@ -437,13 +507,52 @@ the PM reads.*
       complete. Fix path (items 4–6) gated on the user's real-machine logs (plan risk R2);
       requested. Meanwhile: 9a and Amy (TASK-0009 plan) dispatch — both independent of the fix
       path.
-- [ ] `Tails` (item 9a, dispatched 2026-08-28): the Sparrow (Raku) task suite for the GDM
-      login scenario per the item 9a row in `## Plan` (grep the row; do not read the doc in
-      full); checkpoint `### Item 9a` in `## Implementation`.
-- [ ] `Robotnik`: after 9a, Amy (TASK-0009 plan); the fix path (4 → 5 → 6) waits on the
-      user's logs; then Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
-- [ ] `Robotnik`: after 2c, the rest of the chain: 9a (Tails, Sparrow suite), Amy
-      (TASK-0009 plan), 4 → 5 → 6 → Shadow → Omega → Big → 8 → 10 → (11) → 12 → 13 → 14.
+- [x] `Robotnik` (2026-08-30): user re-prioritized — merge the branch to main first (record:
+      Status). Item 9a (Sparrow suite) deferred to TASK-0015, where the widened matrix
+      (minimal-server install + LightDM/SDDM) lands; the TASK-0009 plan stays in Planning.
+- [x] `Shadow` (complete 2026-08-30): 0 blockers, 10 should-fix, 7 nits in `## Review`.
+- [x] `Omega` (complete 2026-08-30): 0 critical, 1 high, 2 medium, 4 low in `## Security`;
+      merge blocked until high + medium resolved (DoD).
+- [x] `Big` (complete 2026-08-30): non-VM 12/12 run, PASS with findings (vnc-grab
+      non-functional; #3 false-PASS live); bare-metal env prep + install PASS — machine at
+      "Cinnamon+GDM installed, enabled, not started" (record: Status + `## Test Results`).
+- [x] `Tails` (batch A, complete 2026-08-30): `1c16045` (host-key pinning on all 12
+      ssh/scp/rsync channels, fail-closed, per-VM pin files seeded out-of-band — the cloud
+      image ships no host keys), `af3a9ff` (key-permission assertion + target-aware keying,
+      bare-metal host never gets the fleet key), `cd6860c` (setup-repo.sh statelessness
+      asserted; canary regression caught). Omega high + 2 medium resolved, verified live.
+- [x] `Tails` (batch B, complete 2026-08-30): `85f629e` (#3 exact-rc comparison), `921de9f`
+      (#4 --destroy-only proves end state, teardown recorded from rc), `9ce6cb5` (#7
+      waiteditable dispatch deleted — no definition, no basis), `6f6b1b5` (#8 abort rcs
+      propagate before any wait), `f259dd5` (#9 ChannelError + shared wait_for, broken channel
+      vs missing node reported separately). All five verified per finding; record: `##
+      Implementation` `### Fix batch B`.
+- [ ] `Knuckles` (dispatched 2026-08-30, **user instruction**): open the PR
+      `task-0008-gdm-auth` → main and merge all 13 commits (`b15dfcb`..`f259dd5`). The DoD
+      deviation is recorded in `## Status` (Shadow gate not met: #2, #5, #6, #10 + vnc-grab +
+      7 nits remain; trio re-run + interactive matrix pending) — the user has explicitly
+      authorized this merge with those tracked as follow-ups; record the deviation + follow-up
+      list in `## Release`.
+- [ ] `Tails` (batch C): vnc-grab decision (rewrite per RFB spec vs replace with QMP `virsh
+      screenshot` + delete) recorded in `## Implementation` with alternatives, then implement.
+      Checkpoint `### Fix batch C`.
+- [ ] `Tails` (batch D): remaining should-fixes (#2 ukey uppercase drop, #5 prerequisite
+      checks, #6 hardcoded 48-RPM check, #10 provisioning dedup) + nits. Checkpoint
+      `### Fix batch D`.
+- [ ] `Shadow` (re-run): verify batches A–D resolved all findings in `## Review`.
+- [ ] `Omega` (re-run): verify all findings above low resolved in `## Security`.
+- [ ] `Big` (re-run): VM harness re-run (re-establish login evidence with the fixed harness) +
+      bare-metal interactive matrix (start GDM, log in as `howard`, a11y + journal + ukey
+      verification, user at the physical console for visual confirmation, record no-glitch
+      evidence) in `## Test Results`.
+- [ ] `Vector`: update the repo README + INSTALL.md for the verified state (GDM Wayland login
+      PASS, harness location and usage); write to `## Docs`. Lands with the follow-up merge.
+- [ ] `Knuckles` (follow-up): land batches C + D + re-run results + docs on main (second PR
+      from the same branch or a new one — shape is Knuckles' call); then the task is DONE.
+- [ ] `Robotnik`: after the merge, start the TASK-0015 chain (work branch from the updated
+      main, then Amy). The fix path (items 4–6) is no longer gated on the user's logs — the
+      bare-metal matrix on `192.168.1.103` is the real-machine evidence; its results decide
+      whether items 4–6 proceed at all.
 
 ---
 
@@ -1797,19 +1906,624 @@ ssh commands); a11y probes printed only targeted readbacks (the `textofext`
 value, visibility checks as exit codes); no large log was cat'd into context
 (evidence files were grepped in the VM, ≤ 2 lines per grep).
 
+### Fix batch A (Omega 1 high + 2 medium, 2026-08-30, `Tails`)
+
+*Scope: `## Security` finding 1 (high: every channel ran
+`StrictHostKeyChecking=no`), finding 2 (medium: fleet key blast radius),
+finding 3 (medium: setup-repo.sh safety on unasserted ordering). One commit
+per finding on `task-0008-gdm-auth`: finding 1 = `1c16045`, finding 2 =
+`af3a9ff`, finding 3 = `cd6860c`; all pushed, remote branch = local HEAD
+(verified `git ls-remote`: `cd6860cb79a76aeb0cf0e54f87efe1e5d1ce6b05`),
+working tree clean.*
+
+*Clone path (AGENTS.md §5): the brief names
+`/home/howard/AI/projects/cinnamon-for-rocky10/`, which does not exist on
+this host. The real clone is `/home/howard/Linux/projects/cinnamon-for-rocky10/`
+(the path Shadow, Omega and Big all recorded); work happened there. No other
+brief deviation.*
+
+**Evidence that shaped the design (collected 2026-08-30 ~15:20–16:00 JST,
+before any edit):**
+
+- The cloud image
+  `/var/lib/libvirt/images/cinnamon-test/Rocky-10-GenericCloud.qcow2` ships
+  **no host keys**: `sudo virt-cat <image> /etc/ssh/` lists only
+  moduli/ssh_config/sshd_config (no `ssh_host_*`).
+- Guests generate host keys at first boot: in-guest journal shows
+  `sshd-keygen@{ecdsa,ed25519,rsa}.service` running at boot; key mtimes =
+  boot time.
+- Two VMs from the same image present **different** keys in all three
+  types: `ssh-keyscan` + `ssh-keygen -lf` on the standing `gdm-login-vm`
+  (192.168.122.15) vs a fresh scratch VM (192.168.122.201), e.g. ed25519
+  `SHA256:jhToRyI+...` vs `SHA256:fdmwjXC1...`. Consequence: no per-image
+  key can be committed in advance.
+- A running VM holds an exclusive qcow2 lock that blocks direct
+  `qemu-img info`/`virt-cat` ("Failed to get shared write lock"); `cp` of
+  the qcow2 + `virt-cat` of the copy works and yields exactly the keys the
+  VM presents (extracted fingerprints == keyscan fingerprints, scratch VM).
+  This is the seeding mechanism.
+- OpenSSH command-line behavior, verified empirically:
+  `-o UserKnownHostsFile=a,b` (comma list) and repeated
+  `-o UserKnownHostsFile=` flags do **not** accumulate on the command line
+  (only the first file is consulted); `-o HostKeyAlias=<name>` makes ssh
+  look the pinned key up under `<name>` regardless of the connected IP and
+  works for ssh, scp and `rsync -e`. Hence one pin file per connection.
+- Re-`ssh-keyscan` of 192.168.1.103 from the PM host matches Big's
+  checkpoint 2 fingerprints exactly (RSA-3072 `SHA256:OxbuXvwV...`, ECDSA
+  `SHA256:NAvJMVH7...`, ED25519 `SHA256:kAu+xhNL...`), so the committed
+  key material is the TOFU record.
+
+**Pinning approach — alternatives considered (finding 1):**
+
+- **Option A** (Omega's first option): commit a `known_hosts` with the
+  cloud image's host keys, pinned under a stable `HostKeyAlias`. Rejected
+  by the evidence above: the image ships no keys and each first boot
+  generates new ones; there is no per-image key to commit.
+- **Option B**: per-VM pin file seeded *from the network* (ssh-keyscan the
+  fresh VM into `vm-test/results/`). Rejected: the seed would be read over
+  the same untrusted channel the pin protects — a MITM's key would get
+  pinned (TOFU re-introduced by another door).
+- **Option C (chosen)**: per-VM pin file seeded **out-of-band** — `cp` the
+  qcow2 (the lock forces a copy; measured ~7 ms warm) + `virt-cat` the
+  three `ssh_host_*_key.pub` from the copy, validate each with
+  `ssh-keygen -lf`, write `vm-test/results/known-hosts/<vm-name>`
+  (gitignored, per Omega's "keep it under `vm-test/results/`"). The
+  provisioner's wait loop seeds first, then probes with
+  `StrictHostKeyChecking=yes` + `HostKeyAlias=<vm-name>`: **no connection
+  ever runs with verification off, including the first one**; the trust
+  anchor is the host's own storage, not the LAN. Alias (not IP) pinning
+  because VM IPs are DHCP-assigned and can change across reboots
+  (`reboot_and_wait` already re-resolves them). A missing pin file is a
+  hard error on non-wait channels (fail-closed), and "not ready yet"
+  inside wait loops while the guest boots.
+- **Option D**: generate a host keypair on the PM host and inject it into
+  the image at provision time (virt-customize), pinning to it. Rejected for
+  this batch: a file created by the libguestfs appliance in `/etc/ssh/`
+  risks a wrong SELinux context on a targeted image (sshd is confined; a
+  mismatch breaks sshd at boot) — a new failure mode in a load-bearing
+  provisioning step. Option C gives the same guarantee (no unpinned
+  connection) without touching image customization.
+- **Option E**: per-VM static DHCP leases (pin by IP). Rejected: changes
+  provisioning (MAC/lease management), breaks the orphan/`--ip` attach
+  mode, and still needs per-VM files.
+- Residual exposure (accepted): none in the evidence chain. Every verdict
+  input (PHASE_RESULT probes, scp/rsync of rpms and evidence, dnf output)
+  flows over a pinned channel; a MITM can only stall provisioning (answer
+  nothing), not forge a key, because the pinned key comes from the disk.
+- **Stale-pin hazard found and fixed during verification**: a re-provision
+  under the same VM name generates new guest keys, so all destroy paths
+  (`destroy_vm` in provision-vm.sh and test-repo-setup.sh,
+  `destroy_single_vm` in validate-install.sh) now remove the pin file with
+  the disk. The first cold-start test failed for exactly this reason
+  (stale pin from the pre-fix run; 120 s of pinned-probe failures), then
+  passed after the fix (ready in 5 s).
+
+**Changes (per finding):**
+
+| File | Change | Why |
+|---|---|---|
+| `vm-test/known_hosts` (new) | committed pin file: 192.168.1.103's three host keys (TOFU fingerprints) + policy header documenting the VM seeding model | the bare-metal host key must be committed; VM keys cannot be (per-boot) |
+| `vm-test/lib.sh` (f1) | pinning machinery: shared `IMG_DIR`, `KNOWN_HOSTS_FILE`, `VM_PIN_DIR`, `BAREMETAL_HOST`, `vm_pin_file()`, `seed_vm_pin()` (out-of-band cp+virt-cat seeding, keys validated), `ssh_pin_opts()` (fail-closed), `ssh_cmd()` pinned | single shared source for the pinning |
+| `vm-test/provision-vm.sh` (f1) | `wait_for_ssh` seeds then probes pinned; `destroy_vm`/`--destroy-only` remove the pin file; `IMG_DIR` moved to lib.sh; header updated | cold-start first contact pinned; a stale pin must not outlive its VM |
+| `vm-test/test-gdm-login.sh` (f1) | `try_ssh` seeds then probes pinned; 3 scp sites pinned; attach branch fails closed up front for un-pinnable targets (no pin file and no seedable disk); header documents the attach pin requirement | every channel pinned; legacy/orphan attach is fail-closed, not silent |
+| `vm-test/test-repo-setup.sh` (f1) | `wait_for_ssh` seeds then probes pinned; 2 rsync sites pinned; `destroy_vm` removes the pin file | same |
+| `vm-test/run-tests.sh` (f1) | 2 scp sites pinned | same |
+| `vm-test/test-quick-install.sh` (f1) | 1 scp site pinned | same |
+| `vm-test/test-step-by-step-install.sh` (f1) | 1 scp site pinned | same |
+| `vm-test/validate-install.sh` (f1) | now sources lib.sh; `wait_for_vm` seeds then probes pinned (per-vm-name alias); `destroy_single_vm` removes the pin file | last self-contained script brought under the shared machinery |
+| `vm-test/lib.sh` (f2) | `assert_ssh_key()` (exists, owner = invoking user, no group/other bits; 600 standard, 400 accepted — ssh's own requirement; once per key per process) called from `ssh_cmd` on every channel; `BAREMETAL_USER`/`BAREMETAL_KEY`; `ssh_cmd` target-aware (BM: howard + dedicated key; VM: root + fleet key); header states the credential blast radius | finding 2(a) permission checks, (b) dedicated-key wiring, (c) blast-radius statement |
+| `vm-test/provision-vm.sh` (f2) | `check_prereqs` calls `assert_ssh_key` before the fleet key is injected | fail fast at provision time |
+| `vm-test/test-repo-setup.sh` (f2) | `provision_vm` calls `assert_ssh_key` before injecting the fleet key | its own provisioner path |
+| `vm-test/validate-install.sh` (f2) | `provision_single_vm` calls `assert_ssh_key` before injecting the fleet key | its own provisioner path |
+| `vm-test/test-repo-setup.sh` (f3) | phase 0 test 3 now snapshots host state before the root run (createrepo_c presence, `cinnamon-rocky10.repo` presence, md5sum of every `/etc/yum.repos.d/*.repo` — also catches a CRB enable — and files created/modified under the working tree's `rpms/` since a timestamp marker) and records a new "Error-path statelessness" check (FAIL + diff on any change) | asserts statelessness instead of relying on the unasserted ordering |
+| `repo-setup/setup-repo.sh` (f3) | header documents the statelessness contract and the load-bearing ordering (error path must die at project-root resolution before any state-changing step) | the contract is visible to the future editor whose one-edit-away refactor would break it |
+
+**Checks run:**
+
+- `bash -n` on all 9 touched scripts: PASS.
+- `shellcheck 0.10.0 --external-sources` on all 9: 0 errors; warnings =
+  pre-existing classes only (SC2034 `setup_rc`/`SYSTEM_DEPS`/`install_rc`,
+  SC2046 `test-repo-setup.sh:212` [pre-existing, line shifted], SC2034
+  `IMG_DIR` false positive in the shared lib, SC1091 source-follow
+  tooling artifacts) — nothing new vs Big's baseline.
+  `repo-setup/setup-repo.sh`: clean.
+- `grep -rn 'StrictHostKeyChecking=no' vm-test tasks repo-setup` → 0 hits.
+- Live, scratch VM `t0008-keycheck-vm` (provisioned for this, destroyed at
+  the end): cold provision with the new `provision-vm.sh` — first ssh
+  pinned, "SSH is ready on 192.168.122.215 after 5s (host key pinned from
+  ...)"; pinned scp + rsync round-trips via `SSH_PIN_OPTS`; fail-closed for
+  an unpinned target (`[lib] ERROR: no pinned host key ...`, rc=1).
+- Live, legacy path: `gdm-login-vm` (old code, still running for the
+  re-run) was refused before seeding and connected after one
+  `seed_vm_pin` from its own disk; its pin file
+  (`vm-test/results/known-hosts/gdm-login-vm`) is kept for the re-run's
+  attach flow.
+- Live, 192.168.1.103 (read-only: `echo` + `hostname` only, machine state
+  untouched): pinned ssh via the committed `known_hosts` → `silver`,
+  rc=0; negative control with `/dev/null` known_hosts → "Host key
+  verification failed", rc=255, refused before auth.
+- Finding 2, unit: `assert_ssh_key` — 600/own key passes; a 644 key →
+  mode error rc=1; a root-owned key → owner error rc=1;
+  `ssh_cmd 192.168.1.103` connects as `howard@silver` with the dedicated
+  key (fleet key not presented).
+- Finding 3, live on the host (phase 0 executed via a `/tmp` copy of the
+  script with `main` replaced by `test_error_handling`; no VM
+  provisioning): 9/9 PASS including the new statelessness check.
+  Regression simulation: a copy of `setup-repo.sh` with a state-changing
+  step (canary file in `/etc/yum.repos.d/`) inserted before
+  project-root resolution → the error-message check still PASSes while the
+  statelessness check records FAIL with a diff, proving detection is
+  independent of the script's output. Canary removed afterwards; host state
+  verified restored (repo file list, createrepo_c presence, `rpms/`
+  unmodified).
+- Push verification: `git ls-remote` remote branch == local HEAD
+  `cd6860c`; local `origin/task-0008-gdm-auth` ref updated to match (it was
+  not advanced by the URL push).
+
+**Not verified (boundaries of this batch):**
+
+- No full `test-gdm-login.sh` or `test-repo-setup.sh` VM-phase re-run —
+  that is Big's re-run, which exercises these pinned paths end to end.
+  The individual channels they use are verified live above.
+- `validate-install.sh`, `run-tests.sh`, `test-quick-install.sh`,
+  `test-step-by-step-install.sh` full flows: syntax + lint + shared channel
+  code only; not provisioned here (would be 2+ VMs).
+- The dnf metadata cache is deliberately outside the statelessness
+  assertion (transient by design; rewritten by any concurrent dnf). A
+  regression that reached only `dnf makecache` on the host — no repo file,
+  no package, no working-tree change — would not be caught; the three
+  persistent state classes are.
+- `ssh_pin_opts` defaults the alias to the script's `VM_NAME`: a manually
+  passed IP belonging to a *different* VM fails the pin (visible error)
+  rather than cross-connecting silently.
+- The bare-metal *client* key fingerprint
+  (`SHA256:CvnIXRjnu7QUErfiExqbQ3q5zncY8ZPCLXo3PZ6TTSM`, Big's checkpoint
+  2) is a record for `## Docs` (Vector's section — untouched per dispatch).
+  The `known_hosts` entries are host keys, not client keys.
+- `## Security` Resolution lines: not filled (dispatch: write only to
+  `## Implementation`); the shas above (`1c16045` / `af3a9ff` / `cd6860c`)
+  are what the re-run cites.
+
+**Observation for `Robotnik`:** the token embedded in the `origin` URL is
+stale — `git push origin` fails with "Invalid username or token". The
+pushes in this batch went through a plain
+`https://github.com/metalllinux/cinnamon-for-rocky10.git` URL via the
+configured credential helper (`credential.https://github.com.helper` →
+`~/token.md`, valid; `gh auth status` shows the separate `GH_TOKEN` env var
+is also invalid). The origin URL was left as-is per the user's
+2026-08-21 decision.
+
+### Fix batch B (Tails, 2026-08-30)
+
+Shadow's five verdict-integrity findings (#3, #4, #7, #8, #9 in
+`## Review`), one commit each, on `task-0008-gdm-auth` atop batch A
+(`cd6860c`). Clone `~/Linux/projects/cinnamon-for-rocky10/` (the
+brief's `/home/howard/AI/projects/cinnamon-for-rocky10/` path does
+not exist on the runner; same branch, same commits, per Shadow's
+note in `## Review`).
+
+| # | Fix | Commit |
+|---|---|---|
+| 3 | remote rc checks, `vm-test/test-repo-setup.sh` | `85f629e` |
+| 4 | teardown rc, `vm-test/provision-vm.sh` + `vm-test/test-gdm-login.sh` | `921de9f` |
+| 7 | `waiteditable` dispatch, `tasks/lib/gdm-a11y.py` | `9ce6cb5` |
+| 8 | `gdm_login_and_verify`, `tasks/lib/gdm-drive.sh` | `6f6b1b5` |
+| 9 | a11y wait loops, `tasks/lib/gdm-a11y.py` | `f259dd5` |
+
+**#3 — rc checks (`85f629e`).** The three remote rc checks at
+`vm-test/test-repo-setup.sh:400,548,589` (the review's 311/459/500,
+shifted by batch A) used `echo "$rc" | grep -q "0$"`, which matches
+any code whose last digit is 0 (rc 10/20/30 → PASS with the literal
+detail "exit code 0"). Now `[ "$rc" = "0" ]` at all three sites
+(setup-repo.sh execution, `dnf install cinnamon`, `dnf install` of
+the extra packages); the ssh-failure sentinel 255 needs no special
+case — any value other than exactly 0 falls through to FAIL.
+Alternatives considered: a shared `rc_is_zero` helper (rejected, the
+comparison is one line and a helper adds indirection); capturing the
+rc over the same ssh as the captured output (rejected, out of scope —
+the double-remote-run pattern predates this fix and re-running
+setup-repo.sh is idempotent). Verified: `bash -n`; `shellcheck -S
+warning` shows only the two pre-existing findings (SC2046 line 248,
+SC2034 `setup_rc` line 387 — both present on the stashed
+pre-batch-B tree); truth table over rc 0/1/10/20/30/255 → PASS only
+for 0.
+
+**#4 — teardown rc (`921de9f`).** `provision-vm.sh --destroy-only`
+now (a) proves libvirt is reachable (`virsh list --all`) before
+anything else, so a permission failure on the system driver cannot
+read as "VM not present"; (b) after the destroy, verifies the domain
+is actually gone (`virsh domstate`) and the disk file is gone,
+exiting non-zero with the observed domstate when either still
+exists. The idempotent "missing VM is a success" path is unchanged.
+`test-gdm-login.sh` records PASS/FAIL from that rc (the destroy
+output is captured into the failure detail instead of `>/dev/null`),
+exits 1 on a teardown that cannot verify the VM is gone (header
+exit-code note updated in the same commit), and `write_summary`
+moved after the teardown block so the teardown verdict is persisted
+in `summary.txt` (previously the summary ran before the teardown
+record, so the record only reached `run.log`). Alternatives
+considered: making `destroy_vm` itself return a meaningful rc
+(rejected — its `|| true` exists for idempotent re-runs on the
+pre-provision path, and the post-hoc `domstate` is the state-based
+verdict this harness is built around; it catches both destroy and
+undefine failure modes, e.g. the busy-disk case). Verified: `bash -n`
+both files; `shellcheck -S warning` clean both; hermetic PATH-shim
+runs of `--destroy-only` (no real libvirt state touched): ghost
+domain absent → rc 0; libvirt unreachable → rc 1 "cannot query
+libvirt"; destroy failing with the domain surviving → rc 1 "still
+present after destroy (domstate: running)"; the harness rc-capture
+idiom under `set -euo pipefail` on both outcomes (no set -e abort on
+the failure path; output preserved for the detail line).
+
+**#7 — `waiteditable` (`9ce6cb5`).** Deleted the dispatch at
+`tasks/lib/gdm-a11y.py:516-517` (`cmd_waiteditable` defined nowhere,
+absent from the docstring's command list; the branch raised
+NameError). Deleted rather than implemented (Shadow's two stated
+options): the verified in-VM evidence (item 2c-3, recorded in the
+`gdm_caps_probe_normalize` comment, `tasks/lib/gdm-drive.sh:349-350`)
+shows the greeter's a11y state sets come back EMPTY for every node,
+so an editable-state-based wait has no basis on the gdm-47 Wayland
+greeter; the verified entry targeting is point-based
+(`findrolex`/`textofext`). Verified: zero `waiteditable` references
+repo-wide (`grep -rn`); `py_compile` clean; `gdm-a11y.py
+waiteditable` now exits 1 with the usage doc (was: NameError
+traceback).
+
+**#8 — `gdm_login_and_verify` (`6f6b1b5`).** `gdm_login`'s rc is
+propagated on non-zero before any wait (`tasks/lib/gdm-drive.sh`,
+the `gdm_login_and_verify` block), with an explicit "credentials not
+submitted" diagnostic: rc 2 (session not selectable), 3 (no login
+surface), 4 (caps pre-pass failed) no longer surface as "no verified
+session after 120s". Return codes documented on the helper:
+gdm_login's 2/3/4 on abort, otherwise gdm_wait_session's (0
+verified, 3 no session appeared, 4 session without the expected
+process). Kept rather than deleted (Shadow's alternative): the file
+header names the Sparky/Sparrow matrix (9a/TASK-0015) as the
+intended consumer and the fixed helper is a safe convenience; a
+repo-wide search confirmed zero callers either way (verified, not
+assumed). Verified: `bash -n`; `shellcheck -S warning` shows only
+the two pre-existing SC2034s in `gdm_caps_probe_normalize` (lines
+461/476); boundary stub test with `gdm_login`/`gdm_wait_session`
+stubbed at the rc level: rc 2/3/4 propagate with the wait skipped;
+rc 0 proceeds and returns the wait's rc (0/3/4) — 6/6 checks pass.
+
+**#9 — a11y wait exception swallow (`f259dd5`).** A second gap found
+while fixing: `connect()` and `greeter_nodes()` exited via
+`sys.exit` inside the poll loop, so a transient channel blip (the
+greeter still coming up) aborted the wait on its first poll; and the
+`except Exception: pass` meant a persistently raising channel was
+indistinguishable from "node never appeared" (all failure modes
+converged on bare rc 1). Design: `ChannelError` (new) marks channel
+failures; `connect()` and `greeter_nodes()` raise it instead of
+`sys.exit`; the four wait commands are thin probes over a shared
+`wait_for()` that counts raising polls and remembers the last
+exception, polls to the deadline, and exits the timeout with one of
+two diagnostics — "a11y channel broken during wait (N failed
+poll(s), last: ...)" vs "target never appeared". Non-wait commands
+are behavior-preserved: `main()` converts `ChannelError` to the
+byte-identical exit message as before (verified, test T6/T6b).
+Alternatives considered: per-command try/except instead of the
+shared helper (rejected — four copies of the same loop is where the
+finding lived); counting failures without keeping the last exception
+(rejected — the last exception is the diagnostic that points at the
+journal). Verified: `py_compile`; module test suite 7/7 (target-
+absent timeout; channel-broken timeout with the last exception;
+transient blip then success; waitvis success prints the find-format
+line; ChannelError reported at timeout; non-wait message
+preservation for `tree` and `has`; unknown command is a usage exit);
+end-to-end CLI run against the absent in-VM a11y bus on this host:
+`wait "Not listed?" 2` exits 1 after 2.0s with the channel-broken
+diagnostic and the real `DBusException` as the last error (old code:
+immediate abort on the first poll).
+
+**Checks run (batch B).** `bash -n` on all four touched shell
+scripts: clean. `shellcheck -S warning` on all four: only the four
+pre-existing warnings (test-repo-setup.sh SC2046:248, SC2034:387;
+gdm-drive.sh SC2034:461, SC2034:476), all present on the stashed
+pre-batch-B tree. `python3 -m py_compile tasks/lib/gdm-a11y.py`:
+clean (pyflakes is not installed on the runner). Per-finding
+functional tests as above (shimmed `virsh`, stubbed driver boundary,
+monkeypatched channel boundary): no real libvirt domain, VM, or
+network target was touched; the one live smoke test was read-only (a
+2s wait against the absent in-VM a11y bus socket). Batch A
+compatibility: `git diff cd6860c..HEAD -- vm-test/lib.sh
+vm-test/known_hosts` empty; every `ssh_pin_opts`/`seed_vm_pin`/
+`StrictHostKeyChecking=yes` call site intact in the touched files;
+no batch B diff line touches a pinning or ssh-option line.
+
+**Competing priorities.** #4: exit-1 on teardown failure stretches
+the header's original contract ("1 when a harness phase failed
+*before it could produce its evidence*"); the contract note was
+updated in the same commit because a surviving domain reported as
+destroyed is the false-PASS class this batch exists to remove. #9:
+the wait commands now emit a stderr line on timeout (previously bare
+rc 1); all current callers redirect stderr, so no caller behavior
+changes — the line is for the operator running the tool by hand. #8:
+kept the helper over Shadow's deletion alternative to give the
+coming Sparky suite a safe convenience; dead-code risk is bounded by
+the now-correct semantics.
+
+**Not verified (could not).** No full `test-gdm-login.sh` or
+`test-repo-setup.sh` run: that requires a provisioned VM and is Big's
+re-run (Next Actions); verified instead is the changed verdict logic
+in isolation (shim/stub/boundary tests) plus syntax and lint.
+`--destroy-only` against a real surviving domain: exercised via the
+shim only; the real-libvirt path of the post-verify `domstate` was
+deliberately not run (destroying a real domain as a test would
+disturb the running fleet state). #7/#9 in-guest behavior against a
+live greeter: the module tests exercise the same code paths with a
+synthetic channel; the in-guest re-run (Big) confirms against the
+real greeter.
+
+**Note for `Robotnik`:** pushed. `origin/task-0008-gdm-auth` =
+`f259dd5` (verified by fetch after the push; same plain-URL push
+method as batch A's note, since the `origin` URL's embedded token is
+stale). `## Review` Resolution lines left unfilled per the write-
+only-to-`## Implementation` dispatch; the shas above are what the
+re-run cites.
+
 ---
 
 ## Review
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### <short claim>
-**Severity:** blocker | should-fix | nit
-**Where:** `path/to/file:123`
-**Problem:** one sentence.
-**Failure scenario:** concrete inputs or state → the wrong outcome.
-**Suggested direction:** what to do instead.
+*Executed 2026-08-30 by `Shadow`. Scope: `git diff main..task-0008-gdm-auth` (5 commits
+`b15dfcb`..`097702e`, 9 files, 3394 insertions / 6 deletions). Verified with `git status`
+(clean tree on `task-0008-gdm-auth`, = origin) and `git log --oneline main..task-0008-gdm-auth`
+(the five commits named in the brief). The working clone is
+`~/Linux/projects/cinnamon-for-rocky10/` (per `## Status` and `vm-test/lib.sh:29`), not
+`~/AI/projects/cinnamon-for-rocky10/` as the brief states; same branch, same commits.*
+
+*What is good, plainly: the evidence discipline in `gdm-drive.sh` (capture on both outcomes,
+state-based verdicts, the caps pre-pass verified by AT-SPI readback before any credential is
+sent) is the design the plan asked for; the test password is generated in the VM and never
+leaves it; `gdm_ensure_greeter` plus the `--destroy` flags make re-runs idempotent, and the
+superseded paths are annotated with the evidence that killed them. The findings below are the
+gaps. No blocker found; nothing here invalidates the 2c-3b PASS (the verified run used the
+QMP screenshot channel and lowercase hex input, so findings 1 and 2 could not have bitten).*
+
+### vnc-grab.py decodes pixel bytes with the endianness inverted
+**Severity:** should-fix
+**Where:** `tasks/lib/vnc-grab.py:118`
+**Problem:** `fmt = ">I" if not pixfmt["big_endian"] else "<I"` maps the RFB big-endian flag
+to the wrong struct format; a server that advertises little-endian pixel data (flag 0, which
+is what QEMU's VNC server sends on an x86 host: flag 0 plus host-byte-order pixel data) is
+decoded as big-endian.
+**Failure scenario:** any `vnc-grab.py <host> 5900 out.png` against a QEMU VM. For the
+standard 32bpp format (shifts 16/8/0, maxima 255), a wire pixel `[B,G,R,A]` is read as
+`0xBBGGRRAA`, so every screenshot comes out with red and green swapped and blue pinned to
+255. The tool is the documented pixel channel for domain-less VMs and for any VM that
+exposes a VNC display, so TASK-0015 runs would collect corrupted evidence that looks
+plausible. The 2-byte path (`tasks/lib/vnc-grab.py:138`) inherits the same `fmt`.
+**Suggested direction:** invert the mapping (flag 1 means the pixel data is big-endian, so
+flag 1 takes `>I`), and sanity-check the decode against a known pattern once.
 **Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### ukey `type` silently drops uppercase letters
+**Severity:** should-fix
+**Where:** `tasks/lib/ukey.c:182` (guard at `tasks/lib/ukey.c:153`, skip at `tasks/lib/ukey.c:423-428`)
+**Problem:** `case 'A' ... 'Z'` sets shift and calls `letter_to_key(c)`, but `letter_to_key`
+rejects every non-lowercase input (`c < 'a'` is true for 'A'-'Z'), so the case range always
+returns -1 and the type loop skips the character with no diagnostic.
+**Failure scenario:** the first time a password contains an uppercase letter (the current
+hex charset never does, which is why 2c-3b did not catch it): `ukey type aBc` emits only
+`ac`; the login fails at PAM with no hint that one character was never sent. This is the
+same silent-corruption class that cost 2c-2.
+**Suggested direction:** lowercase the character before the table lookup so the shift cases
+actually work, or delete the 'A'-'Z' cases and document that `type` is lowercase-only;
+either way, warn on stderr when a character is dropped.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### test-repo-setup.sh records PASS for any exit code that ends in 0
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:311, 459, 500`
+**Problem:** the three remote rc checks use `echo "$rc" | grep -q "0$"`, which matches every
+non-zero code whose last digit is 0, and the `!= 255` guard does not cover that case.
+**Failure scenario:** the second `dnf install` pass exits 10 (a transaction failure):
+`grep -q "0$"` matches, the guard passes, and the check is recorded PASS with the literal
+detail "exit code 0" while the install failed; the run can exit 0 on a broken install.
+**Suggested direction:** compare the value directly, e.g. `[ "$install_rc" = "0" ]`; the
+ssh-failure sentinel 255 then needs no special case.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### test-gdm-login.sh records "teardown PASS" unconditionally
+**Severity:** should-fix
+**Where:** `vm-test/test-gdm-login.sh:678-679`
+**Problem:** the destroy call swallows output and rc (`bash ... --destroy-only >/dev/null 2>&1 || true`),
+and `--destroy-only` itself always exits 0 (its inner `virsh destroy`/`undefine` lines carry
+`|| true`, see `vm-test/provision-vm.sh:125-133`), so the PASS record prints whether or not
+the VM actually went away.
+**Failure scenario:** the runner lacks permission on the libvirt system driver (see the
+prerequisites finding below) or the disk is busy: the domain survives, the summary says
+"teardown PASS - VM destroyed", the run exits 0, and the next operator starts from a phantom
+state; repeated runs accumulate 4GB disks against the plan's one-VM-at-a-time guard.
+**Suggested direction:** make `--destroy-only` verify the domain is actually gone afterwards
+(`virsh domstate`) and return non-zero when it is not, and let the harness record
+PASS/FAIL from that rc instead of `|| true`.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Required host prerequisites are neither documented nor checked
+**Severity:** should-fix
+**Where:** `vm-test/lib.sh:18-19`, `vm-test/provision-vm.sh:44-50`
+**Problem:** the harness forces `LIBVIRT_DEFAULT_URI=qemu:///system` (the comment says the
+session pool has no networks) and assumes the invoking user can talk to the system driver,
+can write `/var/lib/libvirt/images/cinnamon-test/`, and has passwordless `sudo`
+(`vm-test/test-repo-setup.sh` phase 0 runs `sudo bash setup-repo.sh`); `orphan_vm_ip`
+additionally assumes `jq` (`vm-test/test-gdm-login.sh:188`). `check_prereqs` verifies
+binaries, the cloud image, and the SSH key, but none of these.
+**Failure scenario:** a new team member (or the runner user on a reinstalled host) runs
+`test-gdm-login.sh` without libvirt group membership: every `virsh` call fails quietly
+(most call sites redirect stderr) and the run dies at "no IP after provisioning" with no
+hint that permissions are the cause. The 2026-08-26 entry in `## Status` records exactly
+this failure mode on this host (unsuffixed `virsh` saw the empty user session).
+**Suggested direction:** add canaries to `check_prereqs` (a `virsh list --all` against the
+forced URI, a write test for the image dir, `command -v jq` on the orphan path) and list the
+prerequisites in the script headers.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Hardcoded "48 RPMs" in the copy check
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:277`
+**Problem:** the expected RPM count is a magic number, while the 14-package list below it
+degrades to WARN on version drift by design, so the two checks disagree about what is
+acceptable.
+**Failure scenario:** TASK-0015 lands one extra RPM in `rpms/` (or a rebuild drops one): the
+check fails with "expected 48 RPMs, found 49" on a perfectly good copy, and the operator
+must edit the script to discover that the set changed.
+**Suggested direction:** count `rpms/*.rpm` locally and compare local vs remote counts;
+that also detects a truncated rsync, which is what this check exists for.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### gdm-a11y.py dispatches a command that does not exist
+**Severity:** should-fix
+**Where:** `tasks/lib/gdm-a11y.py:516-517`
+**Problem:** `main()` routes `waiteditable` to `cmd_waiteditable`, which is defined nowhere
+in the file (and is absent from the docstring's command list), so the branch raises
+NameError. A repo-wide search for `waiteditable` finds only this dispatch.
+**Failure scenario:** anyone who tries `gdm-a11y.py waiteditable ...` (a plausible name
+given the a11y state API, and the obvious next probe when a state-based lookup misbehaves)
+gets a Python traceback instead of a usage or timeout exit.
+**Suggested direction:** delete the dispatch (the greeter's state sets come back empty per
+the verified in-VM evidence, so the command has no basis), or implement it if the a11y
+suite needs it.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### gdm_login_and_verify hides a no-credentials abort behind a 120s wait
+**Severity:** should-fix
+**Where:** `tasks/lib/gdm-drive.sh:661-665`
+**Problem:** the helper runs `gdm_login ... || true` and then unconditionally waits
+`GDM_LOGIN_WAIT` for a session, so gdm_login rc 2 (requested session not selectable,
+credentials deliberately not submitted) and rc 3/4 (no login surface) all surface as "no
+verified session after 120s".
+**Failure scenario:** a Sparky task in 9a/TASK-0015 calls it with `cinnamon-wayland` on an
+install that lost the wayland session file: no credentials are ever sent, but the caller
+reads the result as a failed login and starts hunting PAM, repeating the 2c-2 misdiagnosis
+this task exists to prevent.
+**Suggested direction:** propagate the gdm_login rc on non-zero before waiting, or delete
+the helper (a repo-wide search finds no caller).
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### The a11y wait loops swallow every probe exception
+**Severity:** should-fix
+**Where:** `tasks/lib/gdm-a11y.py:321-324` (same pattern at lines 373, 394, 431)
+**Problem:** `cmd_wait`, `cmd_waitvis`, `cmd_waitvisrole`, `cmd_waitvisrolex` catch
+`Exception` and `pass` inside the poll loop, so a persistently broken a11y channel (bus up
+but queries raising) is indistinguishable from "the node never appeared".
+**Failure scenario:** the greeter process dies mid-poll and AT-SPI queries raise every
+second: after the timeout the harness reports "greeter a11y UI not ready ('Not listed?' not
+visible after 60s)", pointing the operator at a missing UI node while the real fact (greeter
+process dead, visible in the journal) never surfaces in the harness output.
+**Suggested direction:** remember the last exception (or count failures) and include it in
+the timeout exit path, so "channel broken" and "node absent" are separate diagnostics.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### test-repo-setup.sh carries a second provisioning implementation
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:71-161` (duplicates `vm-test/provision-vm.sh:52-79`)
+**Problem:** the script re-implements `destroy_vm`, `wait_for_ssh`, and full
+`virt-customize`/`virt-install` provisioning with its own `CLOUD_IMAGE`/`DISK_PATH`/`VCPUS`/
+`MEMORY` constants (lines 30-35), instead of calling `provision-vm.sh`, which this same
+branch extended with the `--name` flag it needs.
+**Failure scenario:** a future fix to provisioning (image path, firewall masking, IP wait)
+lands in `provision-vm.sh` only; `test-repo-setup.sh` keeps the old behavior and starts
+failing or passing differently with no visible reason. The copies already diverge
+(separate SSH wait timeouts and log files).
+**Suggested direction:** call `provision-vm.sh --destroy --name cinnamon-test-repo` and
+drop the local copies and duplicated constants.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### vnc-grab.py truncates the server's refusal reason to one byte
+**Severity:** nit
+**Where:** `tasks/lib/vnc-grab.py:73`
+**Problem:** the SecurityResult reason length is a 4-byte big-endian value, but the code
+reads it as `recv_exact(sock, 4)[0]`, i.e. the high byte.
+**Failure scenario:** a VNC server with a password set refuses the zero-password response
+with a short reason: the high byte is 0, so the error prints "server refused connection: "
+with an empty reason and the operator cannot tell why.
+**Suggested direction:** unpack the 4 bytes as `>I` before reading that many bytes.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Zero-package repo yields a garbled count in test-repo-setup.sh
+**Severity:** nit
+**Where:** `vm-test/test-repo-setup.sh:395`
+**Problem:** `grep -c` prints "0" and exits 1 on no match, so `|| echo "0"` appends a second
+line and `pkg_count` becomes "0\n0".
+**Failure scenario:** the repo is broken and lists no packages: the `-ge 30` test errors
+with "integer expression expected" on stderr and the FAIL detail reads "only 0\n0 packages".
+The verdict is still FAIL, but the evidence line is unusable.
+**Suggested direction:** drop the `|| echo "0"` (grep -c already prints 0) or normalize the
+captured value.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### gdm_caps_lock_off has no callers
+**Severity:** nit
+**Where:** `tasks/lib/gdm-drive.sh:307-325`
+**Problem:** the superseded LED-driven toggle is kept "for callers that only have the LED",
+but no caller exists (a repo-wide search finds only the definition and a cross-reference
+comment).
+**Failure scenario:** none today; the risk is a future caller reaching for the superseded
+path and reintroducing the blind-toggle behavior that 2c-2 proved wrong.
+**Suggested direction:** delete it, keeping the documented history in the comment above
+`gdm_caps_probe_normalize`.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Leftover narration comment in provision_vm
+**Severity:** nit
+**Where:** `vm-test/test-repo-setup.sh:99-100`
+**Problem:** "# Use the standard VM name from lib.sh for provisioning, then rename /
+Actually, let's use our own VM name directly" is decision narration, and the first clause
+is wrong about what the code does.
+**Failure scenario:** none; a reader gets a false statement of intent in the code.
+**Suggested direction:** replace with a one-line statement of what is done (dedicated VM
+name so this test does not clobber `cinnamon-test-vm`).
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### The 1280x800 coupling is spread over three places with no cross-check
+**Severity:** nit
+**Where:** `tasks/lib/ukey.c:85-86` (ABS range), `tasks/lib/gdm-drive.sh:352-354, 417` (fixed probe point)
+**Problem:** the absolute pointer range, the caps-probe point, and the a11y extents all
+assume the greeter's 1280x800 framebuffer, and nothing cross-checks them at run time.
+**Failure scenario:** a greeter running at another resolution: absmove either dies with a
+range error (points beyond 1279x799) or, for in-range points, lands at a scaled position,
+so the probe misses the entry and the attempt aborts. All three failures are loud, so this
+is fragility, not a silent bug.
+**Suggested direction:** read the a11y root panel extents at start and verify they match the
+ukey range, failing with a named mismatch.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### run.log may lose its final lines
+**Severity:** nit
+**Where:** `vm-test/test-gdm-login.sh:319`
+**Problem:** `exec > >(tee ...)` spawns an async tee the script never waits for; bash can
+exit before the subshell's buffer drains.
+**Failure scenario:** a run that ends at teardown or in the final log lines: `summary.txt`
+and `run.log` are missing the last few lines (the teardown record is exactly such a line),
+so the persisted evidence understates what happened.
+**Suggested direction:** wait on the process substitution before exiting (bash 4.4+), or
+log to the file directly and drop the exec-tee.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### ukey's exit codes do not match its contract, and the wrappers ignore them
+**Severity:** nit
+**Where:** `tasks/lib/ukey.c:57, 88`, `tasks/lib/gdm-drive.sh:214-216`
+**Problem:** the header promises "0 ok, 2 usage error, 3 device error", but `die()` (used
+for a failed `write()` on the device) exits 2, and `gdm_type`/`gdm_key`/`gdm_click` discard
+the rc entirely.
+**Failure scenario:** a /dev/uinput write fails mid-password: ukey exits 2 (looks like a
+usage error), the driver wrapper ignores it, and the harness proceeds to a PAM rejection
+that the evidence must then explain by hand. The caps pre-pass catches pipeline breakage
+before credentials, which is why this stayed latent.
+**Suggested direction:** give device write failures the documented 3, and have the wrappers
+check the rc and return it.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+**Verdict (2026-08-30): 0 blockers, 10 should-fix, 7 nits.** The should-fixes are small and
+local. Findings 3, 4, 5, and 8 are the ones that can produce a wrong verdict or a
+misleading diagnosis (a PASS on a failed install, a PASS on an undestroyed VM, a
+permissions failure masquerading as a provisioning failure, and a no-credentials abort
+masquerading as a login failure); the rest are latent or cosmetic. The DoD's Shadow gate
+applies to all ten should-fixes.
 
 ---
 
@@ -1817,14 +2531,99 @@ value, visibility checks as exit codes); no large log was cat'd into context
 
 *Owner: `Omega`. Read-only. Severity order.*
 
-### <short claim>
-**Severity:** critical | high | medium | low
-**Vector:** injection | authz | secrets | input-validation | crypto | supply-chain | actions | license
-**Where:** `path/to/file:123`
-**Attack:** who the attacker is, what they control, the concrete steps.
-**Impact:** what they get.
-**Fix:** the specific change.
-**Resolution:** *(filled by `Tails`)*
+*Executed 2026-08-30 by `Omega`. Scope: `git diff main..task-0008-gdm-auth` (5 commits
+`b15dfcb`..`097702e`, 9 files, 3394 insertions / 6 deletions). Verified with `git status`
+(clean tree on `task-0008-gdm-auth`, = origin) and `git log --oneline main..task-0008-gdm-auth`
+in the clone `~/Linux/projects/cinnamon-for-rocky10/` (the brief's `~/AI/projects/` path does
+not exist; same branch and commits as Shadow's note). All nine diff files read in full.
+Deployment context per `## Status`: the harness merges to main and will also drive the
+bare-metal host `howard@192.168.1.103`; the `~/pass.txt` password is never referenced in the
+diff (`git grep -iE 'pass\.txt|192\.168\.1\.' task-0008-gdm-auth -- vm-test tasks .gitignore`
+returns nothing).*
+
+*Clean, briefly: no secrets committed anywhere in the branch (`git grep` for private-key
+blocks, GitHub token patterns, `192.168.1.x`, `pass.txt` across the whole tree returns no
+hits); the origin-URL token (user decision, `## Status`) sits in untracked `.git/config` and
+the harness never runs `git remote` or echoes it. The test password is generated in the
+guest, chmod 600, and never leaves the VM: the phase-9 scp collects only `/root/evidence`
+(`vm-test/test-gdm-login.sh:664-666`) while the pass file lives at `/root/gdmtest.pass`
+(`vm-test/test-gdm-login.sh:434-436`). The `ukey` build interpolates no untrusted input into
+gcc (`tasks/lib/gdm-drive.sh:81`); the C file range-checks its coordinates
+(`tasks/lib/ukey.c:473-488`) and commits no binary. In-VM scripts travel as quoted heredocs
+(`vm-test/test-gdm-login.sh:387` et seq.), so no host-side expansion; the one dynamic
+argument (`SELINUX_MODE`) is allowlisted (`vm-test/test-gdm-login.sh:292-295`). The
+`--graphics vnc` console is bound to 127.0.0.1 by libvirt default (the generated XML carries
+no `listen` attribute; I did not verify the live domain XML) and the greeter framebuffer
+holds no secret (the password field is masked, `tasks/lib/gdm-a11y.py:43-49`).*
+
+### Every harness channel runs with host-key verification off; the evidence chain is forgeable by an on-path attacker
+**Severity:** high
+**Vector:** crypto
+**Where:** `vm-test/lib.sh:39` (`ssh_cmd`, consumed at `vm-test/test-gdm-login.sh:154,225,265,341,377,519,664`), `vm-test/provision-vm.sh:66`, `vm-test/test-repo-setup.sh:84,264,270` (the same pre-existing pattern also sits in `vm-test/run-tests.sh:68,182`, `vm-test/test-quick-install.sh:66`, `vm-test/test-step-by-step-install.sh:180`, `vm-test/validate-install.sh:142`, out of diff scope; the shared `ssh_cmd` is in the diff)
+**Attack:** any host with a position on the segment the target sits on. From 2026-08-30 the harness will drive `192.168.1.103` on the physical LAN, so any device on 192.168.1.0/24 qualifies: ARP-spoof the target (or the gateway), run a rogue sshd, and accept the harness's public key (readable from `~/.ssh/cinnamon-test-key.pub` on the PM host, or from `/root/.ssh/authorized_keys` in any test VM, since the same key is injected into every VM, `vm-test/provision-vm.sh:170`). Every `StrictHostKeyChecking=no` connection then authenticates against the attacker's server. For the libvirt VMs the same position is available to any compromised sibling VM on the shared flat L2 (finding 4).
+**Impact:** the attacker answers the harness's probes and forges its verdict inputs: the `PHASE_RESULT PASS` markers (`vm-test/test-gdm-login.sh:265-275`), the `exit code 0` checks (`vm-test/test-repo-setup.sh:311,459,500`), and the whole evidence stream (journalctl, `/var/log/secure`, loginctl, a11y trees, screenshots). A Cinnamon login that never happened records as PASS; every command the harness runs is readable. The DoD's evidence requirement is defeated end to end.
+**Fix:** pin host keys. Commit a `vm-test/known_hosts` containing (a) the cloud image's host key (all VMs boot from one image; verify once, extract with `virt-cat`/`ssh-keyscan` from a fresh VM, and commit; if the image regenerates keys on first boot, seed it in the provision step after `wait_for_ssh` and keep it under `vm-test/results/`) and (b) `192.168.1.103`'s host key (one-time human TOFU, fingerprint recorded in `## Docs`). Switch `ssh_cmd` and every inline `ssh`/`scp`/`rsync -e` site to `-o StrictHostKeyChecking=yes -o UserKnownHostsFile=...`.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### One SSH key is the sole root credential for every test VM and will unlock the real bare-metal host
+**Severity:** medium
+**Vector:** secrets
+**Where:** `vm-test/lib.sh:28` (`SSH_KEY`), `vm-test/provision-vm.sh:49` (only the `.pub` existence is checked), `vm-test/provision-vm.sh:170` (injection into every VM), `## Next Actions` (Big's one-time `ssh-copy-id` to `howard@192.168.1.103`)
+**Attack:** the key's blast radius today is root in every current and future test VM; the `ssh-copy-id` extends it to the real machine (passwordless sudo per `## Status`, i.e. root). If, as likely since the harness drives the machine with `SSH_KEY`, the fleet key is the one copied, one stolen private key opens the whole fleet plus the real host. The attacker reads the key locally on the PM host: the harness never checks its permissions (`check_prereqs`, `vm-test/provision-vm.sh:44-50`, tests existence only), and I could not verify the actual mode from this review's read-only toolset (no `stat`/`ls -l` access). `--keep-vm` runs leave the key authorized in live VMs for days (standing practice, `## Status`).
+**Impact:** root in the whole VM fleet and root-equivalent on the real machine from one file; no per-target revocation (rotation re-provisions everything); no way to tell which target a given use of the key hit.
+**Fix:** (a) `check_prereqs` asserts the private key is mode 0600 and owned by the invoking user; (b) Big's `ssh-copy-id` uses a key dedicated to the bare-metal host, not the fleet key, and that key's fingerprint goes into the finding-1 `known_hosts`; (c) the blast radius is stated in the `vm-test/lib.sh` header.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### test-repo-setup.sh runs the packaging script as root on the PM host; its safety rests on an unasserted ordering
+**Severity:** medium
+**Vector:** input-validation
+**Where:** `vm-test/test-repo-setup.sh:199` (`sudo bash "${PROJECT_DIR}/repo-setup/setup-repo.sh" /tmp/nonexistent-dir-$(date +%s)`)
+**Attack:** a future editor or agent changes the test argument to an existing directory containing `rpms/` (e.g. `${PROJECT_DIR}`, exactly what the in-guest call at `vm-test/test-repo-setup.sh:300` passes), or relaxes `setup-repo.sh` pre-flight ordering (moving the root check first is the most natural refactor). Current state, verified by tracing `repo-setup/setup-repo.sh` (not executed): with the nonexistent-dir argument the script dies at line 45 (`cd -P` under `set -euo pipefail`) before the root check (line 61) and every state-changing step (lines 82-144); the "No such file" message satisfies the test's grep (`vm-test/test-repo-setup.sh:200,207`) and is recorded PASS with no host state change. The no-argument non-root call (line 181) dies at the root check (line 61). So today it is stateless; the finding is the latent one-edit-away.
+**Impact:** when triggered, the "error handling" test performs the full setup on the PM host as root: `dnf install createrepo_c` (host), `createrepo_c` over `rpms/` (writes gitignored `repodata/` into the working tree, invisible to `git status`), a host `/etc/yum.repos.d/cinnamon-rocky10.repo` with a `file://` baseurl into the working tree, CRB enabled on the host, `dnf makecache` on the host. Unannounced persistent host modification from a test; the host repo then trusts the working tree's `rpms/` (finding 5).
+**Fix:** do not run the real script as root on the host: test the error paths against a stub (a copy with the state-changing sections replaced by echoes), or assert no side effects before/after (`/etc/yum.repos.d/cinnamon-rocky10.repo` absent, `rpm -q createrepo_c` unchanged, `dnf repolist` unchanged), and document the contract in the script header.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### A compromised harness VM can reach and root every other harness VM (masked firewall, flat L2, shared key)
+**Severity:** low
+**Vector:** authz
+**Where:** `vm-test/provision-vm.sh:172-173` and `vm-test/test-repo-setup.sh:114-115` (`systemctl mask firewalld`), `vm-test/provision-vm.sh:187` (`--network network=default`, one shared L2), `vm-test/provision-vm.sh:170` (same public key injected everywhere)
+**Attack:** any code running in any harness VM (a malicious RPM from the local repo, finding 5, or an `--in-vm` experiment) pivots: the firewall is masked, sshd listens, the sibling's IP is on the same L2, and the attacker's VM holds a copy of the public key the sibling trusts, so `ssh root@<sibling>` from inside works.
+**Impact:** cross-VM lateral movement; the attacker can tamper with a running test's evidence (`/root/evidence`, `/var/log/secure`, `/root/gdmtest.pass` on `gdm-login-vm`) before phase 9 collects it, forging a verdict with no network position at all.
+**Fix:** accept and document the disposable-VM assumption, or issue per-VM keypairs (generated during provisioning, injected per VM) and/or a per-test libvirt network; at minimum document the flat-L2 + shared-key assumption in the script headers.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### The local repo installs with gpgcheck=0, and the harness asserts that rather than flagging it
+**Severity:** low
+**Vector:** supply-chain
+**Where:** `repo-setup/cinnamon-rocky10.repo` (`gpgcheck=0`, pre-existing), `vm-test/test-repo-setup.sh:229-235` (test 6 records FAIL when gpgcheck is not 0), `vm-test/test-gdm-login.sh:532-538` (in-guest `dnf install` from the `file://` repo, as root)
+**Attack:** anyone with write access to `rpms/` in the PM-host working tree (every agent has it; a compromised build step would too) replaces or adds an RPM before the scp at `vm-test/test-gdm-login.sh:519-522`. Mitigant: `rpms/` is gitignored and rebuilt from spec, so tampering shows as untracked/modified files in `git status`, which is part of every agent's loop.
+**Impact:** root code execution in the test VM (disposable); a poisoned package can rewrite the evidence before collection, producing a forged PASS (compounds the finding-4 pivot).
+**Fix:** sign the local repo (repo GPG key, `gpgcheck=1`, `repo_gpgcheck`), or at minimum verify a checksum manifest of `rpms/*.rpm` committed to the repo before the scp.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### `--name` is unvalidated: path traversal into `cp` and `rm -f`
+**Severity:** low
+**Vector:** input-validation
+**Where:** `vm-test/provision-vm.sh:104-108` (argument), `vm-test/provision-vm.sh:116-119` (`DISK_PATH`), `vm-test/provision-vm.sh:163` (cp), `vm-test/provision-vm.sh:56` (rm); also the `VM_NAME` env var (`vm-test/lib.sh:26`, `vm-test/test-gdm-login.sh:290,325`)
+**Attack:** an operator, or a manipulated agent, passes `--name '../../../x'` or sets `VM_NAME` with path separators. The caller already has host access, so this is a footgun more than an external attack.
+**Impact:** `cp` overwrites and `rm -f` deletes files outside `/var/lib/libvirt/images/cinnamon-test/` (within the invoking user's permissions) before the libvirt calls fail on the invalid domain name.
+**Fix:** allowlist `^[A-Za-z0-9][A-Za-z0-9._-]*$` (libvirt domain-name rules) for both `--name` and the env var, dying on mismatch.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### New code carries no license headers; the repo is GPLv2; no incompatibility found
+**Severity:** low
+**Vector:** license
+**Where:** `tasks/lib/ukey.c`, `tasks/lib/gdm-drive.sh`, `tasks/lib/gdm-a11y.py`, `tasks/lib/vnc-grab.py`, `vm-test/test-gdm-login.sh`, `vm-test/test-repo-setup.sh` (none carry a copyright or license notice; `git grep -iE 'GPL|license' task-0008-gdm-auth -- vm-test tasks .gitignore` returns nothing, which includes the pre-existing scripts, so this is the repo-wide convention, not a new deviation)
+**Attack:** n/a (compliance gap, not an attack path).
+**Impact:** the repo `LICENSE` is GPLv2. The six new files are original: I reviewed each, `ukey.c` is a standard uinput pattern, `gdm-a11y.py` is a direct AT-SPI2 D-Bus client (not pyatspi2 code), `vnc-grab.py` is a self-contained RFB implementation, the bash files are original. No copied code with stripped headers, no relicensing, no GPL-3.0/AGPL mixing. The gap is notice: GPLv2 section 1 requires license notices to be kept on distributed copies, and the license's "How to Apply" section recommends per-file notices.
+**Fix:** add a GPLv2-or-later header matching `LICENSE` to the six new files; backfill the pre-existing `vm-test/` scripts in the same change.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+**Verdict (2026-08-30): 0 critical, 1 high, 2 medium, 4 low.** Per the DoD Omega gate (no
+unresolved findings above `low`), findings 1-3 block the merge until `Tails` fixes them and
+the Shadow → Omega → Big re-run is clean. Finding 1 is the only one that can silently corrupt
+the task's core deliverable (the evidence chain), and the bare-metal deployment makes it live
+rather than theoretical.
 
 ---
 
@@ -2127,6 +2926,277 @@ explicitly — a truncated run reporting green reads as full coverage.*
 **Verdict:** prose. For each FAIL: the failing check, the evidence, and whether it is a code bug (goes
 to `Tails`) or a harness bug (stays with `Big`).
 
+### Branch diff verification + bare-metal env prep (2026-08-30, `Big`)
+
+*Checkpoint 1/4. Scope: (a) non-VM test layers for `main..task-0008-gdm-auth`; (b)
+non-interactive bare-metal prep on `howard@192.168.1.103` (baseline, RPM install, GDM
+enable; stop before interactive login). Existing evidence base: 2c-3b PASS (checkpoint
+`### Item 2 — 2c-3`). All command outputs truncated before entering context.*
+
+**Environment notes.** Clone at `~/Linux/projects/cinnamon-for-rocky10/` (the brief's
+`~/AI/projects/` path does not exist; same branch/commits as Shadow and Omega noted).
+`git status` clean; `git log --oneline main..task-0008-gdm-auth` = the five commits
+`b15dfcb`..`097702e`; `git diff --stat` = 9 files, 3394 insertions / 6 deletions. Linters
+were absent on the PM host; installed `ShellCheck-0.10.0-3.el10_0` +
+`python3-ruff-0.15.4-2.el10_2` from EPEL (`sudo dnf install -y ShellCheck python3-ruff`)
+so the linter gate could actually run. `rpms/` holds 48 RPMs plus a valid `repodata/`
+(`repomd.xml` present), so `setup-repo.sh` skips metadata generation on the target.
+
+**Applicable test layers per AGENTS.md §7, treatment this pass:**
+
+| Layer | Rationale | Treatment this pass |
+|---|---|---|
+| Unit (language-native) | diff has a C driver, 2 Python modules, 5 bash scripts | `gcc -Wall -Wextra` compile of `ukey.c`; `python3 -m py_compile` both .py files |
+| Linter/static | bash + python in diff | `bash -n` x5; `shellcheck` 5 bash files; `ruff` 2 python files |
+| Repo test entrypoint, no VM | `test-repo-setup.sh` phase 0 is host-side error handling (header line 15; `main()` line 674) | all 8 checks run individually; the script itself NOT run (it would proceed to VM provisioning, line 689) |
+| Docker/podman | harness needs libvirt system driver, uinput, sudo, a LAN | N/A: containerizing changes the environment under test; the repo has no containerized entrypoint |
+| VM / Sparky-Sparrow | graphical target; harness exists (`test-gdm-login.sh`) | not re-run this pass: 2c-3b PASS is the standing evidence; re-run after Tails' should-fixes, because the harness has 5 independently confirmed false-verdict/protocol paths (below + `## Review`) |
+| Bare-metal | user's real machine, minimal-server | in progress (checkpoints 2-4) |
+
+**(a) Results.**
+
+| Check | Target | Result |
+|---|---|---|
+| `bash -n` | `vm-test/{lib,provision-vm,test-gdm-login,test-repo-setup}.sh`, `tasks/lib/gdm-drive.sh` | PASS 5/5 |
+| `python3 -m py_compile` | `tasks/lib/{gdm-a11y,vnc-grab}.py` | PASS 2/2 |
+| `gcc -Wall -Wextra` | `tasks/lib/ukey.c` | PASS, rc=0, zero warnings; binary runs (usage on no args) |
+| `shellcheck 0.10.0` | 5 diff bash files | 0 errors; 7 warnings/notes (4x SC2034 unused vars, SC2046 `test-repo-setup.sh:199`, 2x SC2018/2019 locale classes); 3x SC1091 are tool artifacts (dynamic `source "${SCRIPT_DIR}/lib.sh"` not statically followable). `repo-setup/setup-repo.sh` clean |
+| `ruff 0.15.4` | 2 python files | 2 errors: F821 `cmd_waiteditable` undefined (`gdm-a11y.py:517`); F841 unused `max_depth` (`gdm-a11y.py:277`) |
+| `test-repo-setup.sh` phase 0 (8 host-side checks, run individually) | `setup-repo.sh` + `.repo` template | PASS 8/8: syntax; non-root rejection (rc=1, "must be run as root"); missing-dir rejection (dies at line 45 `cd -P`, stateless per Omega's trace); template exists with `BASEURL_PLACEHOLDER`, `gpgcheck=0`, `enabled=1`, `metadata_expire=0` |
+
+**Independent verification of review findings (no VM needed):**
+
+- Shadow should-fix #3 (false-PASS rc check) — **confirmed**. The exact expression at
+  `vm-test/test-repo-setup.sh:311,459,500` (`echo "$rc" | grep -q "0$" && [ "$rc" != "255" ]`)
+  records rc=10, 20, 30 as PASS; only rc=255 is guarded.
+- Shadow should-fix #7 (`waiteditable` dispatch) — **confirmed by execution**:
+  `python3 tasks/lib/gdm-a11y.py waiteditable` -> uncaught
+  `NameError: name 'cmd_waiteditable' is not defined`, rc=1. ruff F821 flags the same line
+  statically.
+- Omega medium #2 (key mode unverifiable in a read-only review) — resolved: `stat` on the
+  PM host shows `cinnamon-test-key` 600 howard:howard (private), 644 (pub). Mode is not
+  the issue; the single-key fleet-wide blast radius still stands as a design issue.
+- Shadow should-fix #5 (no prerequisite canary) — **failure mode live on this host**:
+  plain `virsh list --all` (user session) returns an empty table, rc=0; `sudo virsh
+  list --all` shows `gdm-login-vm` Id 3 running. The harness forces
+  `LIBVIRT_DEFAULT_URI=qemu:///system` (`vm-test/lib.sh:19`) with no check that the
+  invoking user can reach the system driver.
+- ruff F841 `max_depth` unused (`gdm-a11y.py:277`) — new nit, not in `## Review`.
+
+**NEW FINDING (supersedes the framing of Shadow #1): `vnc-grab.py` is non-functional
+end-to-end against a spec-conformant RFB 3.8 server.** Verified with a spec-conformant
+fake server (`/tmp/opencode/t0008/fake_vnc.py`: security None, 16-byte PixelFormat,
+big_endian flag 0, LE host-order pixels, raw encoding) plus a socketpair isolation of the
+post-handshake path (`/tmp/opencode/t0008/iso_test.py`):
+
+1. ServerInit: `vnc-grab.py:79` reads 16 bytes; the spec's fixed part is 24 (2+2 + 16-byte
+   PixelFormat + 4 name-len). `pf[10:13]` is a 2-byte slice -> uncaught `struct.error` at
+   line 84. Full CLI run against the fake server: `struct.error: unpack requires a buffer
+   of 3 bytes`, rc=1, during handshake.
+2. FramebufferUpdateRequest: `vnc-grab.py:120` packs `>2B4I` = 18 bytes; the spec is 10
+   (`>2B` + four uint16). A conformant server reads x=y=w=h=0 and the 8 trailing bytes
+   desync its input stream.
+3. FBU header: `vnc-grab.py:122-125` reads 8 bytes (spec: 4) and takes `n_rects` from
+   `[6:8]` (spec: `[2:4]`). The full-frame rect at (0,0) that a full grab always produces
+   makes `[6:8]` the rect's x,y = 0 -> isolation test result:
+   `ProtocolError: framebuffer update carried no rects`.
+4. Rect header: `vnc-grab.py:128` reads 10 bytes and unpacks with `>HHHBB` (8-byte
+   format) -> `struct.error` guaranteed for any non-(0,0) rect (encoding is a uint32; the
+   spec rect header is 12 bytes, `>HHHHI`).
+5. Endianness (Shadow #1, `vnc-grab.py:118`): with the QEMU-on-x86 format (flag 0) the
+   code picks `fmt='>I'`; wire bytes `[11 22 33 00]` decode to R=0x22 G=0x33 B=0x00
+   (swapped/zeroed) vs the correct LE decode R=0x33 G=0x22 B=0x11.
+
+Consequence: the documented pixel channel for domain-less VMs has never worked. The 2c-3b
+PASS screenshots came from the QMP channel (consistent with Shadow's note that findings 1
+and 2 "could not have bitten"). All five defects are in this branch's new file. Goes to
+`Tails`; until fixed, any run relying on `vnc-grab.py` gets rc=1 with no screenshot at
+all, not just a color-swapped one.
+
+**Checkpoint 2 — bare-metal access + baseline (192.168.1.103, hostname `silver`).**
+
+Access setup (one-time):
+
+- Dedicated key per Omega finding 2: `~/.ssh/baremetal-103` (ed25519), fingerprint
+  `SHA256:CvnIXRjnu7QUErfiExqbQ3q5zncY8ZPCLXo3PZ6TTSM` (public key material, recorded for
+  the finding-1 `known_hosts` work). The fleet key `cinnamon-test-key` was **not** copied to
+  this host.
+- Host keys of `192.168.1.103` (OpenSSH_9.9) recorded via `ssh-keyscan` before first contact
+  (TOFU): RSA-3072 `SHA256:OxbuXvwVOoYM017va5yZQ4b8907VHI/Tw7VmBhevXZ0`, ECDSA
+  `SHA256:NAvJMVH7DOSWeJz/5fBXXiLXbZHCasrYx2YAmQsxq2c`, ED25519
+  `SHA256:kAu+xhNLhmmJi65Rl6WpuyqdE8xJL/OxoJlzxi4T9qY`.
+- One-time `sshpass -f ~/pass.txt ssh-copy-id ...`: password read from the file in place,
+  never printed, never in arguments; output "Number of key(s) added: 1", rc=0.
+- Key auth verified: `ssh -o BatchMode=yes cinnamon-bm103` rc=0 (BatchMode excludes any
+  password fallback). Passwordless `sudo` confirmed (`sudo -n true` rc=0, per `## Status`).
+  ssh config alias `cinnamon-bm103` (dedicated `IdentityFile`, `IdentitiesOnly yes`).
+- `~/pass.txt` on the PM host tightened 644 -> 600.
+
+Baseline minimal state (recorded before any modification):
+
+- Rocky Linux 10.2 (Red Quartz), kernel `6.12.0-211.16.1.el10_2.0.1`, 12 cores, 19 GB RAM,
+  SELinux `Enforcing`.
+- 674 packages.
+- Login manager: **none**. `rpm -q gdm lightdm sddm` -> all not installed;
+  `systemctl is-enabled gdm` -> `not-found`; `is-active` -> `inactive`.
+- X server: **none**. `xorg-x11-server-Xorg` not installed; `rpm -qa | grep -iE
+  'xorg-x11-server|mesa|wayland|pipewire|pulseaudio'` -> zero packages.
+- Desktop packages: **0** (`rpm -qa | grep -icE 'cinnamon|gnome-shell|gnome-session|mate-desktop|xfce|plasma-desktop'` -> 0).
+- Session dirs: `/usr/share/xsessions/` and `/usr/share/wayland-sessions/` exist, both empty.
+- Active targets: `multi-user.target` + prerequisites; no `graphical.target`.
+- Repos: `appstream`, `baseos`, `extras` (CRB currently disabled; the setup script enables it).
+- Console: getty on tty1; only howard's SSH sessions.
+
+**Checkpoint 3 — Cinnamon RPM install from the local DNF repo (192.168.1.103).**
+
+Procedure (INSTALL.md quick start, local-repo variant):
+
+- Transferred `repo-setup/` + `rpms/` (48 RPMs + `repodata/`) to
+  `~/cinnamon-for-rocky10/` via rsync over the dedicated key; **all 48 RPM sha256s
+  identical local==remote** (manifests diffed, empty).
+- `sudo bash ~/cinnamon-for-rocky10/repo-setup/setup-repo.sh ~/cinnamon-for-rocky10` ->
+  rc=0, `=== Repository setup complete ===`. Installed `createrepo_c-1.1.2-4.el10` + libs
+  (2 packages, appstream); used the clone's shipped `repodata/` (skipped generation); wrote
+  `/etc/yum.repos.d/cinnamon-rocky10.repo` with
+  `baseurl=file:///home/howard/cinnamon-for-rocky10/rpms`; enabled CRB; `dnf makecache` for
+  the local repo OK.
+- `sudo dnf install -y cinnamon` -> rc=0, `Complete!`.
+- `sudo dnf install -y cinnamon-session cinnamon-settings-daemon cinnamon-control-center
+  nemo mozjs115-devel` -> rc=0 (5/5), `Complete!`.
+- `sudo ldconfig` -> rc=0.
+
+What it pulled in (snapshot diff of `rpm -qa` before/after via `comm -13`; full list saved
+on the machine at `~/t0008-new.txt`, snapshots `~/t0008-{before,after}.txt`):
+
+- **157 new packages** total (674 -> 831).
+- **No login manager**: gdm/lightdm/sddm neither installed nor pulled in
+  (`rpm -q gdm` -> not installed, `systemctl is-enabled gdm` -> not-found).
+- **No X server**: no `xorg-x11-server-*` in the new set. Graphics pull-in is the
+  **mesa stack for Wayland**: `mesa-dri-drivers`, `mesa-filesystem`, `mesa-libEGL`,
+  `mesa-libgbm`, `mesa-libGL` (all 25.2.7-4.el10.rocky.0.1) plus 15 X11 *library*
+  packages (link-time deps, not a server).
+- Other notable pull-ins (from dnf's `Installed:` list): pipewire 1.4.11 + wireplumber
+  0.5.10 + pulseaudio-libs 17.0 (audio), tracker 3.7.3 + tracker-miners 3.7.4,
+  xdg-desktop-portal 1.20.0 + xdg-desktop-portal-gtk 1.15.3, upower 1.90.10,
+  sound-theme-freedesktop, rtkit, webrtc-audio-processing, poppler + poppler-glib,
+  xprop, startup-notification, xcb-util.
+- **All 14 target packages present at the INSTALL.md table versions** (`rpm -q`):
+  mozjs115/mozjs115-devel 115.29.0, cjs 6.4.0, muffin/muffin-clutter/muffin-cogl 6.7.4-3,
+  cinnamon-desktop 6.7.2, xapps-lib 3.3.3, cinnamon-session 6.7.3,
+  cinnamon-settings-daemon 6.7.2, cinnamon-control-center 6.7.2, cinnamon-menus 6.7.0,
+  nemo 6.7.4, cinnamon 6.7.4.
+- **Session entries**: `/usr/share/xsessions/cinnamon.desktop` +
+  `/usr/share/wayland-sessions/cinnamon-wayland.desktop`, both present (matches `###
+  Item 3` F3 and the 2c-1 bonus finding).
+
+Verdict so far: the RPM set installs cleanly on a minimal state with no DM and no X
+server; it installs **neither a login manager nor an X server**, and pulls the mesa
+Wayland graphics stack. The machine is now "Cinnamon installed, no login path yet" — GDM
+next.
+
+**Checkpoint 4 — GDM install + enable; final state; summary (192.168.1.103).**
+
+GDM phase (root operation on the target; blast radius = that machine's package DB):
+
+- `sudo dnf install -y gdm` -> rc=0, `Complete!`. Pulled **105 packages** (gnome-shell
+  greeter stack; full list `~/t0008-new-gdm.txt`, snapshots `~/t0008-{pre,after}-gdm.txt`).
+  Installed: `gdm-47.0-22.el10_2`, `gnome-shell-49.4-8.el10_2.rocky.0.2`,
+  `xorg-x11-server-Xwayland-24.1.9-4.el10_2.3`, xdg-desktop-portal-gnome 47.3, wpa_supplicant,
+  switcheroo-control, vulkan-loader, xkbcomp, and the rest of the GNOME greeter deps.
+- **Xorg re-verified absent on bare metal** (the 2c-1 question, machine answer):
+  `dnf list available xorg-x11-server-Xorg` -> `Error: No matching Packages to list`;
+  `dnf list available 'xorg-x11-server*'` -> only `xorg-x11-server-Xwayland-devel` (crb).
+  No `xorg-x11-server-Xorg` in any enabled repo (appstream, baseos, extras, crb,
+  cinnamon-rocky10). X11 compatibility in the Wayland session is via Xwayland, which the
+  GDM install pulled.
+- **GDM 47 is Wayland-only, re-verified**: `rpm -ql gdm | grep -c gdm-x-session` -> 0;
+  `grep -c gdm-wayland-session` -> 1 (`/usr/libexec/gdm-wayland-session`).
+- **Enablement**: `systemctl is-enabled gdm` -> `enabled` (set by the package post-install;
+  no manual `systemctl enable` needed), `is-active` -> `inactive`. `systemctl list-unit-files
+  gdm.service` -> `gdm.service enabled enabled`. **GDM was NOT started; the machine stays at
+  the getty on tty1. Stopped before interactive login, as instructed.**
+- **Session entries after GDM**: `/usr/share/xsessions/` -> `cinnamon.desktop`;
+  `/usr/share/wayland-sessions/` -> `cinnamon-wayland.desktop`, `gnome.desktop`,
+  `gnome-wayland.desktop`.
+
+**Machine state at stop (192.168.1.103, `silver`):**
+
+- Rocky 10.2 minimal-server baseline (674 pkgs) + 14 Cinnamon packages + 157 pulled deps +
+  GDM 47 + 105 pulled deps = 831 + 105 packages. SELinux Enforcing throughout.
+- Login path: GDM enabled, will present at next boot (or `sudo systemctl start gdm`).
+  Cinnamon selectable as `Cinnamon` (Wayland) and `GNOME`/`GNOME Wayland`; the X11
+  `Cinnamon` entry exists but has no Xorg to run on (recorded answer, re-run to confirm).
+- Access: key-based only (dedicated `~/.ssh/baremetal-103`, alias `cinnamon-bm103`),
+  passwordless sudo. Evidence files on the machine: `~/t0008-{before,after,pre-gdm,
+  after-gdm,new,new-gdm}.txt`.
+
+**Workflow run (this pass):**
+
+| Check | What it exercises | Result | Notes |
+|---|---|---|---|
+| compile | `ukey.c` (gcc -Wall -Wextra), `py_compile` x2 | PASS | zero warnings; binaries/scripts load |
+| linter | shellcheck 0.10.0 (5 bash), ruff 0.15.4 (2 py), bash -n (5) | PASS w/ findings | shellcheck 0 errors / 7 notes; ruff 2 errors (1 = Shadow #7 confirmed, 1 new nit F841) |
+| unit tests | `test-repo-setup.sh` phase 0 host-side checks (8), run individually | PASS 8/8 | script not run whole (would provision a VM) |
+| integration tests | vnc-grab.py vs spec-conformant fake RFB server + socketpair isolation; waiteditable exec; rc-0$ expression; virsh canary; bare-metal install flow | **FAIL (tool) / PASS (env prep)** | vnc-grab.py non-functional (5 protocol defects, new finding); all bare-metal steps rc=0 |
+| Sparky tests | Rocky Linux UI, interactive login + navigation | NOT RUN (deferred) | requires the fixed harness (should-fixes #1/#2 + new vnc-grab finding) and post-merge state; 2c-3b PASS is the standing VM evidence |
+
+**Checks requested vs run:** 12 requested, 12 executed. (a): layer determination,
+static/syntax pass, linter pass, repo VM-free entrypoints, independent verification of
+harness verdicts. (b): ssh-copy-id, baseline, RPM install, pull-in record, session entries,
+GDM install+enable, stop-before-login, Xorg re-verification. Nothing dropped: the VM
+re-run and the interactive bare-metal matrix are explicitly out of scope for this pass
+(pending Tails' fixes), not silently skipped.
+
+**Verdict:**
+
+- **(a) Branch diff, non-VM layers: PASS with two code findings for `Tails`.** No syntax,
+  compile, or template defects. The linter pass confirms one should-fix (Shadow #7, F821)
+  and adds one nit (F841 `max_depth` unused, `gdm-a11y.py:277`). The independent
+  verification did not trust the harness's PASS markers and found the harness's own
+  false-PASS expression live (Shadow #3: rc 10/20/30 recorded PASS), the permissions
+  failure mode live on this host (Shadow #5), and a **new major finding: `vnc-grab.py`
+  is non-functional against any spec-conformant RFB server** (5 defects, checkpoint 1) —
+  this supersedes the latent-ness of Shadow #1: no screenshot evidence of any kind is
+  obtainable from that tool today. All of these are code bugs (go to `Tails`), not
+  harness-of-verification bugs.
+- **(b) Bare-metal env prep: PASS, all steps rc=0.** Minimal-state baseline recorded; the
+  48-RPM set (checksum-verified transfer) installs cleanly via the local DNF repo with
+  zero login managers and zero X servers pulled in (mesa Wayland stack only); both
+  Cinnamon session entries present; all 14 packages at the INSTALL.md versions; GDM 47
+  installed and enabled (Wayland-only, Xorg re-confirmed absent from all repos); machine
+  left at the getty, not booted into the greeter, no interactive login attempted.
+  The machine is ready for the re-run's interactive matrix.
+- **Merge gate status (for the chain):** still blocked, as expected — `## Review` has 10
+  unresolved should-fixes (3 of them now independently confirmed to produce wrong
+  verdicts), `## Security` has 1 high + 2 medium unresolved, and this pass adds the
+  vnc-grab protocol rewrite and one nit. Nothing here blocks env prep; it all blocks the
+  re-run and the merge.
+
+**What the re-run still needs:**
+
+1. `Tails` fixes: the 10 should-fixes (independently confirmed: #3 rc-0$ false PASS, #5
+   no prerequisite canary, #7 waiteditable NameError; #1 endianness is subsumed by the
+   new vnc-grab finding which requires fixing the ServerInit read, FBU request size, FBU
+   header size/offset, and rect header before the endianness line is even reachable),
+   the new nit (F841), and Omega's 1 high + 2 medium (known_hosts pinning — use the
+   host-key fingerprints recorded in checkpoint 2; dedicated bare-metal key — done for
+   the host, `~/.ssh/baremetal-103`, harness wiring is Tails' part; root-on-host test
+   stub).
+2. Re-run of the VM harness (`test-gdm-login.sh`) after the fixes to re-establish the
+   2c-3b evidence with a verdict-trustworthy harness.
+3. Interactive bare-metal matrix: start GDM (`systemctl start gdm` or reboot), log in as
+   `howard` (password available in `~/pass.txt` on the PM host, never written anywhere)
+   selecting `Cinnamon (Wayland)`, verify the session is active (loginctl + processes)
+   and navigable; then record the X11-session question (the `cinnamon.desktop` X entry
+   has no Xorg to run on — confirm GDM's behavior for it).
+4. **Open design question for the re-run (observation channel on a physical machine):**
+   the machine exposes no VNC, so `vnc-grab.py` is inapplicable by architecture, not
+   just by bug. Options: (a) a11y over the system bus + loginctl/journal evidence with
+   the user physically observing the screen; (b) install a remote-desktop observation
+   agent in the greeter/session (gnome-remote-desktop or wevnc class). Decide before the
+   interactive run; input injection is not a problem (ukey/uinput is display-protocol
+   independent and the machine has passwordless root for `/dev/uinput`).
+
 ---
 
 ## Docs
@@ -2147,12 +3217,71 @@ to `Tails`) or a harness bug (stays with `Big`).
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** no (recorded, user-authorized deviation; the merge proceeded per
+explicit user instruction, 2026-08-30, asked twice; record in `## Status` fourth entry). Missing
+from the DoD: the Shadow gate (should-fixes #2, #5, #6, #10 plus 7 nits unresolved), the
+vnc-grab decision (batch C), the trio re-run (Shadow, Omega, Big), Big's bare-metal interactive
+matrix (start GDM, log in as `howard`, no-glitch check), and the Vector doc update. Met: the
+Omega gate (high + 2 medium fixed in batch A, only low findings remain) and Big's first pass
+(non-VM 12/12 PASS with findings; bare-metal env prep + RPM install PASS).
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** task-0008-gdm-auth (pre-existing; does not match the `feature/TASK-XXXX-slug`
+  house pattern; the user instructed to merge this branch as-is)
+- **Commits:** GPG-signed no (`commit.gpgsign` not set in the repo or globally; the 13 commits
+  are unsigned)
+- **PR:** opened ✅ | merged ✅ (#3, internal `metalllinux` repo, no human review required)
+- **Deploy:** N/A (repo-only change, no deployment, no workflow dispatched)
+
+**PR #3:** https://github.com/metalllinux/cinnamon-for-rocky10/pull/3, title `feat(vm-test):
+add GDM login harness + security and verdict-integrity fixes`, base `main`, head
+`task-0008-gdm-auth`, opened and merged 2026-08-30, merged 2026-08-30T11:35:06Z via GitHub
+rebase merge. The house default is squash-merge; squash was rejected for this PR because the
+user's instruction requires all 13 commits to land on main and be verifiable there. The rebase
+merge kept the history linear, no merge commit.
+
+**Merge result:** pre-merge main was `1f00da5`; post-merge main is
+`4880e0b87f5758786de36e34a4c654bc2a07c672` (local main = origin/main = GitHub API main head).
+The rebase merge rewrote the 13 commits with new SHAs (author preserved, committer changed to
+the GitHub bot identity); subjects and trees are identical. Old → new mapping:
+`b15dfcb`→`72a2e51`, `959d01d`→`5dac468`, `456ce71`→`e3d3a3e`, `ddac27e`→`d100218`,
+`097702e`→`140a667`, `1c16045`→`abbc1d2`, `af3a9ff`→`188f972`, `cd6860c`→`017506f`,
+`85f629e`→`d72867e`, `921de9f`→`1dc224a`, `9ce6cb5`→`53011a5`, `6f6b1b5`→`816d3a7`,
+`f259dd5`→`4880e0b`.
+
+**Verification (post-merge, clone `~/Linux/projects/cinnamon-for-rocky10/`):**
+
+- `git rev-list --count 1f00da5..main` = 13
+- `git diff f259dd5..main` = empty (main tip tree byte-identical to the branch tip tree)
+- all 13 commits present on main in order, each checked per pair (old vs new subject + tree),
+  all OK
+- local main = origin/main = GitHub API main = `4880e0b`
+- remote branch `task-0008-gdm-auth` retained on origin (follow-up batches C/D build on it)
+
+**Tracked follow-ups (from `## Next Actions`, land via the second PR):** Tails batch C
+(vnc-grab decision + implementation), Tails batch D (should-fixes #2 ukey uppercase drop, #5
+prerequisite checks, #6 hardcoded 48-RPM check, #10 provisioning dedup + nits), Shadow re-run,
+Omega re-run, Big re-run (VM harness re-run + bare-metal interactive matrix), Vector (README +
+INSTALL.md), Knuckles second PR, then the task is DONE; Robotnik starts the TASK-0015 chain
+from the updated main after this merge.
+
+**Process notes / deviations from the brief:**
+
+- Clone location: the brief said `/home/howard/AI/projects/cinnamon-for-rocky10/`; the actual
+  clone is `/home/howard/Linux/projects/cinnamon-for-rocky10/` (the path used throughout the
+  planning doc). Same branch, same tip `f259dd5`, clean tree.
+- Push quirk confirmed and worked around as instructed: the token embedded in the origin URL
+  is stale (401 against the GitHub API; the repo is public, so anonymous fetch works). The
+  configured credential helper (`credential.https://github.com.helper` =
+  `/home/howard/.local/bin/git-cred-token-md`, reads `/home/howard/token.md`, token verified
+  valid with a 200 from `/user`) is the working credential. No git push was needed (the branch
+  was already at `f259dd5` on origin); the `gh` API calls (PR create + merge) used the same
+  token via `GH_TOKEN` in the process environment, never written to a file, doc, or commit.
+- **Security note (escalate to the user):** during verification, one `git config --local
+  --list` run displayed the origin URL with the embedded token unmasked in agent tool output.
+  The token was not written to the repo, a doc, or a commit. It is already invalid against
+  the API, but if it is still valid for any purpose the user should revoke it. Recorded here
+  rather than in `## Security` because Knuckles' write scope for this task is `## Release`
+  only; `Omega` or the user should pick it up in `## Security`.
 
 ---
 
