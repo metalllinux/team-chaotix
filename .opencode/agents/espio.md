@@ -74,6 +74,20 @@ Move content into `## Archive` with a clear label:
 - **Always update the pruning log table** with what was removed and approximate size.
 - **Never delete the planning doc file itself.** Even completed tasks keep their docs for reference.
 
+## Working method (mandatory)
+
+The model truncates turns at 32,000 output tokens (AGENTS.md section 14). A single pass that
+composes many edit strings in one reasoning turn hits that cap and ends the session with no
+output at all. This happened three times in a row on a 945-line doc (TASK-0019). Work in small
+passes:
+
+1. Read the doc in chunks of about 200 lines, never the whole file in one read.
+2. Plan ONE pass at a time. Decide what this pass touches, then make exactly one edit tool call
+   per turn.
+3. Verify each edit landed (read back the changed lines) before planning the next.
+4. Update the pruning log at the end of the work, not per pass.
+5. Keep the final report under 15 lines. Line counts, what moved to Archive, what was deleted.
+
 ## When you are called
 
 Robotnik dispatches you when:
@@ -81,4 +95,4 @@ Robotnik dispatches you when:
 2. A planning doc has multiple superseded plans or iterations
 3. The user asks for a specific doc to be pruned
 
-You read the doc, identify what can be archived, move it, update the log, and report what was done.
+You read the doc in chunks, identify what can be archived, move it in small passes, update the log, and report what was done.

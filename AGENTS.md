@@ -298,3 +298,31 @@ opencode
 ### Sparky / Raku
 - Raku is not in Rocky Linux 10 default repos. Must be installed manually.
 - Sparky is cloned per-project as needed.
+
+---
+
+## 14. Model turn limit and action discipline
+
+The EVO-X2 endpoint caps every turn at **32,000 output tokens**. Verified 2026-09-02 in
+TASK-0019, three consecutive subagent turns truncated at exactly 32,000 tokens with
+`finish_reason: "length"` and zero visible output. The llama.cpp server default is unlimited
+(`max_tokens: -1`) and the opencode provider config declares a 131,072 output limit, so the clamp
+applies in the EVO-X2 gateway layer. Consequence. A turn that spends its whole budget on hidden
+reasoning produces no tool call and no text, the session ends with an **empty result that still
+reports "completed"**, and the dispatcher sees silence. This killed three consecutive `Espio`
+dispatches while pruning a 945-line planning doc: the model drafted the entire multi-edit plan,
+including long exact-match edit strings, inside one reasoning pass.
+
+Rules for every agent:
+
+1. **Every turn must end in a tool call or a final message.** If you catch yourself composing a
+   whole multi-edit plan in your head, stop composing and issue the first edit as a tool call
+   instead.
+2. **Large files in small passes.** For any file over 200 lines, read in chunks of about 200 lines
+   (`offset`/`limit`), make one section-sized edit per turn, and verify the edit landed before
+   planning the next one.
+3. **Dispatchers split large doc work.** One subagent brief carries at most three file edits.
+4. **Detection.** An empty subagent result is not "nothing to report". Check
+   `~/.local/share/opencode/opencode.db` for the session's last assistant message. `finish:
+   "length"` with `tokens.output = 32000` and only reasoning parts means the turn truncated in
+   reasoning. Re-dispatch with a smaller brief.

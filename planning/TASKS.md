@@ -21,6 +21,11 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0012 | Align team dispatch to single-slot endpoint (--parallel 1) | Robotnik | planning/docs/TASK-0012-single-slot-sequencing.md | Done |
 | TASK-0013 | README: GMKtec EVO-X2 + Qwen 3.8 UD-Q4_K_XL model host setup | Robotnik | planning/docs/TASK-0013-evox2-readme-setup.md | Done |
 | TASK-0014 | Vector agent: extend bash permissions to finish TASK-0013 DoD items | Robotnik | planning/docs/TASK-0014-vector-bash-permissions.md | Done |
+| TASK-0015 | Cinnamon RPMs: minimal-server install + LightDM/SDDM test matrix | Robotnik | planning/docs/TASK-0015-cinnamon-server-multidm.md | Planning |
+| TASK-0016 | INSTALL.md: verify all instructions + add minimal-server install-and-run section | Robotnik | planning/docs/TASK-0016-install-md-minimal-server.md | In Progress (doc-writing paused on TASK-0017) |
+| TASK-0017 | Complete Cinnamon desktop: missing subpackages, Rocky wallpaper, branding, terminal | Robotnik | planning/docs/TASK-0017-cinnamon-desktop-completeness.md | In Progress |
+| TASK-0018 | Provision reference + explore VMs for Cinnamon-for-Rocky10 | Robotnik | planning/docs/TASK-0018-vm-reference-explore-provisioning.md | Done |
+| TASK-0019 | Diagnose Espio empty-result failures; harden team against the 32k turn cap | Robotnik | planning/docs/TASK-0019-espio-32k-turn-cap.md | In Progress |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
