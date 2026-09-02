@@ -73,7 +73,8 @@ the PM reads.*
 - [x] `Robotnik`: write fix specs (this section, `## Plan`).
 - [ ] `Tails`: apply changes 1–4 from `## Plan` exactly as specified; run the verification checks;
       record results in `## Implementation`. Never print token values.
-- [ ] `Knuckles`: commit + push this repo's changed files to `metalllinux/team-chaotix` main.
+- [x] `Knuckles`: commit + push this repo's changed files to `metalllinux/team-chaotix`
+      main (done 2026-09-02, ship commit `e1d7e16`, record in `## Release`).
 - [ ] **User:** restart opencode so the new agent + AGENTS.md config loads; then the TASK-0018
       prune retry can be dispatched.
 
@@ -269,8 +270,41 @@ the user-facing documentation of the new discipline.
 
 *Owner: `Knuckles`.*
 
-*(pending — commit + push of AGENTS.md, .opencode/agents/espio.md, planning/TASKS.md,
-planning/docs/TASK-0019-…md to metalllinux/team-chaotix main)*
+**DONE checklist verified:** yes (2026-09-02, Knuckles, box by box against the shipped
+state). The DoD checkboxes in this doc are still unticked at the time of this record.
+Their owner is `Robotnik`, and they get ticked in the closure commit (precedent
+TASK-0014 `fda39dd`). Every box's substance is verified below, and the user directed
+this release explicitly in the dispatch brief. Box 1 diagnosis recorded, `## Status`
+carries the three failed sessions, each last assistant turn exactly 32,000 output
+tokens, `finish: "length"`, reasoning-only parts. Box 2 AGENTS.md section 14, present
+at `AGENTS.md:304`, ends the file, text byte-verified against the spec (`## Implementation`
+check 3). Box 3 espio.md, `## Working method (mandatory)` at `.opencode/agents/espio.md:77`,
+final paragraph now reads "You read the doc in chunks ... move it in small passes",
+frontmatter byte-identical to pre-change (`## Implementation` check 4). Box 4 GH_TOKEN,
+`## Implementation` checks 1–2 PASS, `gh api user` printed `metalllinux`, no token
+literal in `~/.bashrc` (host file, verified by Tails this turn). Box 5 project
+AGENTS.md, `## Implementation` check 5 PASS, `diff` empty. Box 6 TASKS.md row,
+committed in the release commit. Box 7 committed + pushed, this record.
+
+- **Branch:** `main`. Direct push to `metalllinux/team-chaotix` under the standing
+  2026-08-21 user permission for `metalllinux` repos. No feature branch, no PR.
+  Internal repo, AGENTS.md §8.
+- **Commits:** ship commit `e1d7e16` (`e1d7e1677806d64452fdbee5a88fe747f698d75b`),
+  8 files, AGENTS.md, .opencode/agents/espio.md, planning/TASKS.md, plus the planning
+  docs TASK-0015 through TASK-0018 that were never committed (this repo is the source
+  of truth for planning docs). GPG-signed, no. `commit.gpgsign` is not set in this
+  repo (checked this turn, `git config --get commit.gpgsign` empty).
+- **PR:** n/a. Internal repo shipped by direct push under the standing permission. No
+  PR required, AGENTS.md §8.
+- **Deploy:** n/a. Team config change, no deployment to dispatch. The new AGENTS.md
+  section 14 + espio.md working method take effect on the next opencode restart
+  (pending user action, `## Status`). Config load, not a deployment.
+- **Remote HEAD verification (2026-09-02, Knuckles):** pre-push, `git ls-remote origin
+  main` → `29066b568493afe476a2ae17128d74993baa627c	refs/heads/main`, == pre-push
+  local HEAD, clone in sync, no `pull --rebase` needed. Push output, `29066b5..e1d7e16
+  main -> main`. Post-push, `git ls-remote origin main` →
+  `e1d7e1677806d64452fdbee5a88fe747f698d75b	refs/heads/main`, == local
+  `git rev-parse HEAD`. PASS.
 
 ---
 
