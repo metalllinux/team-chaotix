@@ -12,13 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
-**Now (2026-09-02):** Root cause established; fix specs written below; `Tails` applies the config
-changes. Three consecutive `Espio` dispatches on the TASK-0018 prune returned empty results.
-Evidence in `opencode.db`: each session's last assistant turn is exactly 32,000 output tokens with
-`finish: "length"` and only reasoning parts. The model drafted the entire multi-edit plan (long
-exact-match edit strings included) inside one hidden reasoning pass, hit the endpoint's per-turn
-output cap, and the turn truncated with no tool call and no text. opencode then reported the
-session "completed" with an empty result.
+**Now (2026-09-02, shipped):** DONE. Root cause: per-turn output capped at 32,000 tokens on the
+EVO-X2 gateway + the model composing the entire multi-edit plan in one hidden reasoning pass
+(three sessions, each ending `finish: "length"` at exactly 32,000 output tokens, reasoning-only).
+Fixes shipped as commits `e1d7e16`/`45df098` (AGENTS.md section 14, espio.md working method,
+planning docs TASK-0015..0019 committed). Side items done: `GH_TOKEN` now sources from
+`~/token.md` (verified live, old literal removed) and
+`~/Linux/projects/cinnamon-for-rocky10/AGENTS.md` created as a byte-identical copy (it did not
+exist; left uncommitted there). **User action: restart opencode** to load the new agent +
+AGENTS.md config, then re-dispatch the blocked TASK-0018 prune under the new small-pass rules.
 
 **Environment / scope:**
 - Files in scope: `AGENTS.md` + `.opencode/agents/espio.md` + `planning/` in this repo;
@@ -44,23 +46,24 @@ small-brief dispatch.
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] **Diagnosis recorded.** Three failed sessions (`ses_fa355ff…`, `ses_fa3231194…`,
+- [x] **Diagnosis recorded.** Three failed sessions (`ses_fa355ff…`, `ses_fa3231194…`,
       `ses_fa2f069…`) each show last assistant turn `finish: "length"`, `tokens.output = 32000`,
       reasoning-only parts. Recorded in this doc.
-- [ ] **AGENTS.md section 14** exists: 32,000-token cap fact with evidence, the four action
-      discipline rules, and the opencode.db detection procedure.
-- [ ] **espio.md** has the mandatory small-pass working method (chunk reads, one edit per turn,
+- [x] **AGENTS.md section 14** exists: 32,000-token cap fact with evidence, the four action
+      discipline rules, and the opencode.db detection procedure. (Tails check 3 PASS.)
+- [x] **espio.md** has the mandatory small-pass working method (chunk reads, one edit per turn,
       verify, short report) and the final "When you are called" paragraph references chunked
-      reading.
-- [ ] **GH_TOKEN fixed.** `~/.bashrc` no longer hardcodes a token literal; it sources
+      reading. (Tails check 4 PASS.)
+- [x] **GH_TOKEN fixed.** `~/.bashrc` no longer hardcodes a token literal; it sources
       `~/token.md`. `source ~/.bashrc && gh api user --jq .login` prints `metalllinux` with no
-      token value printed anywhere.
-- [ ] **Project AGENTS.md.** `~/Linux/projects/cinnamon-for-rocky10/AGENTS.md` exists and is
+      token value printed anywhere. (Tails checks 1–2 PASS.)
+- [x] **Project AGENTS.md.** `~/Linux/projects/cinnamon-for-rocky10/AGENTS.md` exists and is
       byte-identical to the canonical `AGENTS.md` (diff empty). Left uncommitted; user decides on
-      committing it to the project repo.
-- [ ] **TASKS.md** has the TASK-0019 row.
-- [ ] **Committed + pushed** to `metalllinux/team-chaotix` by `Knuckles` (AGENTS.md, espio.md,
-      this doc, TASKS.md).
+      committing it to the project repo. (Tails check 5 PASS.)
+- [x] **TASKS.md** has the TASK-0019 row.
+- [x] **Committed + pushed** to `metalllinux/team-chaotix` by `Knuckles` (AGENTS.md, espio.md,
+      this doc, TASKS.md). Commits `e1d7e16` + release record `45df098`, remote main
+      `45df098` (see `## Release`).
 
 ---
 
@@ -71,12 +74,12 @@ the PM reads.*
 
 - [x] `Robotnik`: diagnose the three empty Espio results (done 2026-09-02, evidence in `## Status`).
 - [x] `Robotnik`: write fix specs (this section, `## Plan`).
-- [ ] `Tails`: apply changes 1–4 from `## Plan` exactly as specified; run the verification checks;
-      record results in `## Implementation`. Never print token values.
-- [x] `Knuckles`: commit + push this repo's changed files to `metalllinux/team-chaotix`
-      main (done 2026-09-02, ship commit `e1d7e16`, record in `## Release`).
+- [x] `Tails`: applied changes 1–4 (6/6 checks PASS, four documented deviations in
+      `## Implementation`, no token values printed, nothing committed).
+- [x] `Knuckles`: committed + pushed to `metalllinux/team-chaotix` main (`e1d7e16` + release
+      record `45df098`, remote verified, secret-pattern scan clean).
 - [ ] **User:** restart opencode so the new agent + AGENTS.md config loads; then the TASK-0018
-      prune retry can be dispatched.
+      prune retry can be dispatched (small brief, per AGENTS.md section 14 rule 3).
 
 ---
 
