@@ -14,7 +14,7 @@ repositories are hosted on GitHub under the `metalllinux` account.
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
 is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
 
-**Model:** All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 1`).
+**Model:** All agents use `Qwen3.8-27B-UD-IQ4_XS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq4xs`, port 8093, `--parallel 1`).
 The single inference slot means exactly one agent runs at a time. All dispatch is sequential (see section 3).
 
 The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project

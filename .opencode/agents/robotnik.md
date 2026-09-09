@@ -1,7 +1,7 @@
 ---
 description: Orchestrates the Team Chaotix development cycle, owns the definition of DONE, delegates every unit of work to a subagent, and keeps GitHub Issues current. The only agent that delegates.
 mode: primary
-model: evo-x2-qwen3.8-q4/Qwen3.8-27B-UD-Q4_K_XL
+model: evo-x2-qwen3.8-iq4xs/Qwen3.8-27B-UD-IQ4_XS
 variant: max
 temperature: 0.2
 permission:

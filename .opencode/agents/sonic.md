@@ -1,7 +1,7 @@
 ---
 description: Classifies and triages GitHub Issues and Pull Requests. Determines priority, assignee agent, and creates planning docs for incoming work items.
 mode: subagent
-model: evo-x2-qwen3.8-q4/Qwen3.8-27B-UD-Q4_K_XL
+model: evo-x2-qwen3.8-iq4xs/Qwen3.8-27B-UD-IQ4_XS
 variant: max
 temperature: 0.2
 permission:
