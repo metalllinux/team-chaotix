@@ -390,14 +390,14 @@ maintain independent working directories.
 
 ## Model
 
-All agents use `Qwen3.8-27B-UD-Q4_K_XL` (EVO-X2 endpoint `evo-x2-qwen3.8-q4`, port 8092, `--parallel 1`).
+All agents use `Qwen3.8-27B-UD-IQ4_XS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq4xs`, port 8093, `--parallel 1`).
 The endpoint has a single inference slot, so exactly one agent runs at a time and every dispatch
 is strictly sequential. The machine that serves this endpoint, a GMKtec EVO-X2, is documented in
 the EVO-X2 model host setup section below.
 
 ## EVO-X2 model host setup
 
-The agents run on `Qwen3.8-27B-UD-Q4_K_XL`, which a dedicated GMKtec EVO-X2 at 192.168.1.106
+The agents run on `Qwen3.8-27B-UD-IQ4_XS`, which a dedicated GMKtec EVO-X2 at 192.168.1.106
 serves through llama.cpp. This section documents the reference setup. Every value below is
 verified against the reference machine or the team's records of it.
 
@@ -429,12 +429,12 @@ not recorded. The working identifiers are the version and the commit, plus the b
 
 ### Model files
 
-The model lives in `/mnt/data/models/qwen3.8-27b-q4/` with two files. The SHA-256 values were
-computed on the reference machine (2026-08-29).
+The model lives in `/mnt/data/models/qwen3.8-27b-iq4xs/` with two files. The SHA-256 values were
+computed on the reference machine (2026-09-09).
 
 | File | Role | SHA-256 |
 |---|---|---|
-| `Qwen3.8-27B-UD-Q4_K_XL.gguf` | the 27B model, UD-Q4_K_XL quantization | `3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e` |
+| `Qwen3.8-27B-UD-IQ4_XS.gguf` | the 27B model, UD-IQ4_XS quantization | `40fac4050e940397dbf13087afd50f4734a11805bf9d65ef8ddd7483470e6199` |
 | `mmproj-F16.gguf` | the vision projector | `cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e` |
 
 Both come from the Hugging Face repo `unsloth/Qwen3.8-27B-GGUF`. The team's `add-ai-model`
@@ -442,21 +442,20 @@ skill (`~/.config/opencode/skills/add-ai-model/SKILL.md`) is the standing proced
 models to this box. For this model the download is
 
 ```bash
-mkdir -p /mnt/data/models/qwen3.8-27b-q4
-cd /mnt/data/models/qwen3.8-27b-q4
+mkdir -p /mnt/data/models/qwen3.8-27b-iq4xs
+cd /mnt/data/models/qwen3.8-27b-iq4xs
 
 # Weights first, then the vision projector
-hf download unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q4_K_XL.gguf --local-dir .
+hf download unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-IQ4_XS.gguf --local-dir .
 hf download unsloth/Qwen3.8-27B-GGUF mmproj-F16.gguf --local-dir .
 ```
 
 Verify the result by SHA-256 (`sha256sum` against the table above) and by the GGUF magic
 header. The first line of `xxd` should start with `4747 5546`.
 
-Model endpoints on this box take ports in the 8080-8099 range, and this endpoint takes 8092.
+Model endpoints on this box take ports in the 8080-8099 range, and this endpoint takes 8093.
 The firewall keeps 8080-8088 and 8090 open for the sibling model endpoints, and the opencode
-client carries entries for them, but as of 2026-08-29 the only listener in that range is this
-endpoint on 8092, and the team runs one active model at a time (see the systemd unit
+client carries entries for them. The team runs one active model at a time (see the systemd unit
 subsection).
 
 ### The systemd unit
@@ -465,18 +464,18 @@ The server runs under a user-level systemd unit, not a system one. Inspect it wi
 `systemctl --user`, because bare `systemctl` sees nothing. The wedge investigation in TASK-0010
 wasted time on exactly that mixup.
 
-The file is `~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service`.
+The file is `~/.config/systemd/user/llama-server-qwen3.8-27b-iq4xs.service`.
 
 ```ini
 [Unit]
-Description=Llama server for Qwen3.8-27B-UD-Q4_K_XL
+Description=Llama server for Qwen3.8-27B-UD-IQ4_XS
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 LimitMEMLOCK=infinity
-ExecStart=/usr/local/bin/llama-server --model /mnt/data/models/qwen3.8-27b-q4/Qwen3.8-27B-UD-Q4_K_XL.gguf --mmproj /mnt/data/models/qwen3.8-27b-q4/mmproj-F16.gguf --alias Qwen3.8-27B-UD-Q4_K_XL --host 0.0.0.0 --port 8092 --n-gpu-layers 99 -fa on --parallel 1 -t 32 -tb 32 -ub 2048 -ctk q8_0 -ctv q8_0 --mlock -c 262144
+ExecStart=/usr/local/bin/llama-server --model /mnt/data/models/qwen3.8-27b-iq4xs/Qwen3.8-27B-UD-IQ4_XS.gguf --mmproj /mnt/data/models/qwen3.8-27b-iq4xs/mmproj-F16.gguf --alias Qwen3.8-27B-UD-IQ4_XS --host 0.0.0.0 --port 8093 --n-gpu-layers 99 -fa on --parallel 1 -t 32 -tb 32 -ub 2048 -ctk q8_0 -ctv q8_0 --mlock -c 262144
 Restart=on-failure
 RestartSec=5
 
@@ -492,8 +491,8 @@ The flags worth knowing. `--n-gpu-layers 99` pins every layer to the iGPU. `-fa 
 flash attention, which the quantized KV cache (`-ctk q8_0 -ctv q8_0`) requires at startup.
 `--mlock` pins the weights in RAM. `--parallel 1` serves a single 262144-token slot, which is
 the team's operating point and, per the fit table, the measured ceiling on this hardware. The
-fit table was measured on the heavier sibling Q5 model (2026-08-23), so the Q4 ceiling is
-unmeasured, though the Q4 weights are smaller. With four slots the llama.cpp fit step silently
+fit table was measured on the heavier sibling Q5 model (2026-08-23), so the IQ4_XS ceiling is
+unmeasured, though the IQ4_XS weights are smaller. With four slots the llama.cpp fit step silently
 degrades the context to 4 x 65536 per slot instead of failing (same Q5 measurement), so check
 the effective context in the startup log (`new slot, n_ctx = 262144`) or in `/v1/models`
 rather than trusting the command line.
@@ -513,8 +512,8 @@ On a fresh setup, enable the unit with
 
 ```bash
 systemctl --user daemon-reload
-systemctl --user enable --now llama-server-qwen3.8-27b-q4.service
-systemctl --user status llama-server-qwen3.8-27b-q4.service
+systemctl --user enable --now llama-server-qwen3.8-27b-iq4xs.service
+systemctl --user status llama-server-qwen3.8-27b-iq4xs.service
 ```
 
 Run one active model at a time. A sibling 27B endpoint held about 40 GB of the 92 GiB pool
@@ -524,14 +523,14 @@ and disable the other `llama-server-*.service` user units.
 ### Firewall
 
 ```bash
-sudo firewall-cmd --zone=public --add-port=8092/tcp --permanent
+sudo firewall-cmd --zone=public --add-port=8093/tcp --permanent
 sudo firewall-cmd --reload
 sudo firewall-cmd --list-all
 ```
 
-The reference machine runs firewalld. The live state read on 2026-08-29 is the `public` zone on
-`eno1`, with open ports 8092/tcp for this endpoint plus 8080-8088 and 8090 for the sibling
-endpoints, and enabled services cockpit, dhcpv6-client, and ssh. The llama-server HTTP API is
+The reference machine runs firewalld. The live state read on 2026-09-09 is the `public` zone on
+`eno1`, with 8093/tcp open for this endpoint, the sibling endpoint ports 8080-8088 and 8090 also
+open, and enabled services cockpit, dhcpv6-client, and ssh. The llama-server HTTP API is
 unauthenticated, so the firewalld rule is the only access control, and on a network that is not
 fully trusted the port should be restricted to the team's segment instead of opened in the
 `public` zone.
@@ -541,16 +540,16 @@ fully trusted the port should be restricted to the team's segment instead of ope
 The provider entry in `~/.config/opencode/opencode.json`, verified on the reference workstation.
 
 ```json
-"evo-x2-qwen3.8-q4": {
+"evo-x2-qwen3.8-iq4xs": {
   "npm": "@ai-sdk/openai-compatible",
-  "name": "EVO-X2 Qwen3.8-27B-UD-Q4_K_XL (llama.cpp)",
+  "name": "EVO-X2 Qwen3.8-27B-UD-IQ4_XS (llama.cpp)",
   "options": {
-    "baseURL": "http://192.168.1.106:8092/v1",
+    "baseURL": "http://192.168.1.106:8093/v1",
     "timeout": 3600000
   },
   "models": {
-    "Qwen3.8-27B-UD-Q4_K_XL": {
-      "name": "Qwen3.8-27B-UD-Q4_K_XL (EVO-X2)",
+    "Qwen3.8-27B-UD-IQ4_XS": {
+      "name": "Qwen3.8-27B-UD-IQ4_XS (EVO-X2)",
       "limit": {
         "context": 262144,
         "output": 131072
@@ -621,13 +620,13 @@ window.
 
 ### Verification after setup
 
-1. `systemctl --user status llama-server-qwen3.8-27b-q4.service` shows active and enabled.
-2. `sha256sum` of both files in `/mnt/data/models/qwen3.8-27b-q4/` matches the SHA-256 table in
+1. `systemctl --user status llama-server-qwen3.8-27b-iq4xs.service` shows active and enabled.
+2. `sha256sum` of both files in `/mnt/data/models/qwen3.8-27b-iq4xs/` matches the SHA-256 table in
    the Model files subsection.
-3. `curl http://192.168.1.106:8092/v1/models` returns the model with `n_ctx` 262144. Poll it,
+3. `curl http://192.168.1.106:8093/v1/models` returns the model with `n_ctx` 262144. Poll it,
    because the list is empty during the roughly 12-second load window after each (re)start.
 4. The startup log shows `new slot, n_ctx = 262144` with no `n_ctx_seq` warning.
-5. `sudo firewall-cmd --list-all` lists 8092/tcp in the public zone.
+5. `sudo firewall-cmd --list-all` lists 8093/tcp in the public zone.
 
 ## Updating the team
 

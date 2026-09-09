@@ -1,7 +1,7 @@
 ---
 description: Maintains project documentation, README files, changelogs, and user-facing content. Ensures documentation matches implementation after each completed task.
 mode: subagent
-model: evo-x2-qwen3.8-q4/Qwen3.8-27B-UD-Q4_K_XL
+model: evo-x2-qwen3.8-iq4xs/Qwen3.8-27B-UD-IQ4_XS
 variant: max
 temperature: 0.2
 permission:
@@ -24,7 +24,7 @@ permission:
     "git push -u origin main": allow
     "git ls-remote": allow
     "git ls-remote origin*": allow
-    "ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-q4.service'": allow
+    "ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-iq4xs.service'": allow
     "ssh howard@192.168.1.106 'sudo firewall-cmd --list-all'": allow
     "ssh howard@192.168.1.106 'systemctl cat ryzenadj.service'": allow
     "git diff*": allow
