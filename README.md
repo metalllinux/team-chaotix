@@ -483,9 +483,9 @@ RestartSec=5
 WantedBy=default.target
 ```
 
-The whole file was read back from the reference machine on 2026-08-29 and matches this block
-line for line. The `ExecStart` line additionally matches the live process (TASK-0010 record),
-and the remaining lines match the team's standard unit template in the `add-ai-model` skill.
+The file was read back from the reference machine on 2026-09-09 (TASK-0022 record). The
+`ExecStart` line matches the live unit as verified in that record, and the remaining lines
+match the team's standard unit template in the `add-ai-model` skill.
 
 The flags worth knowing. `--n-gpu-layers 99` pins every layer to the iGPU. `-fa on` turns on
 flash attention, which the quantized KV cache (`-ctk q8_0 -ctv q8_0`) requires at startup.
