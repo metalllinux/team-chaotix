@@ -26,6 +26,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0017 | Complete Cinnamon desktop: missing subpackages, Rocky wallpaper, branding, terminal | Robotnik | planning/docs/TASK-0017-cinnamon-desktop-completeness.md | In Progress |
 | TASK-0018 | Provision reference + explore VMs for Cinnamon-for-Rocky10 | Robotnik | planning/docs/TASK-0018-vm-reference-explore-provisioning.md | Done |
 | TASK-0019 | Diagnose Espio empty-result failures; harden team against the 32k turn cap | Robotnik | planning/docs/TASK-0019-espio-32k-turn-cap.md | In Progress |
+| TASK-0022 | Set IQ4_XS Qwen 3.8 as the team's default model | Robotnik | planning/docs/TASK-0022-team-model-iq4xs.md | Done |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
