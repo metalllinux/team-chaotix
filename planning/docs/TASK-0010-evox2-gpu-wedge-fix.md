@@ -12,6 +12,19 @@
  *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
  stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-14 07:40 JST, Robotnik): Shadow attempt 1 died to window exhaustion; client config
+mismatch identified, change requested from the user.** Shadow's session (87 parts) accumulated to
+the 98,304 window across many turns; the FIRST request was only 10,408 tokens, so the b1867bf
+checkpoint reset worked and the injected diff was not the cause — plain tool-result accumulation
+was. Last turn: input 97,918, output 388, finish "length", zero doc writes (session DB
+`ses_f6321b7d…`). Client-side mismatch: `~/.config/opencode/opencode.json` declares the iq4xs
+limit context 262144 / output 131072, while the live server runs `-c 98304` (verified 2026-09-14
+07:25 JST via pid 1907 cmdline + unit ExecStart) and the gateway clamps output at 32,000
+(TASK-0019, 2026-09-02). PM edit permission covers `planning/**` only (least privilege), so the
+user was asked to set the iq4xs `limit` to context 98304 / output 32000; it takes effect at the
+next opencode start and does not affect the running session. Shadow re-dispatches with incremental
+`## Review` writes so findings survive a mid-review death.
+
 **Now (2026-09-14 07:20 JST, Robotnik): review chain starts; machine calm.** 0 wedges since the
 2026-09-13 21:29 JST reboot (9 h 50 m uptime, load 0.34); service active (pid 1907, 8093); 24 h
 monitor still running (pid 6647, last sample 07:14 JST wedge_count=0, hard stop 2026-09-14 22:44
