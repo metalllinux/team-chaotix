@@ -9,8 +9,27 @@
 
 ## Status
 
-*Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
-stale entry means the whole loop runs on bad information.*
+ *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
+ stale entry means the whole loop runs on bad information.*
+
+**Now (2026-09-14 07:20 JST, Robotnik): review chain starts; machine calm.** 0 wedges since the
+2026-09-13 21:29 JST reboot (9 h 50 m uptime, load 0.34); service active (pid 1907, 8093); 24 h
+monitor still running (pid 6647, last sample 07:14 JST wedge_count=0, hard stop 2026-09-14 22:44
+JST). Shadow dispatches now; chain runs sequentially Shadow → Omega → Big. Monitor result to be
+checked before Knuckles.
+
+**Now (2026-09-13 23:05 JST, Robotnik): W3 DONE; dispatch-failure root cause found and fixed.**
+W3: kernel 7.2.5 live, build 2000 confirmed via /proc/1907/exe, wedge baseline 0, 24 h monitor
+running (pid 6647, log /tmp/wedge-monitor-20260913-224443.log, hard stop 2026-09-14 22:44 JST).
+The first Shadow dispatch hard-failed with zero work: request 98591 tokens vs the 98304 window.
+Root cause: opencode injects the working-tree diff (vs git HEAD) of files touched by the session
+into every subagent's initial request; the planning doc carried 1,420 uncommitted insertions
+(148KB diff vs the Aug 27 commit), injected into every brief. That, not the subagents' own
+doc-reading, dominated request size (the 24-min Tails session's full reads were an aggravating
+factor, not the cause). Fix: mid-task checkpoint commit d26a115 (doc only; other tasks' files
+untouched); the injected patch is now empty until the next edit. Lesson: keep planning docs
+committed as work progresses; under the 98304 cap, uncommitted doc growth is a dispatch
+availability risk, not just a hygiene issue. Shadow re-dispatches.
 
 **Now (2026-09-13 21:00 JST, Robotnik): W1 DONE; W2 dispatches now and kills the PM session with
 the reboot (expected, approved).** W1: t/s verification PASS (live decode 11.95 t/s at ~57.9k vs
@@ -2017,6 +2036,84 @@ Scope read this round: staged section (644-663), W1-W3 (1648-1795), T5-H2 outcom
 
 The record is coherent and complete as a read-only investigation plus one applied window. The chain holds end to end: the T3 forensics (51 wedges, two modes, the retry-loop correlation) → the T5-H2 controlled repro (a non-llama RADV stressor wedged the chip; the kernel's attribution of the hung job to llama-server weighed as victim-not-cause, T6 1472-1484) → the T6 third-state verdicts (honest terminal states for a read-only investigation) → the T7 staged table with complete backup/apply/verify/revert cells → the W2 command-for-command application → the W3 post-reboot verification. The blocker 3 addendum closes the last correlation gap (#4-#6 ownership) and names the `## Status` conflict without editing it (1629-1635). The T3 clause "iq4xs has wedged zero times" (1195-1197) is scoped by its tail clause to the small-context safe-regime workload and does not contradict the boot-0 wedge record.
 No new blockers. Open items: the 10 initial-review should-fixes + 1 nit (three of them partially mitigated, per the status table) and the 3 new should-fixes + 1 nit above. DoD box 11 (278, "no unresolved blockers or should-fix findings") is therefore not yet met. None of the open items affect the physical state of the host (7.2.5 live, service active on 8093, `-c 98304` intact, monitor running with a hard stop) or the executability of the Stage 3 revert. The H1 deciding test has run but not resolved: the Stage 3 verification number is the monitor's final line at ~2026-09-14 22:44 JST (W3:1791-1793), and DoD box 1 (SF8) has a defined closure path from there.
+
+### Post-window review verification (Shadow, 2026-09-14): deliverables (1)-(3) verified against the current doc state; no new blockers; 2 new nits
+
+Re-verification of the post-window review above (1970-2032). The doc gained 13 lines above W1
+after that review was written (its scope line cites W1 at 1648; W1 is now 1661; the same +13 holds
+across the initial-review, addendum, T6/T7, and W2/W3 citations). Read this round: staged section
+(657-677), W1 (1661-1696), W2 (1698-1770), W3 (1772-1808), T5-correlation addendum (1592-1659),
+Test Results (2051-2075), the `## Changes` table (678-684), and the fixes doc
+`/home/howard/AI/projects/qwen-38-q5-fixes/qwen38-q5-fixes.md` current state (185-235, file ends
+at 235).
+
+**Deliverables (1)-(3) stand; their claims check out against the current doc state.**
+
+- (1) Finding status (2003-2020). B1: the BLS step is at 1739-1747 (N=1 guard, BLSID recorded,
+  `saved_entry` confirm) and the revert at 1749-1759 reads `OLDSAVED` from the recorded
+  `/tmp/grubdefault.bak3` content (1714-1716); resolved in W2 by design, as claimed. B2: the
+  corrected "fastest cold-mode-class wedge" wording with the hot-mode contrast is verified in the
+  fixes doc H2 cell (192); the T5-H2 and T6 cells stand on the initial round's verification, not
+  re-read this round. B3: the addendum (1592-1659) carries the per-wedge table, the 172,727-token
+  prefill created 00:00-00:32 JST (1611-1621), the retry cadence 27m38s/28m10s vs 27m34s
+  (1633-1635), the session-identity arithmetic (1623-1631), and the named-not-edited `## Status`
+  conflict (1642-1648); resolved as claimed. SF1-SF10 and the nit remain open as the table states;
+  spot-verified this round: `dnf reinstall /tmp/rpmbak2/<file>` still in staged 669 and fixes doc
+  227 (SF1); Stage 2 row still "(live: H2 partially supported)" with no expected-no-op note
+  (SF2, staged 669); 11.87 baseline still in staged 668/671 and fixes doc 226/229 (SF3); "at or
+  near the 120 W cap" and "fresh chip 26.1-31.6 min" unchanged in fixes doc 199-204 (SF7); H1
+  undetermined / H2 partially supported / H3 not excluded, not supported per fixes doc 191-193, so
+  DoD box 1 remains unmet (SF8); Test Results still "NOT yet executed" and "fixes-doc update is
+  pending" (2069-2070, SF9). SF4, SF5, SF6, SF10 not re-read this round; their open status stands
+  on the post-window review.
+- (2) Execution record (2022-2027). W2 matched the staged cell command-for-command with the two
+  documented deviations (section-scoped sed, diff-verified to one line, 1721-1726; BLS guard run
+  as an atomic script, 1739-1740); all three staged backups taken at the staged paths with the
+  timestamp (1711-1717); the revert is documented with the real `OLDSAVED` value and the old
+  kernel was never removed (1749-1759). W1 was verification-only: no service touch (1663-1666,
+  1694-1695), t/s PASS against the iq4xs baseline (1668-1691); its gaps (the 24 h wedge pair, the
+  staged pre-change backups, the build 2000 deployment time) remain open per the finding at 1982.
+  W3 met the staged verify item 1 with the binary fingerprint cross-check (1774-1786) and item 2
+  is in progress under the bounded monitor (1787-1798).
+- (3) Overall verdict (2029-2032). Consistent with everything re-verified this round. Host state
+  not re-probed (no live EVO-X2 access from this toolset); the standing state is the W3 record
+  plus the dispatch brief: 7.2.5 live, service on 8093, monitor to the 2026-09-14 22:44:43 JST
+  hard stop.
+
+**Open until the post-monitor checkpoint:** the Stage 3 verification number is the monitor's final
+`wedge_count=` line; before it is used, record the script's exact count command line and boot
+scope (finding 1975), and update the fixes doc header (finding 1989) and Test Results (SF9) in
+the same pass. No new blockers; DoD box 11 (no unresolved blockers or should-fix) remains unmet
+while the 11 initial-review findings and 4 new findings stay open.
+
+### Post-window review line citations are uniformly stale (+13) against the current doc
+**Severity:** nit
+**Where:** `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:1972-2032`
+**Problem:** 13 lines were inserted above W1 after the post-window review was written, so every
+line citation in it points 13 lines early; citations to sections below the Review additionally
+carry the review block's own length.
+**Failure scenario:** a re-verifier following "W2:1726-1734" for the BLS guard lands on the dnf
+install / DKMS text (the BLS step is now 1739-1747); following "Test Results (1974-1997)" lands
+inside the post-window review's own section (Test Results is now 2051); following "initial review
+(1801-1817)" lands on the tail of the initial nit (the verdict is now 1814-1830).
+**Suggested direction:** refresh the citations in the pass that closes the other open items, or
+replace line numbers with section-name citations ("W2 BLS step", "Test Results 'checks requested
+vs run' paragraph").
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### `## Changes` table still says "no changes yet (read-only so far)" after Stage 3 was applied
+**Severity:** nit
+**Where:** `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:682`
+**Problem:** the EVO-X2 Changes row carries the diagnosis-phase header, but Stage 3 was applied in
+the window (kernel-ml 7.2.5 installed, `saved_entry` changed, elrepo-kernel repo enabled; W2
+1700-1763).
+**Failure scenario:** a reader scanning `## Implementation` for what changed on the host stops at
+the Changes table (the section's first summary table) and concludes EVO-X2 is unchanged,
+contradicting the W2/W3 checkpoints ~900 lines below.
+**Suggested direction:** Tails updates the row in the post-monitor pass: EVO-X2 now carries the
+Stage 3 change set (kernel, grubenv, repo file) with the W2/W3 checkpoint references; the sysfs
+claim can stay scoped to sysfs if that is what was meant.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
 ---
 
