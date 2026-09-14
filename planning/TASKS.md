@@ -16,7 +16,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0007 | Git worktrees support for parallel projects | Robotnik | planning/docs/TASK-0007-git-worktrees.md | In Progress |
 | TASK-0008 | Fix GDM Cinnamon-session login Authentication Error; widen VM test matrix | Robotnik | planning/docs/TASK-0008-cinnamon-gdm-auth-fix.md | In Progress |
 | TASK-0009 | Standardize desktop application testing on Sparky + pyatspi2 | Robotnik | planning/docs/TASK-0009-pyatspi2-desktop-testing-standard.md | Planning |
-| TASK-0010 | Fix EVO-X2 iGPU wedge killing llama-server (Q5) sessions | Robotnik | planning/docs/TASK-0010-evox2-gpu-wedge-fix.md | In Progress |
+| TASK-0010 | EVO-X2 iGPU wedges: root cause + durable fix | Robotnik | planning/docs/TASK-0010-evox2-gpu-wedge-fix.md | In Progress |
 | TASK-0011 | Set Q4_K_XL Qwen 3.8 as the team's default model | Robotnik | planning/docs/TASK-0011-default-model-q4kxl.md | In Progress |
 | TASK-0012 | Align team dispatch to single-slot endpoint (--parallel 1) | Robotnik | planning/docs/TASK-0012-single-slot-sequencing.md | Done |
 | TASK-0013 | README: GMKtec EVO-X2 + Qwen 3.8 UD-Q4_K_XL model host setup | Robotnik | planning/docs/TASK-0013-evox2-readme-setup.md | Done |
@@ -26,7 +26,10 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0017 | Complete Cinnamon desktop: missing subpackages, Rocky wallpaper, branding, terminal | Robotnik | planning/docs/TASK-0017-cinnamon-desktop-completeness.md | In Progress |
 | TASK-0018 | Provision reference + explore VMs for Cinnamon-for-Rocky10 | Robotnik | planning/docs/TASK-0018-vm-reference-explore-provisioning.md | Done |
 | TASK-0019 | Diagnose Espio empty-result failures; harden team against the 32k turn cap | Robotnik | planning/docs/TASK-0019-espio-32k-turn-cap.md | In Progress |
+| TASK-0020 | TV project: quiet hours for hard drive activity (installer option + override commands) | Robotnik | planning/docs/TASK-0020-quiet-hours.md | Done |
+| TASK-0021 | Team lesson: interactive-input test stubs fed via `$(...)` lose in-subshell state | Robotnik | planning/docs/TASK-0021-subshell-input-stub-lesson.md | Planning |
 | TASK-0022 | Set IQ4_XS Qwen 3.8 as the team's default model | Robotnik | planning/docs/TASK-0022-team-model-iq4xs.md | Done |
+| TASK-0023 | Install ripgrep (rg) on the agent host | Robotnik | planning/docs/TASK-0023-rg-host.md | In Progress |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
