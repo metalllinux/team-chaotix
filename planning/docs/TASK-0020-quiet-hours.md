@@ -12,13 +12,13 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
-**Now:** Review chain complete on the post-fix tree (2026-09-08): Shadow verified 11/11 closures
-(2 new nits), Omega verified both lows (1 new low), Big PASS (8 requested, 7 executed, VM run
-explicitly waived, no libvirt VM on the team host, conditions recorded in `## Test Results`).
-User decision 2026-09-08: the three open non-blocking items are deferred, no pre-commit folding;
-release proceeds. Tree is exactly Big's verified state (118/118, 12/12, failure path rc 1,
-credential audit clean, no mode drift); the cancelled Tails re-dispatch made 0 tool calls, no
-drift. Next: Vector (item 11), then Knuckles (item 12).
+**Now:** Closed (2026-09-08): all 15 DoD boxes verified and ticked; released via PR
+`metalllinux/project-tv-rocky-linux-edition#1`, squash-merged 08:17:34Z, merged sha
+`8623cc3df38f96bc32fe85608bfd62dd4d3e253c` on `main` (PM-verified live via `git ls-remote` and
+`gh pr view`); doc pruned (~895 active lines, ~600 in `## Archive`). User decisions 2026-09-08:
+GPG signing deferred (deviation stays in `## Release`), self-hosted runner restore deferred
+(CI dead since 2026-09-02; user will sort later). Open deliverable: production-apply prompt
+file (`Tails`, `## Next Actions`).
 
 **Environment / scope:**
 - Files in scope: `/home/howard/Linux/projects/project_tv_rocky_linux` (local clone of
@@ -50,59 +50,53 @@ drift. Next: Vector (item 11), then Knuckles (item 12).
 - All task changes must be pushed to `metalllinux/project-tv-rocky-linux-edition` (in-account,
   no human gate; Knuckles verifies the push landed on GitHub).
 
-**Unknowns:**
-- (Resolved 2026-09-08, evidence in `## Implementation` item 1) HDD activity sources on the
-  12T pool: `plocate-updatedb.timer` (daily 00:18 full-library walk, the largest scheduled
-  contributor), `sanoid.timer` (daily ~00:00 snapshot pass; hourly runs verified no-ops), and the
-  `jellyfin-library-refresh` CronJob (hourly, 4s incremental scan). All three sit inside the
-  window and are quiable; target list `QUIET_K8S_CRONJOBS="jellyfin-library-refresh"`,
-  `QUIET_SYSTEMD_UNITS="sanoid.timer plocate-updatedb.timer"` (plocate added via the gate's
-  extension clause). Playback dominates the pool (~253MB read in 88 min during TV viewing) and
-  stays loud by the PM decision above; if the user finds that insufficient it is a new decision,
-  not a fix.
-- (Resolved 2026-09-07, PM) Pre-existing uncommitted changes: verified mode-only, 755 to 644 on
-  7 files, zero content lines (`git diff --summary` on the project checkout). Restored by
-  Tails' item 2 (tree == HEAD, guard satisfied); Knuckles still verifies no mode bit leaks into
-  the release commit.
+**Unknowns:** none open. Both resolved 2026-09-08: HDD activity sources on the 12T pool (evidence in
+`## Implementation` item 1, gate verdict) and the pre-existing uncommitted changes (mode-only on
+7 files, restored by item 2, verified absent from the release commit in `## Release`). Resolved
+text archived in `## Archive`.
 
 ---
-
 ## Definition of Done
 
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] Plan approved: `## Plan` names a concrete quiet-hours mechanism with rationale, grounded in
-      read-only verification of the HDD activity source on production. PM approval recorded in
+- [x] Plan approved: `## Plan` names a concrete quiet-hours mechanism with rationale, grounded
+      in read-only verification of the HDD activity source on production. PM approval recorded in
       `## Status`.
-- [ ] Activity source verified: findings in this doc name the process(es)/container(s) producing
+- [x] Activity source verified: findings in this doc name the process(es)/container(s) producing
       the HDD writes/reads, with the exact commands that produced the evidence, run on
       192.168.1.107. Only read-only commands were used (verifiable from the command list).
-- [ ] No production changes: nothing on 192.168.1.107 was modified, installed, or restarted by the
-      team, per the PM decision in `## Status`.
-- [ ] Installer option: the installer offers a quiet-hours option with configurable start and end
-      hour, defaulting to 20:00-07:00, and the option is visible in installer help/usage output.
-- [ ] Mechanism: during the configured window, HDD I/O from the verified source(s) is limited while
-      active playback continues to work (PM decision). The mechanism fails soft: on error it logs
-      and leaves the system in normal (loud) operation, never a broken media server.
-- [ ] Override commands: a user-facing command enables quiet hours immediately outside the window,
-      and a second command removes them. The override persists until the disable command is run,
-      including the documented behaviour across reboots.
-- [ ] Time correctness: the window calculation is correct across the midnight wrap (20:00-07:00)
-      and across DST transitions, with unit tests as evidence.
-- [ ] Credentials: the 192.168.1.107 password appears nowhere in this doc, in commits, or in logs.
-- [ ] Code compiles / linters pass: `bash -n` and the project's existing lint/test tooling on all
-      changed files.
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
-- [ ] `Omega`: no unresolved findings above `low` in `## Security` (includes license check on added
-      code)
-- [ ] `Big`: unit tests for the window calculation and the override state machine, plus installer
-      dry-run checks, all PASS, with no silently dropped checks
-- [ ] `Vector`: README and user-facing docs updated (the option, its default, the override
+- [x] No production changes: nothing on 192.168.1.107 was modified, installed, or restarted by
+      the team, per the PM decision in `## Status`.
+- [x] Installer option: the installer offers a quiet-hours option with configurable start and
+      end hour, defaulting to 20:00-07:00, and the option is visible in installer help/usage
+      output.
+- [x] Mechanism: during the configured window, HDD I/O from the verified source(s) is limited
+      while active playback continues to work (PM decision). The mechanism fails soft: on error
+      it logs and leaves the system in normal (loud) operation, never a broken media server.
+- [x] Override commands: a user-facing command enables quiet hours immediately outside the
+      window, and a second command removes them. The override persists until the disable command
+      is run, including the documented behaviour across reboots.
+- [x] Time correctness: the window calculation is correct across the midnight wrap
+      (20:00-07:00) and across DST transitions, with unit tests as evidence.
+- [x] Credentials: the 192.168.1.107 password appears nowhere in this doc, in commits, or in
+      logs.
+- [x] Code compiles / linters pass: `bash -n` and the project's existing lint/test tooling on
+      all changed files.
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
+- [x] `Omega`: no unresolved findings above `low` in `## Security` (includes license check on
+      added code)
+- [x] `Big`: unit tests for the window calculation and the override state machine, plus
+      installer dry-run checks, all PASS, with no silently dropped checks
+- [x] `Vector`: README and user-facing docs updated (the option, its default, the override
       commands, the behaviour during quiet hours)
-- [ ] `Knuckles`: PR to `metalllinux/project-tv-rocky-linux-edition` contains only this task's
+- [x] `Knuckles`: PR to `metalllinux/project-tv-rocky-linux-edition` contains only this task's
       changes, merges to `main`. The user's pre-existing uncommitted changes were not swept in.
-- [ ] Planning doc pruned by `Espio`
+- [x] Planning doc pruned by `Espio`
+
+**Closed 2026-09-08 (PM):** all 15 boxes verified against this doc's evidence and PM
+`gh`/`git` checks (PR merge state, remote `main` sha, runner count, GPG keyring).
 
 ---
 
@@ -111,14 +105,12 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Espio` (handoff from Knuckles, 2026-09-08, item 12 done): prune this doc per the `##
-  Archive` rules — superseded detail into `## Archive` (item 1 command list and interim
-  measurement notes, resolved unknowns A1-A6, fix-round narration superseded by the merged sha),
-  decisions and verified facts stay, add a row to the pruning log.
-- [ ] `Robotnik` (after pruning): closure — tick the last DONE item ("Planning doc pruned by
-  Espio"), mark TASK-0020 shipped in `planning/TASKS.md`, and note the remaining user-decision
-  deliverable (production apply prompt file for 192.168.1.107, credential-free) if not yet tracked.
-
+- [ ] `Tails`: production-apply prompt file for 192.168.1.107 (user-authorized write step,
+      decision in `## Status`): write `PRODUCTION-APPLY.md` in the project checkout as a local
+      untracked artifact, credential-free (the password stays in `~/pass.txt`, read at
+      runtime), covering identity preconditions, the exact apply steps, in-window verification
+      with playback confirmed unaffected, and full rollback. Then `Robotnik` verifies it and the
+      task is fully closed.
 ---
 
 ## Plan
@@ -127,9 +119,10 @@ the PM reads.*
 `/home/howard/Linux/projects/project_tv_rocky_linux` (branch `main`, tip `c520226`,
 `git log --oneline -15`) and of this doc's `## Status`/`## Definition of Done`. The production host
 was not reached from the planner seat: this agent's shell is restricted to git/gh/rg, so no SSH is
-possible from here. Item 1 below is the read-only production investigation, executed by `Tails`, who
-has bash. Everything in "Verified local facts" was checked in the working tree; everything labelled
-assumption is not yet verified.*
+possible from here. Item 1 (the read-only production investigation) was executed by `Tails`, who has
+bash; its findings and gate verdict are in `## Implementation`. Everything in "Verified local facts"
+was checked in the working tree; all labelled assumptions are resolved (see `## Implementation`, gate
+verdict).*
 
 **Decision doc:** `planning/decisions/TASK-0020-quiet-hours-mechanism.md` (one-pager, mechanism choice).
 
@@ -206,61 +199,12 @@ per-process throttling was rejected: the scan and the stream share one process, 
 - Team-chaotix CI exists and runs on push: `gh run list` shows `Static Checks` and `Secret Scan Self`
   workflows on `main`. `Secret Scan Self` is the credential DoD gate for this doc.
 
-**Assumptions (labelled, to be confirmed or killed by item 1):**
-- A1. 192.168.1.107 is the k8s media server. Conflict: `CLAUDE.md:117` says the deployment target is
-  `vector` / 192.168.1.191. The PM's `## Status` names 192.168.1.107 and is binding for the
-  investigation target; item 1's gate commands verify the role. If they fail, item 1 stops and reports.
-- A2. The top HDD I/O sources in the quiet window are the two scheduled sources above. Unverified until
-  item 1 samples I/O in-window. If the top source is EPGStation live recording or Jellyfin streaming
-  itself, the only mechanisms that stop it break playback or recording: per the PM decision the
-  trade-off is surfaced before implementation and the cycle returns to `Amy`.
-- A3. `sshpass` exists (or is installable via `dnf`) on the team host. Unverified; item 1 checks and
-  records the fallback used.
-- A4. The 7 mode-only local changes are accidental. Evidence above; the project's own B-01 test fails
-  on them. If the user objects at release, Knuckles stops and consults (PM decision).
-- A5. The production host's timezone is Asia/Tokyo (`config/defaults.conf:6`, module 01), so it has no
-  DST; DST correctness is still unit-tested per DoD.
-- A6. `howard` can read kubectl/zfs/journal output directly or via read-only sudo. Unverified; item 1
-  records any permission denial as a limitation rather than working around it.
+**Assumptions (A1-A6):** all resolved by item 1 (see `## Implementation`, gate verdict and
+"Assumptions resolved"). Original text archived in `## Archive`.
 
-**Item 1 — read-only investigation command list** (run on 192.168.1.107 as `howard`; credential from
-`~/pass.txt` on the team host, passed only via `SSHPASS` env var to `sshpass -e`, never on any command
-line, never in this doc, commit, or log. Read-only commands only; no sudo unless a read-only command is
-permission-denied as `howard`, in which case sudo with the same credential and the exact sudoed command
-is recorded. The I/O sample (section 3) must straddle a top-of-hour inside the user's reported window
-(20:00-07:00 local) so the hourly CronJob and sanoid fire during the sample):
-
-```
-# 1. Identity gate (A1): is this the media server?
-hostname
-head -3 /etc/os-release
-kubectl get nodes -o wide
-kubectl get pods -A --no-headers | head -40
-
-# 2. Storage topology and scrub state
-zpool status
-zfs list -o name,mountpoint,used | head -20
-grep -E ' sda | sdb ' /proc/diskstats
-
-# 3. I/O attribution, 3-minute per-process sample straddling :00, in-window
-command -v pidstat iotop sysstat
-pidstat -d 5 36
-# fallbacks if sysstat absent: iotop -b -n 3 -d 60 -o, or two /proc/[0-9]*/io snapshots 60s apart
-# diffed for read_bytes/write_bytes per pid
-
-# 4. What is scheduled
-systemctl list-timers --all --no-pager
-kubectl -n project-tv get cronjobs
-kubectl -n project-tv get cronjob jellyfin-library-refresh -o jsonpath='{.spec.schedule} {.spec.suspend}'
-kubectl -n project-tv get jobs -o wide
-
-# 5. Per-component confirmation (last 12h)
-kubectl -n project-tv logs deploy/jellyfin --since=12h --tail=2000 | grep -iE 'scanning|refresh|library' | tail -25
-journalctl -u sanoid.service --since "12h ago" --no-pager | tail -30
-zfs list -t snapshot -o name,creation | tail -20
-kubectl -n project-tv logs deploy/epgstation --since=12h --tail=2000 | grep -iE 'record' | tail -25
-df -h /var/lib/project-tv /mnt 2>/dev/null
-```
+**Item 1 command list:** the planned read-only command list (credential via `SSHPASS` env only, never
+argv; read-only commands only; no sudo unless a read-only command was permission-denied) is archived in
+`## Archive`; the executed command list and findings are in `## Implementation` item 1.
 
 **Gate (item 1 exit):** PASS when the top-3 I/O sources are all within the quietable target list
 (extend `QUIET_K8S_CRONJOBS`/`QUIET_SYSTEMD_UNITS` if the sample shows `media-sync.timer` or another
@@ -281,54 +225,9 @@ host state (`/etc/project-tv/quiet-hours.conf`, the state file) must be handled 
 backup work. The 15-minute tick caps transition precision; a later minute-scale feature needs a
 finer timer or a long-running service.
 
-**Work breakdown** — one agent finishes one item in one turn; sequential dispatch per AGENTS.md §3.
-
-| # | Item | Owner agent | Acceptance criterion | Parallel with |
-|---|---|---|---|---|
-| 1 | Read-only production investigation per the command list above; record findings, exact commands run, and gate verdict in `## Implementation`; credential via `SSHPASS` env only; verify after the fact with `grep -Ff ~/pass.txt` on this doc (pattern-from-file, never argv) | `Tails` | Findings name the top-3 HDD I/O sources with command evidence; gate verdict (PASS / STOP-trade-off / STOP-identity) recorded; zero write commands used (verifiable from the recorded command list); password absent from doc, verified by the grep above | Independent of 2 (remote vs local); on the critical path before 3 |
-| 2 | Restore the 7 mode-only bits (`chmod +x` on the 7 files listed in Verified local facts) and create branch `task-0020-quiet-hours` from `origin/main`; guard: `git diff --stat` on those 7 files is empty and `git status` shows no content changes before any task commit; record in `## Implementation` | `Tails` | Working tree matches HEAD except this task's files; B-01 of `test_installer.sh` passes in-tree | Independent of 1; must land before item 3's first commit |
-| 3 | Core script `quiet-hours/quiet-hours.sh`: window calc (start inclusive, end exclusive, wrap-aware; start==end treated as full 24h defensively), config parse with fail-soft, state machine, apply/release with per-step error isolation, env-overridable paths (`QUIET_HOURS_CONF`, `QUIET_HOURS_STATE`) for tests | `Tails` | `bash -n` passes; functions sourceable without side effects; no secret material in the file | After 1 (target list confirmed) and 2 |
-| 4 | CLI `quiet-hours/project-tv-quiet-hours` (`status`/`enable`/`disable`/usage with the 20:00-07:00 default visible) + systemd units `quiet-hours/project-tv-quiet-hours.{service,timer}` (15-min timer, oneshot, runs once at boot) | `Tails` | `bash -n` passes; usage output shows the default window; units contain the required `[Unit]/[Service]/[Timer]/[Install]` sections | After 3; independent of 5a |
-| 5a | TAP unit tests in new `test/scripts/test_quiet_hours.sh`: window matrix (20-07 wrap, 10-14 no-wrap, boundary inclusivity), DST cases with fixed timestamps under `TZ=America/New_York` (spring-forward and fall-back 2026) and `TZ=Europe/Berlin` plus `TZ=Asia/Tokyo` control, override state machine with stubbed apply/release (enable outside window, disable, reboot simulation with reset state file, config parse error, failed apply step leaves state file unchanged) | `Tails` | All TAP lines `ok`; zero silently dropped checks; runs on the team host without a VM | After 3 |
-| 5b | Structural tests appended to `test_quiet_hours.sh` (module 21 file exists and defines `run()`, `MODULE_DESC[21]` and `21` in `MODULE_ORDER` in `install.sh`, quiet-hours files present, `bash -n` on all changed files, CLI usage shows the default) + one invocation line in `test/run_tests.sh` (file has the mode-only local change; content edit is this task's) | `Tails` | Full TAP file passes in-tree; `run_tests.sh` line placed next to the other script invocations (`test/run_tests.sh:98-106` pattern) | After 4 |
-| 6 | Installer module `modules/21-quiet-hours.sh` + `install.sh` wiring (`MODULE_DESC[21]`, `MODULE_ORDER` append, prompt range `(0-20)`→`(0-21)` at `install.sh:234`) | `Tails` | Module appears in the module menu listing; prompts default to 20/7; decline path marks the module skipped; kubectl-missing path warns and skips k8s targets; re-run overwrites cleanly | After 5b (reviews see the final tree) |
-| 7 | Review: code review, findings in `## Review` | `Shadow` | No unresolved blocker/should-fix | After 6; fixed sequence 7→8→9 per AGENTS.md §3 |
-| 8 | Security review: no credentials in any changed file, config/state file permissions, root-only CLI, license check on added code (all original, no third-party code introduced), findings in `## Security` | `Omega` | No unresolved findings above `low` | After 7 |
-| 9 | Test run: `test_quiet_hours.sh` on the team host, `test_installer.sh` in-tree (regression, B-01 included), `bash -n` on all changed files; full `run_tests.sh` VM run at Big's discretion (recorded if skipped); verdicts in `## Test Results` | `Big` | All requested checks PASS with counts; any dropped check named explicitly | After 8 |
-| 10 | Fix round for findings (only if 7/8/9 found something) | `Tails` | Each finding resolved with a sha in its Resolution line | Contingent branch off 7/8/9 |
-| 11 | Docs: `README.md` quiet-hours section (option, 20:00-07:00 default, override commands, in-window behaviour, reboot behaviour, uninstall), `docs/ja/README.md` kept in sync (repo convention, `CLAUDE.md:234`), `CLAUDE.md` module order + common tasks updated; table in `## Docs` | `Vector` | English and Japanese sections present and consistent; `## Docs` table complete | After 10 (or 9 if no fixes) |
-| 12 | Release: verify tree contains only this task's files (`git status --short`, `git diff --stat` on the 7 files empty), commit per-file (`git add <file>`, never `git add -A`) with `TASK-0020:` prefix, PR to `metalllinux/project-tv-rocky-linux-edition` (internal account, no human gate per AGENTS.md §8), verify PR diff contains only this task's files, merge, record sha + `git ls-remote origin main` in `## Release`; planning-doc update committed to team-chaotix (gated by its `Static Checks` + `Secret Scan Self` CI) | `Knuckles` | PR merged; `## Release` filled; user's 7 mode bits absent from every commit (`git show --stat` on the release commits shows only task files) | After 11 |
-
-**Dependencies and sequence.** Genuinely ordered: 1→3 (the gate confirms the target list), 3→4→5b→6,
-6→7→8→9 (fixed review-trio sequence, AGENTS.md §3), 9→10→11→12. Item 10 is contingent, not sequential:
-it runs only on findings. Item 2 is independent of 1 (local vs remote) and item 4 is independent of 5a;
-with one inference slot the order of independent items is free along the critical path, so they are
-listed above in a sensible order, not a mandate.
-
-**Critical path:** 1 → 3 → 4 → 5b → 6 → 7 → 8 → 9 → 11 → 12 (item 10 branches off 7/8/9 when needed;
-items 2 and 5a sit off the path).
-
-**Estimates** (agent turns, three-point, `T = (O + 4M + P) / 6`):
-
-| # | O | M | P | T |
-|---|---|---|---|---|
-| 1 | 1 | 2 | 4 | 2.2 |
-| 2 | 1 | 1 | 2 | 1.2 |
-| 3 | 2 | 3 | 5 | 3.2 |
-| 4 | 1 | 2 | 3 | 2.0 |
-| 5a | 2 | 3 | 6 | 3.3 |
-| 5b | 1 | 1 | 2 | 1.2 |
-| 6 | 1 | 2 | 3 | 2.0 |
-| 7 | 1 | 2 | 3 | 2.0 |
-| 8 | 1 | 2 | 3 | 2.0 |
-| 9 | 1 | 2 | 4 | 2.2 |
-| 10 | 0 | 1 | 3 | 1.3 (contingent) |
-| 11 | 1 | 2 | 3 | 2.0 |
-| 12 | 1 | 2 | 4 | 2.2 |
-
-Total ≈ 26.8 turns expected (≈25 median). Buffer +30% for window scheduling (item 1 must wait for an
-in-window top-of-hour slot), review rounds, and 32k turn-cap truncation retries (AGENTS.md §14):
-**plan at 35 agent turns.**
+**Work breakdown, estimates and sequence:** the 12-item breakdown (owners, acceptance criteria,
+dependencies, critical path, three-point estimates, plan at 35 agent turns) executed as planned and is
+archived in `## Archive`.
 
 **Risks:**
 
@@ -343,19 +242,9 @@ in-window top-of-hour slot), review rounds, and 32k turn-cap truncation retries 
 | R7: kubectl absent or cluster down when the service ticks | low | low | Per-step error isolation: log, continue, exit 0, retry next tick; state file only updated on full success | Worst case is 15 extra minutes of the previous state, self-healing; module 21 warns if kubectl is missing at install |
 | R8: 32k turn-cap truncation kills a dispatch (TASK-0019) | medium | medium (wasted turns) | One item per turn per the breakdown; findings checkpointed to the doc after each item; small briefs | Re-dispatch with a smaller brief; detect via the session DB per AGENTS.md §14 rule 4 |
 
-**Validation:**
-- Syntax: `bash -n` on `install.sh`, `modules/21-quiet-hours.sh`, `quiet-hours/quiet-hours.sh`,
-  `quiet-hours/project-tv-quiet-hours`, `test/scripts/test_quiet_hours.sh`, `test/run_tests.sh` (item 9).
-- Unit/structural: `test/scripts/test_quiet_hours.sh` all `ok` on the team host, no VM needed (item 9).
-- Regression: `test/scripts/test_installer.sh` in-tree, 12/12 including B-01 after item 2 (item 9).
-- Investigation audit: the command list recorded in `## Implementation` contains only the read-only
-  commands from item 1's list (or their recorded sudo variants); DoD "No production changes" is verified
-  from that list, not by assertion.
-- Credential audit: `grep -Ff ~/pass.txt` over the doc returns nothing (item 1 post-check, re-run by
-  Knuckles before push); `Secret Scan Self` CI green on the planning-doc push.
-- Human look: the PR file list (Knuckles shows `git diff --stat` of the merge), the README quiet-hours
-  section (user-facing wording), and the investigation findings (the user's own hypothesis about
-  Jellyfin is confirmed or refuted there).
+**Validation:** executed during the cycle; results in `## Test Results` (all executable checks PASS,
+full VM run waived with explicit conditions), `## Security` (credential audits clean), `## Release`
+(tree purity, merge). The planned validation checklist is archived in `## Archive`.
 
 **Rollback:**
 - Detect: pre-merge, CI/tests in item 9 and the PR diff check. Post-merge, the change is inert until
@@ -416,22 +305,15 @@ in-window top-of-hour slot), review rounds, and 32k turn-cap truncation retries 
 7. **Navidrome** — reads `/mnt/vector/music` only during playback/library scan (no periodic scanner timer found in the host's `systemctl list-timers`).
 8. **Other host timers** (`systemctl list-timers --all`): `dnf-makecache` (20:20, ran 20:20:30), `logrotate` (00:31), `unbound-anchor` (00:00), `sysstat-collect` (10-min), `sysstat-rotate/summary` (00:00/00:07), `fstrim` (Mon 00:24), `tmpfiles-clean`, `raid-check` (weekly, no md raid present) — all NVMe or negligible for the pool. No `media-sync.timer` (module 13 never applied), consistent with the plan.
 
-**Measurement:** `grep -E ' sd[a-z]+ ' /proc/diskstats` snapshots at 20:14:32, 20:27:54 and 20:3x show **identical sda/sdb counters** — zero I/O to the media pool for 13.5+ minutes, spanning the 20:00 hourly event. Lifetime counters since the ~18:14 reboot: ~155MB read / ~13MB written to the pool (boot-time jellyfin library validation + the 18:50 plocate warm-cache walk). **Interim conclusion:** every scheduled pool I/O source in the window is either negligible (4s scan) or once-a-day (~00:00 sanoid, ~00:18 plocate), all quiable; the user's hypothesis "Jellyfin (container)" is confirmed as the *scan* source but the scan itself is 4 seconds, and playback is the only large pool reader and is out of scope by the PM decision. The formal in-window top-of-hour sample straddling 22:00 (below) records the per-process evidence.
-
 **Pod-process visibility (methodology fact):** `ps -o pid,ppid,uid,user,etime,comm -p 13016,13455,14440` + `cat /proc/<pid>/cgroup` show the jellyfin server (PID 13016, UID 1000) and elasticsearch JVMs (13455/14440) in `kubepods.slice/...` cgroups, visible in the host PID namespace on this node. This is what makes host-level `pidstat -d` attribution valid here.
 
-**Exact commands run (remote, as `howard@192.168.1.107`; all read-only; no sudo was ever needed, A6 resolved):**
-- Identity: `hostname`; `head -3 /etc/os-release`; `kubectl get nodes -o wide`; `kubectl get pods -A --no-headers | head -40`
-- Tooling/baseline: `command -v pidstat iotop`; `grep -E ' sd[a-z]+ ' /proc/diskstats` (3 times); `pidstat -d 5 12` (60s post-20:00 sample)
-- Process identity: `ps -o pid,ppid,uid,user,etime,comm -p 13016,13455,14440`; `cat /proc/13016/cgroup /proc/13455/cgroup /proc/14440/cgroup`
-- Storage: `zpool status`; `zfs list -o name,mountpoint,used | head -25`; `zfs list -t snapshot -o name,creation | tail -15`; `df -h /var/lib/project-tv /mnt/vector`
-- Scheduled: `systemctl list-timers --all --no-pager | head -30`; `kubectl -n project-tv get cronjobs`; `kubectl -n project-tv get cronjob jellyfin-library-refresh -o jsonpath='{.spec.schedule} {.spec.suspend} {.spec.concurrencyPolicy}'`; `kubectl -n project-tv get jobs -o wide`
-- Components: `kubectl -n project-tv logs deploy/jellyfin --since=12h --tail=2000 | grep -iE 'scanning|refresh|library' | tail -25`; `journalctl -u sanoid.service --since "12h ago" --no-pager | tail -25`; `journalctl -u plocate-updatedb.service --since "18:00" --no-pager | tail -12`; `kubectl -n project-tv logs deploy/epgstation --since=12h --tail=3000 | grep -iE 'record' | tail -20`; `kubectl -n project-tv logs deploy/epgstation --since=2h --tail=3000 | grep -E '2026-09-07 20:' | tail -15`; `kubectl -n project-tv logs deploy/tubearchivist --since=2h --tail=300 | tail -15`; `kubectl -n project-tv logs deploy/tubearchivist --since=6h --tail=2000 | grep -iE 'download|process|import' | tail -10`
-- Topology: `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`; `cat /proc/diskstats`; `cat /etc/sanoid/sanoid.conf`; `stat -c '%y %n' /etc/sanoid/sanoid.conf`; `cat /etc/plocate.ignore` (→ no such file); `ls -la /var/lib/plocate/`; `ls -ld /mnt/mediapool /mnt/mediapool/youtube`; `df -h /mnt/mediapool`
-- Volume maps: `kubectl -n project-tv get deploy jellyfin -o jsonpath='{range .spec.template.spec.volumes[*]}{.name}={.hostPath.path}{"\n"}{end}'`; same for `epgstation`
-- File activity: `find /mnt/vector/tv /mnt/vector/live_shows -type f -mmin -120 | head -15`; `find /mnt/vector/tv /mnt/vector/live_shows -type f -mtime -1 | head -15`; `find /mnt/vector/tv -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort -r | head -8`; `ls -lt /mnt/vector/tv | head -8`
-- **Extension of section 5 (recorded, per A2):** read-only MariaDB queries inside the mariadb pod to answer "is anything scheduled to record tonight": `kubectl -n project-tv get secret mariadb-secret -o jsonpath=...` (values kept in remote shell vars, never printed), then `printf '%s\n' "$PW" | kubectl -n project-tv exec -i deploy/mariadb -- mysql -u epgstation -p epgstation -e '...'` running only `SHOW TABLES`, `SHOW COLUMNS FROM reserve; SHOW COLUMNS FROM recorded`, `SELECT COUNT(*) FROM reserve`, `SELECT COUNT(*) FROM recorded`, and column-limited `SELECT ... LIMIT` on `reserve`/`recorded`. No `INSERT/UPDATE/DELETE/CREATE/ALTER/DROP` anywhere.
-- **Credential handling:** the howard password was passed only as `SSHPASS` env to `sshpass -e`; the MariaDB password only via the mysql client's stdin password prompt; neither value appears in any command line, file, or log. Post-hoc `grep -Ff ~/pass.txt` over this doc: run after the final verdict (below).
+**Exact commands run:** the full executed command list (remote, as `howard@192.168.1.107`; all
+read-only; no sudo was ever needed, A6 resolved) is archived in `## Archive`. Credential handling:
+the howard password was passed only as `SSHPASS` env to `sshpass -e`; the MariaDB password only via
+the mysql client's stdin password prompt; neither value appears in any command line, file, or log
+(post-hoc `grep -Ff ~/pass.txt` over this doc: clean, run after the final verdict below). The interim
+20:14-20:3x measurement notes are archived with the command list; the formal in-window sample below
+supersedes them.
 
 **Formal in-window sample (22:00 straddle, per plan item 1 section 3):** one remote session from 21:56:26 to 22:02:46 JST: `grep -E ' sd[a-z]+ | nvme' /proc/diskstats` (T0), `pidstat -d 5 40` (samples 21:56:31-22:00:50, straddling the 22:00:00 CronJob + sanoid firing), `iostat -xd 20 10`, diskstats (T1), `kubectl -n project-tv get jobs -o wide`, `journalctl -u sanoid.service --since "21:59"`. Raw output preserved on the team host at `/tmp/opencode/task-0020-pidstat-2200.txt` (289 lines, not committed, no credential material).
 - `pidstat`: exactly four processes had any I/O in any of the 40 samples, all UID 1000: `jellyfin` (avg 4.32 kB/s **writes**, its SQLite/log state on the NVMe), two `java` (elasticsearch JVMs, ~0.7 kB/s writes), `rustdesk` (0.32 kB/s). **Zero `kB_rd/s` in every sample.** No sanoid, zfs, plocate, or job-pod process appeared: the 22:00 sanoid run (journal: started 22:00:00, `taking snapshots...`, deactivated in <1s, no snapshot taken) and the 22:00 refresh job (`jellyfin-library-refresh-29813100`, Complete, 4s) produced no measurable pool I/O.
@@ -494,7 +376,9 @@ in-window top-of-hour slot), review rounds, and 32k turn-cap truncation retries 
 
 **Design (as implemented):** 94 checks in eight sections. A window matrix (wrap 20-07: 11 in / 13 out; no-wrap 10-14; degenerate 10-10 full day). B boundary inclusivity named (start in, end out). C DST/fixed-epoch correctness with real glibc `date` under `QUIET_HOURS_TZ`: America/New_York 2026-03-08 spring-forward (incl. "skipped hour 02 never occurs") and 2026-11-01 fall-back (both passes of 01:30 quiet); Europe/Berlin 2026-03-29 spring and 2026-10-25 fall (both passes of 02:30 quiet); Asia/Tokyo no-DST control. D config parse (valid six-key, missing file rc 1, hour 24 rc 1, `09` → decimal 9, unknown key skipped, flag 2 rc 1, quoted list keeps interior spaces). E state machine with stubs + fake clock (fresh in-window tick applies quiet + advances state; already-quiet no-op; outside-window release; failed step → exit 0 and state NOT written; reboot-with-override re-applies outside window; corrupt config → no actions and state untouched; disable override → release). F enabled/override precedence. G state-file round-trip + garbage/missing → unknown, no tmp left. H structural (see item 5b).
 
-**Checks run (item 5a):** first in-tree run 87/94, 7 failures — all in H (module 21 and install.sh wiring not yet written, expected) plus one real bug: C-NY-spring check 33 failed because the test overwrote `E_EPOCH` (06:30 UTC) with 07:30 UTC before the check ran. Fixed by deleting the stray duplicate assignment (test bug, not core bug — the core was never at fault). After item 6 landed, full in-tree run is 94/94 (see Final regression below).
+**Checks run (item 5a):** in-tree run 94/94 after item 6 landed (see Final regression below). The
+first-run 87/94 detail (expected H-section failures plus one test-side `E_EPOCH` bug found and
+fixed; the core was never at fault) is archived in `## Archive`.
 
 **Item 5b — structural tests + harness wiring (2026-09-08):**
 - Structural section H appended to `test_quiet_hours.sh`: module 21 file exists and defines `run()`; `install.sh` has `MODULE_DESC[21]` and `MODULE_ORDER` ending in 21; all four quiet-hours deliverables present; service unit has `[Unit]`/`[Service]`, `Type=oneshot`, correct `ExecStart`; timer unit has `[Unit]`/`[Timer]`/`[Install]`, `OnBootSec=`, `OnCalendar=*:0/15`, `WantedBy=timers.target`; `bash -n` on all seven changed files; CLI usage output shows `20:00-07:00`; `run_tests.sh` invokes `test_quiet_hours.sh`.
@@ -592,35 +476,15 @@ changes table carries the full shas.
 `set -euo pipefail` + `ssh | tee` pipeline fails fast by design, so no orchestrator change was
 needed.
 
-**Checks run (all on the team host, 2026-09-08):**
-- `bash -n` on all 7 changed files: 7/7 PASS.
-- shellcheck 0.10.0 `-S warning` on the same 7 files: no new findings; the only remaining hits
-  are the two already classified in `## Review` (SC1090 dynamic source in `install.sh`, SC2120
-  on `load_config` — the test suite passes arguments from another file); SC2034 (`now_hour`) is
-  gone. Two warnings introduced mid-round (SC2034 on a dead `QUIET_K8S_NAMESPACE` global,
-  2× SC1007 on empty-env prefixes in the test) were found and fixed before the final run.
-- `test/scripts/test_quiet_hours.sh "$PWD"`: **118/118 ok**, rc 0, plan `1..118` matches,
-  0 `not ok` (was 94/94 pre-fix; +24 = section I). TAP kept at
-  `/tmp/opencode/task0020-quiet-hours-item10.tap` (team host, not committed).
-- `test/scripts/test_installer.sh "$PWD"`: **12/12 ok**, rc 0. Exit-code fix demonstrated:
-  empty-directory run → 9 `not ok`, **rc 1** (previously 0). TAP kept at
-  `/tmp/opencode/task0020-installer-item10.tap`.
-- Hand verification of the in-place upgrade: a status file with entries 00-20 →
-  `get_module_status 21` rc 0 `pending`; `init_status` backfills exactly one `21:pending`;
-  `set_module_status 21 completed` round-trips; the call survives under `set -e`.
-- Hand verification of the module sandbox (the same stubs section I uses): 7/07 re-prompt fires
-  once and the config gets normalised 7/8; a re-run carries `QUIET_OVERRIDE=1` and prints the
-  carry-over note; `K8S_NAMESPACE=media` lands in the config and in the kubectl detection call;
-  both mkdirs appear in the `log_cmd` record.
-- Credential audit: `grep -Fqf ~/pass.txt` over the 7 task files and this doc: clean.
-- Tree purity: `git status --short` shows only this task's paths (`M install.sh`,
-  `M test/run_tests.sh`, `M test/scripts/test_installer.sh`, `?? modules/21-quiet-hours.sh`,
-  `?? quiet-hours/`, `?? test/scripts/test_quiet_hours.sh`); `git diff --summary` empty (no
-  mode-bit drift).
+**Checks run (all on the team host, 2026-09-08):** all green — `bash -n` 7/7 PASS, shellcheck 0.10.0
+`-S warning` no new findings (two warnings introduced mid-round were found and fixed before the
+final run), `test_quiet_hours.sh` **118/118 ok** rc 0 (plan `1..118`; +24 = section I),
+`test_installer.sh` **12/12 ok** rc 0 with the exit-code fix demonstrated (empty-directory run → 9
+`not ok`, rc 1), hand verifications of the in-place upgrade and the module sandbox, credential audit
+clean, tree purity confirmed (only this task's paths, no mode-bit drift). Full check detail is
+archived in `## Archive`; results re-confirmed in `## Test Results` run 2.
 
 **Competing priorities:**
-- *The blob shas are provisional.* They identify the working-tree content exactly, but item
-  12's commit supersedes them; every `Resolution:` line says so.
 - *`QUIET_HOURS_CONF_PATH` is a new env var.* Small production surface (a user who exports it
   redirects the module's config write) in exchange for a sandboxable module; the core/CLI
   already expose `QUIET_HOURS_CONF` with the same property.
@@ -654,246 +518,37 @@ unchanged, and is safe under `set -e`/`set -u` (conditional context). The core s
 advancing only on full success, atomic tmp+mv writes, and the glibc empty-`TZ` handling are all
 correct. No blockers.
 
-### k8s namespace is lost between install and runtime
-**Severity:** should-fix
-**Where:** `modules/21-quiet-hours.sh:56`; `quiet-hours/quiet-hours.sh:28,97-102`
-**Problem:** the module detects the CronJob target in the installer-configurable
-`$K8S_NAMESPACE` (`config/defaults.conf:14`), but the config it writes has no namespace key and
-the core only reads `QUIET_HOURS_NAMESPACE` from the environment (default `project-tv`), which
-the systemd service never sets.
-**Failure scenario:** user sets `K8S_NAMESPACE="media"` in `config/defaults.conf` (supported
-customization; module 04 creates that namespace) and runs a fresh install. Detection succeeds in
-`media` and the CronJob is written into the config. Every tick the core then patches the CronJob
-in `project-tv`, where it does not exist: the patch fails, the state file never advances, the
-systemd units churn stop/start with a journal line every 15 minutes, and the real CronJob in
-`media` keeps scanning hourly. The primary target is never silenced and `status` reports
-permanent out-of-sync.
-**Suggested direction:** persist the namespace in the config (new key, honoured by
-`load_config`) or emit a service drop-in with `Environment=QUIET_HOURS_NAMESPACE=` at install
-time, so detection and runtime read the same value.
-**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`) + `0ad1fdb0`
-(`git hash-object quiet-hours/quiet-hours.sh`), working tree on `task-0020-quiet-hours`
-(uncommitted; item 12's release commit supersedes the blob shas). Chose the config key over the
-drop-in: one source of truth the CLI `status` can display, and a later config edit of the
-CronJob list stays consistent with its namespace. The module writes
-`QUIET_K8S_NAMESPACE=${K8S_NAMESPACE}`; `load_config` applies it to `QUIET_HOURS_NAMESPACE`
-only when the env var did not set it (precedence: env test override > config key > default
-`project-tv`, via a provenance marker captured at source time), and validates it as a DNS-1123
-label. Pinned: section I checks "module persists the detection namespace", "detection ran
-kubectl in the configured namespace", "core resolves the namespace from the config key",
-"env QUIET_HOURS_NAMESPACE wins over the config key", "namespace defaults to project-tv".
+### Closed findings (all fixed in the item 10 round, shipped in merged sha `8623cc3df38f96bc32fe85608bfd62dd4d3e253c`; each pinned by `test_quiet_hours.sh` section I)
 
-### Module re-run silently resets a live override
-**Severity:** should-fix
-**Where:** `modules/21-quiet-hours.sh:78-90`
-**Problem:** re-running the module regenerates `/etc/project-tv/quiet-hours.conf` with
-`QUIET_OVERRIDE=0` unconditionally, discarding a live override set by the CLI.
-**Failure scenario:** user runs `project-tv-quiet-hours enable` (per the DoD the override
-persists until `disable`, including reboots). Later the user re-runs module 21 (a supported
-flow; the installer tracks per-module status precisely for re-runs). The config is rewritten
-with `QUIET_OVERRIDE=0`, the forced quiet ends with no disable command, and nothing in the
-module output mentions it.
-**Suggested direction:** read the existing `QUIET_OVERRIDE` from the old config before
-overwriting and write it back; mention the carry-over in the install summary.
-**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
-on `task-0020-quiet-hours` (uncommitted). The module reads the old config's last
-`QUIET_OVERRIDE=` line before rewriting (only a clean 0/1 is honoured; anything else starts
-fresh at 0, matching the core's own flag validation), writes it back, and the summary prints a
-"kept on from the previous install" line when it is 1. Pinned: section I checks "re-run carries
-a live QUIET_OVERRIDE=1", "re-run applies the new window (20/7)", "mentions the override
-carry-over in the summary".
+1. **k8s namespace is lost between install and runtime** (should-fix). Fixed: `QUIET_K8S_NAMESPACE` persisted in the config, honoured by `load_config` (precedence: env test override > config key > default `project-tv`, via a provenance marker), validated as a DNS-1123 label. Config key chosen over a service drop-in: one source of truth `status` can display. Full finding, failure scenario and resolution: `## Archive`.
+2. **Module re-run silently resets a live override** (should-fix). Fixed: the module reads the old config's last `QUIET_OVERRIDE=` line before rewriting (only a clean 0/1 is honoured), writes it back, and prints a carry-over note in the summary. Detail: `## Archive`.
+3. **start==end guard is bypassed by leading-zero input** (should-fix). Fixed: the guard compares `(( 10#$start_hour == 10#$end_hour ))` and both values are normalised after the loop, so "07" never reaches the config (an unguarded start==end means a full 24h quiet window). Detail: `## Archive`.
+4. **In-place upgrade kills the installer on the new module number** (should-fix; pre-existing installer trap: `get_module_status` returned grep's rc 1 under `set -o pipefail` for a missing status line, and `init_status` only seeded when the file was absent). Fixed: `init_status` backfills missing `MODULE_ORDER` entries into an existing status file and `get_module_status` is total (missing line reads as `pending`, rc 0). Detail: `## Archive`.
 
-### start==end guard is bypassed by leading-zero input
-**Severity:** should-fix
-**Where:** `modules/21-quiet-hours.sh:33`
-**Problem:** the equality check compares `ask_number` string output, but `ask_number`
-(`lib/prompts.sh:82-87`) accepts leading-zero hours ("07" passes its range test as octal 7) and
-echoes them verbatim, so "7" and "07" compare as different hours.
-**Failure scenario:** user enters start `7` and end `07` (or vice versa). No re-prompt fires,
-the config gets start=end=7, and the core treats `start == end` as a full 24-hour window
-(`quiet-hours.sh:123-125`). The CronJob stays suspended and sanoid/plocate stay stopped
-permanently while the user believes a bounded night window was configured.
-**Suggested direction:** normalise both values before comparing, e.g.
-`(( 10#$start_hour == 10#$end_hour ))`.
-**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
-on `task-0020-quiet-hours` (uncommitted). The guard now compares
-`(( 10#$start_hour == 10#$end_hour ))` exactly as suggested, and both values are additionally
-normalised after the loop (`start_hour=$((10#$start_hour))`), so the config holds plain decimal
-hours ("07" no longer reaches the config file). Pinned: section I checks "leading-zero input
-(7 vs 07) trips the re-prompt" and "config gets the normalised window (7/8, no leading zeros)".
-
-### In-place upgrade kills the installer on the new module number
-**Severity:** should-fix
-**Where:** `install.sh:76-83` (`get_module_status`), `install.sh:57-63` (`init_status`), call sites `install.sh:128,164,179`
-**Problem:** adding `21` to `MODULE_ORDER` exposes a pre-existing trap: when the status file
-has no line for a module, `get_module_status` returns grep's rc 1 (the `grep | cut` pipeline
-under `set -o pipefail` at `install.sh:9`), and `init_status` only seeds entries when the file
-is absent.
-**Failure scenario:** a host installed with a pre-TASK-0020 repo has `logs/.install-status`
-holding entries 00-20. The user updates the checkout in place and re-runs the installer:
-`status=$(get_module_status "21")` (module menu `install.sh:164`, status view `install.sh:128`,
-full install `install.sh:179`) hits the missing line and `set -e` exits the installer. Every
-use of menu options 2/3 and every full install dies. The new `run_module` branch
-(`install.sh:106`) is in a conditional context and is unaffected.
-**Suggested direction:** make `get_module_status` return 0 with empty output when no line
-matches, or have `init_status` append entries for modules missing from an existing file.
-**Resolution:** fixed in `d6bdc59a` (`git hash-object install.sh`), working tree on
-`task-0020-quiet-hours` (uncommitted). Both suggested directions applied, because neither alone
-closes the finding: `init_status` backfills missing `MODULE_ORDER` entries into an existing
-status file (the root fix: `main` calls it before any menu/status path), and
-`get_module_status` is now total (missing line reads as `pending` with rc 0, so no call site can
-trip `set -e` even if the file is hand-edited later). Note: "empty output" was implemented as
-"echo `pending`" instead, because the call sites treat both identically and an explicit status
-word keeps the function's contract (always echo a status) intact. Verified by hand: a 00-20
-status file upgrades cleanly, `21:pending` is backfilled, `21:completed` round-trips. Pinned:
-section I checks "missing status line reads as pending with rc 0", "init_status backfills the
-new module into the old file", "status is recorded for the new module after the backfill".
-
-### `now_hour` is dead and can raise an arithmetic error
-**Severity:** nit
-**Where:** `quiet-hours/project-tv-quiet-hours:157`
-**Problem:** `now_hour` is computed but never used (shellcheck SC2034); if
-`local_tz_hour` ever returns empty, `$((10#))` raises an arithmetic error to stderr in the
-middle of `status` output.
-**Failure scenario:** `status` on a host where `date -d` fails (broken `/etc/localtime`):
-`bash: 10#: value too great for base` interleaves into the status output; the value is unused
-regardless.
-**Suggested direction:** delete the variable; `cur_state` already carries the current state.
-**Resolution:** fixed in `e81b634d` (`git hash-object quiet-hours/project-tv-quiet-hours`),
-working tree on `task-0020-quiet-hours` (uncommitted). Variable and its assignment deleted from
-`next_transition`; `cur_state` already carries the state. SC2034 no longer fires (shellcheck
-re-run, item 10). Pinned: section I check "dead now_hour is gone from the CLI".
-
-### `trigger_now` fallback ignores the repo-layout core path
-**Severity:** nit
-**Where:** `quiet-hours/project-tv-quiet-hours:142`
-**Problem:** the immediate-apply fallback re-derives the core script as
-`${QUIET_HOURS_LIB:-/usr/local/lib/project-tv/quiet-hours.sh}` instead of reusing
-`core_script_path`, which also resolves the repository layout next to the CLI.
-**Failure scenario:** the CLI is run from a repo checkout on a host with nothing installed
-(the exact structural-test layout): `systemctl start` fails (no unit) and the fallback runs
-the nonexistent `/usr/local` path, so `enable`/`disable` always end in the 15-minute warning
-even though the core script sits next to the CLI.
-**Suggested direction:** have `load_core` remember the resolved core path and `trigger_now`
-execute it.
-**Resolution:** fixed in `e81b634d` (`git hash-object quiet-hours/project-tv-quiet-hours`),
-working tree on `task-0020-quiet-hours` (uncommitted). `load_core` records the resolved path in
-`CORE_PATH` and `trigger_now` executes it (with a `-f` guard, so a stale `QUIET_HOURS_LIB`
-falls through to the 15-minute warning instead of a broken exec), replacing the
-`${QUIET_HOURS_LIB:-/usr/local/lib/project-tv/quiet-hours.sh}` literal. Pinned: section I
-checks "trigger_now fallback uses the resolved core path (CORE_PATH)" (structural), "runs the
-core directly when the unit is absent" and "executed the resolved repo-layout core" (functional
-harness: the CLI functions are extracted next to a stand-in core that logs its own path, and a
-stubbed `systemctl` refuses the unit).
-
-### Two `mkdir -p` calls bypass `log_cmd`
-**Severity:** nit
-**Where:** `modules/21-quiet-hours.sh:70,77`
-**Problem:** every other state-changing command in the module goes through `log_cmd`; the two
-`mkdir -p` calls do not, so the install log has no "Running:" line for them.
-**Failure scenario:** `/usr/local` is unwritable (read-only filesystem): `mkdir` fails, the
-installer dies under `set -e`, and the log shows only the last successful command with no
-record of what failed.
-**Suggested direction:** route the `mkdir` calls through `log_cmd` like their neighbours.
-**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
-on `task-0020-quiet-hours` (uncommitted). Both `mkdir -p` calls now go through `log_cmd`; the
-config-directory one targets `$(dirname "$conf_path")`, where `conf_path` defaults to
-`/etc/project-tv/quiet-hours.conf` and is overridable via `QUIET_HOURS_CONF_PATH` (test-suite
-hook, documented in the module header; production behaviour unchanged). Pinned: section I
-checks "lib-directory mkdir is routed through log_cmd" and "config-directory mkdir is routed
-through log_cmd".
+5. **`now_hour` is dead and can raise an arithmetic error** (nit). Fixed: variable and assignment deleted from `next_transition`; SC2034 gone. Note: the same unguarded `$((10#$(local_tz_hour ...)))` failure class survived at one live site in `next_transition`'s hour step; it is tracked as an open nit below. Detail: `## Archive`.
+6. **`trigger_now` fallback ignores the repo-layout core path** (nit). Fixed: `load_core` records the resolved path in `CORE_PATH` and `trigger_now` executes it under a `-f` guard (a stale `QUIET_HOURS_LIB` falls through to the 15-minute warning instead of a broken exec). Detail: `## Archive`.
+7. **Two `mkdir -p` calls bypass `log_cmd`** (nit). Fixed: both routed through `log_cmd`; the config-directory one targets `$(dirname "$conf_path")`, overridable via the documented `QUIET_HOURS_CONF_PATH` test hook. Detail: `## Archive`.
 
 ### Re-review: item 10 fix round (2026-09-08, Shadow)
 
-**Method.** Verified against the working tree at `/home/howard/Linux/projects/project_tv_rocky_linux`
-(the dispatch brief's `/home/home/...` path is a typo; the doc's path is the real one), branch
-`task-0020-quiet-hours`, tip `b892a70`, tree uncommitted (`git status`: 3 modified
-[`install.sh`, `test/run_tests.sh`, `test/scripts/test_installer.sh`] + 3 untracked task paths;
-`git diff --summary` empty, no mode-bit drift). All seven task files read in full. Per-finding
-verification is by direct content inspection at the cited lines. Re-run this round: `bash -n`
-7/7 PASS on all seven changed files; `shellcheck -S warning` on the same seven, with only the
-hits already classified in the first review (SC1090 `install.sh:121` dynamic source, SC2120
-`quiet-hours/quiet-hours.sh:79` and `quiet-hours/project-tv-quiet-hours:54` — false positives,
-the callers pass arguments); SC2034 for `now_hour` is gone. TAP plan verified statically:
-`test_quiet_hours.sh:19` declares `1..118`; per-section check-site count is A 30, B 2, C 14,
-D 8, E 17, F 2, G 4, H 17 (= 94, the pre-fix plan) + section I 24
-(`test_quiet_hours.sh:444-662`) = 118. Section I's I6 block branches on whether
-`/usr/local/lib/project-tv/quiet-hours.sh` exists, but both branches emit exactly two checks, so
-the plan holds on any host. Limitations of this re-review: `git hash-object` is not in this
-agent's permitted command set, so the blob shas in the item 10 changes table were not
-independently recomputed (content verification stands in for them); the two suites were not
-re-run here, so the 118/118 and 12/12 rc 0 results stand on Tails' recorded runs (item 10,
-`## Implementation`).
+Verified against the working tree (branch `task-0020-quiet-hours`, tip `b892a70`, tree uncommitted;
+`git diff --summary` empty, no mode-bit drift), all seven task files read in full, per-finding
+verification by direct content inspection at the cited lines. Re-run this round: `bash -n` 7/7 PASS
+on all seven changed files; `shellcheck -S warning` with only the hits already classified in the
+first review (SC1090 dynamic source; SC2120 ×2 — false positives, the callers pass arguments);
+SC2034 for `now_hour` is gone. TAP plan verified statically: `1..118` = 94 pre-fix (A 30, B 2,
+C 14, D 8, E 17, F 2, G 4, H 17) + section I 24; section I's I6 block branches on whether
+`/usr/local/lib/project-tv/quiet-hours.sh` exists but both branches emit exactly two checks, so
+the plan holds on any host. Limitations: `git hash-object` is not in this agent's permitted
+command set, so the blob shas in the item 10 changes table were not independently recomputed
+(content verification stands in for them); the two suites were not re-run here, so the 118/118
+and 12/12 rc 0 results stand on Tails' recorded runs (item 10, `## Implementation`) and
+`## Test Results` run 2.
 
-**Verdicts on the 11 closed findings:**
-
-1. "k8s namespace is lost between install and runtime" — **VERIFIED FIXED.** The module detects
-   with `$K8S_NAMESPACE` (`modules/21-quiet-hours.sh:65`) and writes the same value into the
-   config (`modules/21-quiet-hours.sh:116`); `K8S_NAMESPACE` is always set because `install.sh:20`
-   sources `config/defaults.conf:14`. The core captures env provenance at source time
-   (`quiet-hours/quiet-hours.sh:38-39`) and `load_config` applies the config key only when the
-   env var did not set it, after a DNS-1123 label check
-   (`quiet-hours/quiet-hours.sh:142-151`). Precedence env > config key > default holds as
-   claimed. `status` displays the resolved namespace
-   (`quiet-hours/project-tv-quiet-hours:205`). Pinned by I3's five checks
-   (`test_quiet_hours.sh:509-540`).
-2. "Module re-run silently resets a live override" — **VERIFIED FIXED**, with one new nit below.
-   The module reads the old config's last `QUIET_OVERRIDE=` line
-   (`modules/21-quiet-hours.sh:88-93`), honours only a clean 0/1, writes it back
-   (`modules/21-quiet-hours.sh:115`), and the summary prints the carry-over line
-   (`modules/21-quiet-hours.sh:131-133`). Pinned by I2's three checks
-   (`test_quiet_hours.sh:488-502`).
-3. "start==end guard is bypassed by leading-zero input" — **VERIFIED FIXED.** The guard compares
-   `(( 10#$start_hour == 10#$end_hour ))` (`modules/21-quiet-hours.sh:40`) and both values are
-   normalised after the loop (`modules/21-quiet-hours.sh:47-48`), so a leading-zero hour never
-   reaches the config. Pinned by I1 (`test_quiet_hours.sh:447-459`).
-4. "In-place upgrade kills the installer on the new module number" — **VERIFIED FIXED.**
-   `init_status` backfills missing `MODULE_ORDER` entries into an existing status file
-   (`install.sh:63-74`) and `main` calls it before the menu loop (`install.sh:245`);
-   `get_module_status` is total, a missing line reads as `pending` with rc 0
-   (`install.sh:91-97`), so no call site (`install.sh:124,146,182,197`) can trip `set -e`.
-   Pinned by I5's three checks (`test_quiet_hours.sh:576-600`), which simulate exactly the
-   pre-upgrade 00-20 file.
-5. "`now_hour` is dead and can raise an arithmetic error" — **VERIFIED FIXED** as stated; the
-   same failure class survives at one live site, logged as a new nit below. `now_hour` has no
-   occurrence left in the 259-line CLI and SC2034 no longer fires. Pinned by I7
-   (`test_quiet_hours.sh:657-662`).
-6. "`trigger_now` fallback ignores the repo-layout core path" — **VERIFIED FIXED.** `load_core`
-   records the resolved path in `CORE_PATH` (`quiet-hours/project-tv-quiet-hours:89-92`) and
-   `trigger_now` executes it under a `-f` guard, with no `/usr/local` literal left in the
-   fallback (`quiet-hours/project-tv-quiet-hours:141-155`). Pinned by I6
-   (`test_quiet_hours.sh:602-655`), structural on hosts with an installed copy, functional
-   (stand-in core + refusing `systemctl` stub) otherwise.
-7. "Two `mkdir -p` calls bypass `log_cmd`" — **VERIFIED FIXED.** Both calls route through
-   `log_cmd` (`modules/21-quiet-hours.sh:96,103`); the config-directory one targets
-   `$(dirname "$conf_path")` with the documented `QUIET_HOURS_CONF_PATH` test hook
-   (`modules/21-quiet-hours.sh:80`). Pinned by I1's two mkdir checks
-   (`test_quiet_hours.sh:465-474`). The adjacent `chmod 0644 "$conf_path"`
-   (`modules/21-quiet-hours.sh:120`) also bypasses `log_cmd`, but a chmod failure on a file the
-   module just created is not a realistic scenario, so it is noted here, not raised as a
-   finding.
-8. `## Security` "Config target lists flow into systemctl/kubectl without allowlist
-   validation" — **VERIFIED FIXED.** `valid_cronjob_list` uses the full DNS-1123 label form and
-   `valid_unit_list` forbids a leading dash (`quiet-hours/quiet-hours.sh:60-72`); both reject
-   the attack token `--foo` (a dash is not in either first-character class) while accepting the
-   legitimate multi-target lists and empty lists. `load_config` fails the whole load on a bad
-   value (`quiet-hours/quiet-hours.sh:128-147`) and `main` exits 0 leaving the current state
-   (`quiet-hours/quiet-hours.sh:404-407`), so the documented fail-soft contract holds. The
-   recorded deviation over Omega's proposed character sets is implemented exactly as described
-   in the Resolution line. Pinned by I4's four checks (`test_quiet_hours.sh:542-566`).
-9. `## Security` "B-11 test check interpolates repo file paths into a python -c string" —
-   **VERIFIED FIXED.** The path now goes via `sys.argv[1]`
-   (`test/scripts/test_installer.sh:122`); nothing from the tree is interpolated into the
-   `-c` string.
-10. `## Test Results` harness bug — **VERIFIED FIXED.** `[[ "$FAIL" == "0" ]]` is the final
-    statement (`test/scripts/test_installer.sh:161`), so the suite's exit code now carries the
-    result and the `run_tests.sh` `ssh | tee` pipeline under `set -euo pipefail` aborts on a
-    failing suite. The `test/run_tests.sh` diff is only the quiet-hours VM-run wiring
-    (4 lines), consistent with item 10's "unchanged this round".
-11. `## Test Results` coverage gaps — **VERIFIED FIXED.** Section I
-    (`test_quiet_hours.sh:409-662`) pins all four should-fix scenarios, Omega low 1, and all
-    three nits; its 24 checks take the plan from `1..94` to `1..118`
-    (`test_quiet_hours.sh:19`), matching the static count above.
+**Verdicts:** all 11 closed findings (the 7 findings above, both `## Security` `low` findings,
+the `## Test Results` harness bug, and the `## Test Results` coverage gaps) are **VERIFIED FIXED**
+against the tree, each pinned by section I checks (I1-I7). Per-finding verification detail
+(cited lines, the static TAP recount, pin locations) is archived in `## Archive`.
 
 ### `next_transition` leaves the R5 failure class unguarded at the hour step
 **Severity:** nit (new in re-review)
@@ -944,34 +599,10 @@ credential-pattern `git grep` over the changed files (only hit is the B-09 test 
 itself, no credential values). No critical, high, or medium findings. Two low findings,
 both non-blocking per the DoD.
 
-### Config target lists flow into systemctl/kubectl without allowlist validation
-**Severity:** low
-**Vector:** input-validation
-**Where:** `quiet-hours/quiet-hours.sh:97-102` (lists stored verbatim), `quiet-hours/quiet-hours.sh:299` (`systemctl "$action" "$unit"`), `quiet-hours/quiet-hours.sh:252-253,276-288` (kubectl patch/list/delete)
-**Attack:** a root-equivalent actor edits `/etc/project-tv/quiet-hours.conf` (root:root 0644, only root can write it) and sets `QUIET_SYSTEMD_UNITS="--foo bar.timer"` or a `QUIET_K8S_CRONJOBS` value containing spaces. The root timer service then word-splits the value and passes the attacker's tokens to `systemctl`/`kubectl`: argument injection into the 15-minute root run.
-**Impact:** none beyond what the actor already holds. Writing the config requires root, and root can already run arbitrary `systemctl`/`kubectl`; this is defense-in-depth, not a privilege escalation. It matters for the future: the plan makes the target list a growing named contract, and a later module or user edit could supply less-controlled values.
-**Fix:** in `load_config`, validate each list value against an allowlist before accepting it (CronJob names: k8s DNS-1123 `[a-z0-9-]+`; unit names: `[A-Za-z0-9._:@-]+`), failing the whole load exactly like an invalid hour does, so a bad value fails soft to the current state.
-**Resolution:** fixed in `0ad1fdb0` (`git hash-object quiet-hours/quiet-hours.sh`), working tree
-on `task-0020-quiet-hours` (uncommitted). `load_config` validates both lists and the new
-namespace key, failing the whole load exactly like an invalid hour. One refinement over the
-suggested character sets, recorded so it is seen as deliberate: the attack token `--foo` itself
-matches both proposed classes (the dash is inside `[a-z0-9-]+` and `[A-Za-z0-9._:@-]+`), so
-CronJob names use the full DNS-1123 label form (alphanumeric first and last) and unit names must
-not start with a dash. Empty lists (no targets) stay valid, because the module writes them when
-nothing is detected. Pinned: section I checks "unit list with an option token is rejected",
-"cronjob list with an option token is rejected", "malformed namespace is rejected", "empty
-target lists are accepted".
+### Closed low findings (both fixed in the item 10 round, shipped in merged sha `8623cc3df38f96bc32fe85608bfd62dd4d3e253c`; both pinned by section I)
 
-### B-11 test check interpolates repo file paths into a python -c string
-**Severity:** low
-**Vector:** injection
-**Where:** `test/scripts/test_installer.sh:119`
-**Attack:** a contributor with push access to `metalllinux/project-tv-rocky-linux-edition` adds a manifest whose filename contains a single quote plus python, e.g. `manifests/x'); import os; os.system('id').yaml` (`find -name '*.yaml'` still matches it). When the suite runs, the assembled command `python3 -c "import yaml; list(yaml.safe_load_all(open('<path>')))"` executes the injected statement as the test-runner user (team-host user or `testuser` in the VM).
-**Impact:** code execution on whatever machine runs the test suite. Does not raise the attacker's ceiling: the same push access can already ship a malicious installer module, which `run_module` sources and executes as root (`install.sh:103`). The interpolation pattern is pre-existing; this diff only changed `safe_load` to `list(safe_load_all(...))` on the same line.
-**Fix:** pass the path via argv instead of string-building: `python3 -c "import sys, yaml; list(yaml.safe_load_all(open(sys.argv[1])))" "$yaml"`.
-**Resolution:** fixed in `ad185f7e` (`git hash-object test/scripts/test_installer.sh`), working
-tree on `task-0020-quiet-hours` (uncommitted). B-11 now passes the path via `sys.argv[1]`
-exactly as suggested; in-tree run 12/12 rc 0.
+1. **Config target lists flow into systemctl/kubectl without allowlist validation** (low, input-validation). A root actor editing the root-owned config could word-split attack tokens into the 15-minute root `systemctl`/`kubectl` run; defense-in-depth, not privilege escalation. Fixed: `load_config` allowlist-validates both lists and the namespace key, failing the whole load (fail-soft to the current state). Deliberate refinement over the proposed character sets: the attack token `--foo` itself matches both proposed classes, so CronJob names use the full DNS-1123 label form (alphanumeric first and last) and unit names must not start with a dash; empty lists stay valid. Full finding, attack and impact text: `## Archive`.
+2. **B-11 test check interpolates repo file paths into a python -c string** (low, injection). A push-access contributor could inject code via a crafted manifest filename when the suite assembles the `python3 -c` command; does not raise the attacker's ceiling (push access can already ship a malicious installer module). Fixed: the path now goes via `sys.argv[1]`, nothing from the tree is interpolated into the `-c` string; in-tree run 12/12 rc 0. Full finding: `## Archive`.
 
 **Verified clean (no finding):**
 - **Secrets:** no credential material in any of the nine task files (read in full); the two systemd units contain no secrets; the module writes only a `$(date)` comment into the generated config. The 192.168.1.107 password appears nowhere in this doc (read in full; only the host IP, which `## Status` already records) and nowhere in the task files. Tails' `grep -Ff ~/pass.txt` audits (`## Implementation`, items 1 and final regression) are consistent with this. The raw investigation sample is on the team host, not committed.
@@ -1004,66 +635,33 @@ command set, and no secret scanner is installed in this shell (rg/gitleaks/truff
 the blob shas, the 118/118 and 12/12 results, and the credential audit stand on Tails' item 10
 runs and Big's audit, both 2026-09-08 on this tree.
 
-**The two Resolution lines:**
-1. "Config target lists flow into systemctl/kubectl without allowlist validation" —
-   **VERIFIED FIXED.** `valid_cronjob_list` (`quiet-hours/quiet-hours.sh:60-63`) is the full
-   DNS-1123 label form (alphanumeric first and last per token, space-separated, empty valid)
-   and `valid_unit_list` (`:69-72`) forbids a leading dash; both reject `--foo`, `-foo`,
-   `foo-`, `;`, quotes, and `$(...)`. `load_config` fails the whole load on a bad list
-   (`:128-141`) and `main` exits 0 leaving the state untouched (`:404-407`), so the fail-soft
-   contract holds. The recorded deviation over my proposed character sets is implemented
-   exactly as the Resolution line says. Pinned by I4's four checks
-   (`test_quiet_hours.sh:542-566`), verified present and matching the claims. The unquoted
-   word-splitting at the use sites (`:363,:367`) is safe: tokens are allowlisted (no leading
-   dash, no glob characters, line-based parsing rules out newlines) and every
-   `kubectl`/`systemctl` argument is quoted (`:301,:325,:332,:348`); in-flight job names from
-   `get jobs -o name` are DNS labels by k8s naming rules and are quoted at delete (`:332`).
-2. "B-11 test check interpolates repo file paths into a python -c string" —
-   **VERIFIED FIXED.** `test/scripts/test_installer.sh:122` passes the path via
-   `sys.argv[1]`; nothing from the tree is interpolated into the `-c` string.
+**The two Resolution lines:** both **VERIFIED FIXED** against the tree, pinned by I4's four
+checks (`test_quiet_hours.sh:542-566`), verified present and matching the claims. Allowlist
+verification confirmed (both validators reject `--foo`, `-foo`, `foo-`, `;`, quotes, `$(...)`;
+`load_config` fails the whole load on a bad list; `main` exits 0 leaving the state untouched,
+so the fail-soft contract holds; the recorded deviation over the proposed character sets is
+implemented exactly as the Resolution says); the unquoted word-splitting at the use sites is
+safe (tokens allowlisted, every `kubectl`/`systemctl` argument quoted, in-flight job names
+quoted at delete). B-11 passes the path via `sys.argv[1]`; nothing from the tree is
+interpolated into the `-c` string. Full verification detail: `## Archive`.
 
-**Fix-round surface (new since the first review):**
-- **Namespace precedence.** Provenance marker captured at source time
-  (`quiet-hours/quiet-hours.sh:38-39`); the config key applies only when the env var did not
-  set the namespace (`:148-150`); env > config key > default. The module detects in
-  `$K8S_NAMESPACE` (`modules/21-quiet-hours.sh:65`, always set: `install.sh:20` sources
-  `config/defaults.conf:14`) and writes the same value into the config (`:116`); `status`
-  displays the resolved namespace (`quiet-hours/project-tv-quiet-hours:205`). I3 pins all
-  three precedence paths, each in a fresh `bash -c` with `$CORE`/`$CONF` as positional
-  arguments, nothing interpolated (`test_quiet_hours.sh:522-540`). Side benefit: a malformed
-  `K8S_NAMESPACE` in `defaults.conf` (e.g. `--foo`) now fails detection at install time and is
-  rejected by the load-time validation, so it can no longer reach kubectl at runtime.
-- **Override carry-over.** The module reads the last `QUIET_OVERRIDE=` line of the old config,
-  honours only a clean 0/1, writes it back, and prints the carry-over note in the summary
-  (`modules/21-quiet-hours.sh:86-93,115,131-133`); the `|| true` at `:89` keeps the grep safe
-  under the installer's pipefail. I2 pins three checks (`test_quiet_hours.sh:476-502`).
-  Shadow's re-review nit on the same code (the regex does not trim, unlike the core's
-  trim-then-validate, so a hand-edited trailing space makes the two disagree) is a behavioural
-  consistency issue reachable only by root hand-edit; tracked in `## Review`, not duplicated
-  here.
-- **`QUIET_HOURS_CONF_PATH` hook.** `${QUIET_HOURS_CONF_PATH:-/etc/project-tv/quiet-hours.conf}`
-  (`modules/21-quiet-hours.sh:80`), documented in the module header (`:12-13`); every use is
-  quoted (`:88,103,104,120`), so a hostile value is a literal path, not a command. The trust
-  boundary is the installer's invoker (root), who already owns the machine; item 10's
-  competing-priorities note records the surface. No escalation.
-- **Section I harness.** The module sandbox stubs `log_cmd` to record without executing
-  (`test_quiet_hours.sh:422-442`), so `install`/`mkdir`/`systemctl` never touch the host;
-  real writes stay in the `mktemp` scratch dir; the `ask_number` stub is fed by a
-  test-controlled answer file. I5 `eval`s function bodies extracted verbatim from
-  `install.sh` (`:571-574`); the eval target is the file under test, and push access to the
-  repo already buys arbitrary root code through `run_module`'s source (`install.sh:121`), so
-  the harness adds no new ceiling. I6's functional branch writes and runs a scratch script in
-  which only `$WORK` (mktemp output) is interpolated (`:627-655`).
-- **install.sh and run_tests.sh.** The backfill (`install.sh:57-75`) and status totality
-  (`:87-101`) touch only fixed `MODULE_ORDER` numbers and fixed status words; the
-  skip-preservation branch (`:121-130`) sits in conditional context and is `set -e` safe.
-  `test/run_tests.sh` adds a 4-line VM invocation block identical in shape to its neighbours;
-  no new surface (the pre-existing `StrictHostKeyChecking=no` toward the throwaway VM was
-  noted in the first review).
-- **Units and CLI.** `project-tv-quiet-hours.{service,timer}` are unchanged and contain no
-  secrets or env material; the CLI's `CORE_PATH` fallback
-  (`quiet-hours/project-tv-quiet-hours:89-92,141-155`) executes only the path
-  `core_script_path` resolved, under a `-f` guard.
+**Fix-round surface (new since the first review):** re-analyzed clean apart from the one new
+`low` below. Namespace precedence (env > config key > default, provenance marker captured at
+source time; I3 pins all three paths in fresh `bash -c` runs, nothing interpolated); override
+carry-over (clean 0/1 only, `|| true` keeps the grep safe under the installer's pipefail; I2
+pins three checks; Shadow's re-review nit on the untrimmed regex is tracked in `## Review`,
+not duplicated here); the `QUIET_HOURS_CONF_PATH` hook (every use quoted, so a hostile value is
+a literal path, not a command; trust boundary is the root installer invoker; no escalation);
+the section I harness (stubbed `log_cmd` records without executing; I5's `eval` target is the
+file under test, which push access already reaches via `run_module`'s source, so the harness
+adds no new ceiling; I6's functional branch interpolates only `$WORK`); `install.sh` and
+`run_tests.sh` (backfill and status totality touch only fixed `MODULE_ORDER` numbers and fixed
+status words; skip-preservation branch in conditional context, `set -e` safe; the 4-line VM
+invocation block is identical in shape to its neighbours); units and CLI (unchanged, no
+secrets or env material; `CORE_PATH` executed only under a `-f` guard). Side benefit confirmed:
+a malformed `K8S_NAMESPACE` in `defaults.conf` (e.g. `--foo`) now fails detection at install
+time and is rejected by load-time validation, so it can no longer reach kubectl at runtime.
+Full per-item surface analysis: `## Archive`.
 
 **Credential audit (this round):** full read of all nine task files plus the pattern sweep
 above; no credential material in any of them. The password-file pattern audit is outside this
@@ -1128,50 +726,33 @@ not committed, no credential material).
 | credential audit (DoD) | 192.168.1.107 password absent from doc and task files | PASS | `grep -Fqf ~/pass.txt` (pattern-from-file, `-q`, nothing printed) over the planning doc and all 7 task files: clean |
 | installer option visibility (DoD) | option in help/usage, default 20:00-07:00, override commands, configurable hours | PASS | CLI `usage` rc 0 shows the 20:00-07:00 default, `status`/`enable`/`disable`, and reboot persistence; `MODULE_DESC[21]` present (structural H3); `MODULE_ORDER` ends in 21 (`install.sh:51`, structural H4); module prompts take 0-23 with defaults 20/7 (`modules/21-quiet-hours.sh:31-32`) |
 
-**Checks requested vs run:** 7 requested (compile, linter, quiet-hours unit suite, installer
-regression, full VM run, credential audit, installer option visibility), 6 executed, 1 skipped
-with explicit reasons (full VM run). No other check was dropped; nothing was reduced silently.
+**Checks requested vs run (run 1):** 7 requested (compile, linter, quiet-hours unit suite,
+installer regression, full VM run, credential audit, installer option visibility), 6 executed,
+1 skipped with explicit reasons (full VM run). No other check was dropped; nothing was reduced
+silently.
 
-**Harness bug found (pre-existing, demonstrated):** `test/scripts/test_installer.sh` exits 0 when
-checks fail. The script ends with the results `echo` (`test/scripts/test_installer.sh:151-152`)
-and never exits on `$FAIL`, unlike `test_quiet_hours.sh:411`. Demonstrated 2026-09-08: run against
-an empty directory yields 9 of 12 `not ok` and exit code 0. Any wrapper that checks the exit code
-(the `ssh ... | tee` pipeline in `run_tests.sh` under `set -euo pipefail` would abort the whole
-orchestrator the moment this script started telling the truth) sees a green suite. Fix is one line,
-`[[ "$FAIL" == "0" ]]` at the end; include it in the item 10 round so it ships in the release
-commit. Pre-existing: the file predates this task, which only changed the B-11 line 119.
-**Resolution (Tails, 2026-09-08):** fixed in `ad185f7e` (`git hash-object
-test/scripts/test_installer.sh`), working tree on `task-0020-quiet-hours` (uncommitted).
-`[[ "$FAIL" == "0" ]]` appended after the results echo. Demonstrated: the empty-directory run
-now reports 9 `not ok` and exits 1 (previously 0); the in-tree run is 12/12 rc 0. The
-`run_tests.sh` `set -euo pipefail` + `ssh | tee` interaction is now fail-fast by design: a
-failing suite aborts the orchestrator at the failing step instead of reporting green, so no
-`run_tests.sh` change was needed.
+**Harness bug found (pre-existing, demonstrated, fixed in item 10):** `test/scripts/test_installer.sh`
+exited 0 when checks fail — the script ends with the results `echo` (`test/scripts/test_installer.sh:151-152`)
+and never exits on `$FAIL`, unlike `test_quiet_hours.sh:411`. Demonstrated: run against an empty
+directory yields 9 of 12 `not ok` and exit code 0, so the `ssh ... | tee` pipeline in `run_tests.sh`
+under `set -euo pipefail` sees a green suite. Fix (one line, shipped in the release commit):
+`[[ "$FAIL" == "0" ]]` at the end; the empty-directory run now exits 1, the in-tree run is 12/12
+rc 0, and the pipeline is fail-fast by design, so no `run_tests.sh` change was needed.
+Pre-existing: the file predates this task, which only changed the B-11 line 119. Demonstration
+and resolution detail: `## Archive`.
 
-**Coverage gaps vs the review findings (input to item 10):** the committed suite does not yet
-exercise any of Shadow's four should-fix scenarios: the namespace lost between install and runtime
-(no test feeds a namespace into the config), module re-run resetting a live override, the
-start==end guard bypassed by leading-zero input, and the in-place-upgrade trap in
-`get_module_status` (`install.sh:76-83`). Omega low 1 (target-list allowlist) is also untested;
-no section D case feeds an injection token such as `--foo` into a list value. The fix round should
-add a regression check for each fix where unit-testable (at minimum the start==end normalisation
-and the namespace persistence) so the fixes stay fixed.
-**Resolution (Tails, 2026-09-08):** fixed in `569befc3` (`git hash-object
-test/scripts/test_quiet_hours.sh`), working tree on `task-0020-quiet-hours` (uncommitted). New
-section I adds 24 regression checks (plan `1..94` → `1..118`): all four should-fix scenarios
-(leading-zero start==end, namespace persistence, override carry-over, in-place upgrade), Omega
-low 1 (allowlist, incl. empty-list acceptance), and the three nits (now_hour gone, trigger_now
-repo-layout fallback via a functional harness, mkdir through log_cmd). Suite: 118/118 ok, rc 0,
-on the team host 2026-09-08.
+**Coverage gaps vs the review findings (fixed in item 10):** the pre-fix suite exercised none of
+Shadow's four should-fix scenarios (namespace lost between install and runtime, module re-run
+resetting a live override, start==end guard bypassed by leading-zero input, in-place-upgrade
+trap in `get_module_status`) nor Omega low 1 (no section D case feeds an injection token such as
+`--foo` into a list value). New section I (24 checks, plan `1..94` → `1..118`) pins all of them
+plus the three nits; suite 118/118 ok, rc 0, on the team host 2026-09-08. Detail: `## Archive`.
 
-**Verdict:** PASS for plan item 9 as far as it can run on this tree: every executable check is
-green, the TAP counts match their plans exactly, no check was silently dropped, and the credential
-audit is clean. The tree under test is pre-fix. Shadow's 4 should-fix + 3 nits (`## Review`) and
-Omega's 2 low findings (`## Security`) are not resolved here and are not yet pinned by tests (see
-coverage gaps); they drive the item 10 round. The full VM run is skipped with explicit reasons and
-remains a gate after the fixes. The test run itself found no code bug in the quiet-hours
-deliverables; the only defect found is the `test_installer.sh` exit-code harness bug, which is a
-harness bug (Big's finding, one-line fix, lands in item 10 with the rest).
+**Verdict (run 1, pre-fix tree):** PASS for plan item 9 as far as it can run on this tree: every
+executable check is green, the TAP counts match their plans exactly, no check was silently
+dropped, and the credential audit is clean. The test run found no code bug in the quiet-hours
+deliverables; the only defect found was the `test_installer.sh` exit-code harness bug above
+(Big's finding, one-line fix, lands in item 10). Superseded by run 2 (post-fix) below.
 
 **Run 2 (2026-09-08, post-fix verification of the item 10 tree, plan item 9 re-run)**
 
@@ -1306,4 +887,613 @@ user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-09-08 | `## Status`: two resolved unknowns (HDD activity sources; pre-existing uncommitted changes) → chunk 1 | ~14 lines |
+| 2026-09-08 | `## Plan`: assumptions A1-A6 (all resolved by item 1) → chunk 1 | ~16 lines |
+| 2026-09-08 | `## Plan`: planned item-1 command list (superseded by the executed list in `## Implementation`) → chunk 2 | ~38 lines |
+| 2026-09-08 | `## Plan`: work breakdown, dependencies, critical path, estimates, planned validation checklist (all executed, merged) → chunk 3 | ~80 lines |
+| 2026-09-08 | `## Implementation`: interim 20:14-20:3x measurement notes + executed command list (superseded by the formal in-window sample; gate verdict kept) → chunk 4 | ~16 lines |
+| 2026-09-08 | `## Implementation`: item 5a first-run 87/94 detail (test-side bug found and fixed; 94/94 kept) → chunk 4 | ~3 lines |
+| 2026-09-08 | `## Implementation`: item 10 checks-run detail + duplicated "blob shas provisional" note (counts kept; re-confirmed in `## Test Results` run 2) → chunk 4 | ~27 lines |
+| 2026-09-08 | `## Review`: full text of the 7 closed findings, compressed to one-line resolutions (fixed, shipped in the merged sha, pinned by section I) → chunks 5a-5b | ~148 lines |
+| 2026-09-08 | `## Review`: Shadow re-review method + per-finding VERIFIED FIXED enumeration (verdict kept) → chunk 6 | ~90 lines |
+| 2026-09-08 | `## Security`: full text of the 2 closed low findings, compressed (fixed, shipped, pinned) → chunk 7a | ~28 lines |
+| 2026-09-08 | `## Security`: Omega re-review Resolution-line verifications + fix-round surface analysis (compressed verdicts kept) → chunk 7b | ~60 lines |
+| 2026-09-08 | `## Test Results`: run-1 narrative (harness bug, coverage gaps, run-1 verdict; both run tables and all counts kept) → chunk 8 | ~44 lines |
+
+### Chunk 1 — resolved `## Status` unknowns and `## Plan` assumptions A1-A6
+
+**`## Status`, Unknowns (both resolved 2026-09-08):**
+- (Resolved 2026-09-08, evidence in `## Implementation` item 1) HDD activity sources on the
+  12T pool: `plocate-updatedb.timer` (daily 00:18 full-library walk, the largest scheduled
+  contributor), `sanoid.timer` (daily ~00:00 snapshot pass; hourly runs verified no-ops), and the
+  `jellyfin-library-refresh` CronJob (hourly, 4s incremental scan). All three sit inside the
+  window and are quiable; target list `QUIET_K8S_CRONJOBS="jellyfin-library-refresh"`,
+  `QUIET_SYSTEMD_UNITS="sanoid.timer plocate-updatedb.timer"` (plocate added via the gate's
+  extension clause). Playback dominates the pool (~253MB read in 88 min during TV viewing) and
+  stays loud by the PM decision above; if the user finds that insufficient it is a new decision,
+  not a fix.
+- (Resolved 2026-09-07, PM) Pre-existing uncommitted changes: verified mode-only, 755 to 644 on
+  7 files, zero content lines (`git diff --summary` on the project checkout). Restored by
+  Tails' item 2 (tree == HEAD, guard satisfied); Knuckles still verifies no mode bit leaks into
+  the release commit.
+
+**`## Plan`, Assumptions (recorded 2026-09-07, all resolved by item 1):**
+- A1. 192.168.1.107 is the k8s media server. Conflict: `CLAUDE.md:117` says the deployment target is
+  `vector` / 192.168.1.191. The PM's `## Status` names 192.168.1.107 and is binding for the
+  investigation target; item 1's gate commands verify the role. If they fail, item 1 stops and reports.
+- A2. The top HDD I/O sources in the quiet window are the two scheduled sources above. Unverified until
+  item 1 samples I/O in-window. If the top source is EPGStation live recording or Jellyfin streaming
+  itself, the only mechanisms that stop it break playback or recording: per the PM decision the
+  trade-off is surfaced before implementation and the cycle returns to `Amy`.
+- A3. `sshpass` exists (or is installable via `dnf`) on the team host. Unverified; item 1 checks and
+  records the fallback used.
+- A4. The 7 mode-only local changes are accidental. Evidence above; the project's own B-01 test fails
+  on them. If the user objects at release, Knuckles stops and consults (PM decision).
+- A5. The production host's timezone is Asia/Tokyo (`config/defaults.conf:6`, module 01), so it has no
+  DST; DST correctness is still unit-tested per DoD.
+- A6. `howard` can read kubectl/zfs/journal output directly or via read-only sudo. Unverified; item 1
+  records any permission denial as a limitation rather than working around it.
+
+_(end of chunk 1: status-unknowns-and-plan-assumptions)_
+
+### Chunk 2 — `## Plan`, item 1 planned read-only investigation command list (superseded by the executed list in `## Implementation`)
+
+**Item 1 — read-only investigation command list** (run on 192.168.1.107 as `howard`; credential from
+`~/pass.txt` on the team host, passed only via `SSHPASS` env var to `sshpass -e`, never on any command
+line, never in this doc, commit, or log. Read-only commands only; no sudo unless a read-only command is
+permission-denied as `howard`, in which case sudo with the same credential and the exact sudoed command
+is recorded. The I/O sample (section 3) must straddle a top-of-hour inside the user's reported window
+(20:00-07:00 local) so the hourly CronJob and sanoid fire during the sample):
+
+```
+# 1. Identity gate (A1): is this the media server?
+hostname
+head -3 /etc/os-release
+kubectl get nodes -o wide
+kubectl get pods -A --no-headers | head -40
+
+# 2. Storage topology and scrub state
+zpool status
+zfs list -o name,mountpoint,used | head -20
+grep -E ' sda | sdb ' /proc/diskstats
+
+# 3. I/O attribution, 3-minute per-process sample straddling :00, in-window
+command -v pidstat iotop sysstat
+pidstat -d 5 36
+# fallbacks if sysstat absent: iotop -b -n 3 -d 60 -o, or two /proc/[0-9]*/io snapshots 60s apart
+# diffed for read_bytes/write_bytes per pid
+
+# 4. What is scheduled
+systemctl list-timers --all --no-pager
+kubectl -n project-tv get cronjobs
+kubectl -n project-tv get cronjob jellyfin-library-refresh -o jsonpath='{.spec.schedule} {.spec.suspend}'
+kubectl -n project-tv get jobs -o wide
+
+# 5. Per-component confirmation (last 12h)
+kubectl -n project-tv logs deploy/jellyfin --since=12h --tail=2000 | grep -iE 'scanning|refresh|library' | tail -25
+journalctl -u sanoid.service --since "12h ago" --no-pager | tail -30
+zfs list -t snapshot -o name,creation | tail -20
+kubectl -n project-tv logs deploy/epgstation --since=12h --tail=2000 | grep -iE 'record' | tail -25
+df -h /var/lib/project-tv /mnt 2>/dev/null
+```
+
+_(end of chunk 2: plan-item1-planned-command-list)_
+
+### Chunk 3 — `## Plan`, work breakdown, dependencies, critical path, estimates, and planned validation checklist (all executed and merged; results in `## Test Results`, `## Security`, `## Release`)
+
+**Work breakdown** — one agent finishes one item in one turn; sequential dispatch per AGENTS.md §3.
+
+| # | Item | Owner agent | Acceptance criterion | Parallel with |
+|---|---|---|---|---|
+| 1 | Read-only production investigation per the command list above; record findings, exact commands run, and gate verdict in `## Implementation`; credential via `SSHPASS` env only; verify after the fact with `grep -Ff ~/pass.txt` on this doc (pattern-from-file, never argv) | `Tails` | Findings name the top-3 HDD I/O sources with command evidence; gate verdict (PASS / STOP-trade-off / STOP-identity) recorded; zero write commands used (verifiable from the recorded command list); password absent from doc, verified by the grep above | Independent of 2 (remote vs local); on the critical path before 3 |
+| 2 | Restore the 7 mode-only bits (`chmod +x` on the 7 files listed in Verified local facts) and create branch `task-0020-quiet-hours` from `origin/main`; guard: `git diff --stat` on those 7 files is empty and `git status` shows no content changes before any task commit; record in `## Implementation` | `Tails` | Working tree matches HEAD except this task's files; B-01 of `test_installer.sh` passes in-tree | Independent of 1; must land before item 3's first commit |
+| 3 | Core script `quiet-hours/quiet-hours.sh`: window calc (start inclusive, end exclusive, wrap-aware; start==end treated as full 24h defensively), config parse with fail-soft, state machine, apply/release with per-step error isolation, env-overridable paths (`QUIET_HOURS_CONF`, `QUIET_HOURS_STATE`) for tests | `Tails` | `bash -n` passes; functions sourceable without side effects; no secret material in the file | After 1 (target list confirmed) and 2 |
+| 4 | CLI `quiet-hours/project-tv-quiet-hours` (`status`/`enable`/`disable`/usage with the 20:00-07:00 default visible) + systemd units `quiet-hours/project-tv-quiet-hours.{service,timer}` (15-min timer, oneshot, runs once at boot) | `Tails` | `bash -n` passes; usage output shows the default window; units contain the required `[Unit]/[Service]/[Timer]/[Install]` sections | After 3; independent of 5a |
+| 5a | TAP unit tests in new `test/scripts/test_quiet_hours.sh`: window matrix (20-07 wrap, 10-14 no-wrap, boundary inclusivity), DST cases with fixed timestamps under `TZ=America/New_York` (spring-forward and fall-back 2026) and `TZ=Europe/Berlin` plus `TZ=Asia/Tokyo` control, override state machine with stubbed apply/release (enable outside window, disable, reboot simulation with reset state file, config parse error, failed apply step leaves state file unchanged) | `Tails` | All TAP lines `ok`; zero silently dropped checks; runs on the team host without a VM | After 3 |
+| 5b | Structural tests appended to `test_quiet_hours.sh` (module 21 file exists and defines `run()`, `MODULE_DESC[21]` and `21` in `MODULE_ORDER` in `install.sh`, quiet-hours files present, `bash -n` on all changed files, CLI usage shows the default) + one invocation line in `test/run_tests.sh` (file has the mode-only local change; content edit is this task's) | `Tails` | Full TAP file passes in-tree; `run_tests.sh` line placed next to the other script invocations (`test/run_tests.sh:98-106` pattern) | After 4 |
+| 6 | Installer module `modules/21-quiet-hours.sh` + `install.sh` wiring (`MODULE_DESC[21]`, `MODULE_ORDER` append, prompt range `(0-20)`→`(0-21)` at `install.sh:234`) | `Tails` | Module appears in the module menu listing; prompts default to 20/7; decline path marks the module skipped; kubectl-missing path warns and skips k8s targets; re-run overwrites cleanly | After 5b (reviews see the final tree) |
+| 7 | Review: code review, findings in `## Review` | `Shadow` | No unresolved blocker/should-fix | After 6; fixed sequence 7→8→9 per AGENTS.md §3 |
+| 8 | Security review: no credentials in any changed file, config/state file permissions, root-only CLI, license check on added code (all original, no third-party code introduced), findings in `## Security` | `Omega` | No unresolved findings above `low` | After 7 |
+| 9 | Test run: `test_quiet_hours.sh` on the team host, `test_installer.sh` in-tree (regression, B-01 included), `bash -n` on all changed files; full `run_tests.sh` VM run at Big's discretion (recorded if skipped); verdicts in `## Test Results` | `Big` | All requested checks PASS with counts; any dropped check named explicitly | After 8 |
+| 10 | Fix round for findings (only if 7/8/9 found something) | `Tails` | Each finding resolved with a sha in its Resolution line | Contingent branch off 7/8/9 |
+| 11 | Docs: `README.md` quiet-hours section (option, 20:00-07:00 default, override commands, in-window behaviour, reboot behaviour, uninstall), `docs/ja/README.md` kept in sync (repo convention, `CLAUDE.md:234`), `CLAUDE.md` module order + common tasks updated; table in `## Docs` | `Vector` | English and Japanese sections present and consistent; `## Docs` table complete | After 10 (or 9 if no fixes) |
+| 12 | Release: verify tree contains only this task's files (`git status --short`, `git diff --stat` on the 7 files empty), commit per-file (`git add <file>`, never `git add -A`) with `TASK-0020:` prefix, PR to `metalllinux/project-tv-rocky-linux-edition` (internal account, no human gate per AGENTS.md §8), verify PR diff contains only this task's files, merge, record sha + `git ls-remote origin main` in `## Release`; planning-doc update committed to team-chaotix (gated by its `Static Checks` + `Secret Scan Self` CI) | `Knuckles` | PR merged; `## Release` filled; user's 7 mode bits absent from every commit (`git show --stat` on the release commits shows only task files) | After 11 |
+
+**Dependencies and sequence.** Genuinely ordered: 1→3 (the gate confirms the target list), 3→4→5b→6,
+6→7→8→9 (fixed review-trio sequence, AGENTS.md §3), 9→10→11→12. Item 10 is contingent, not sequential:
+it runs only on findings. Item 2 is independent of 1 (local vs remote) and item 4 is independent of 5a;
+with one inference slot the order of independent items is free along the critical path, so they are
+listed above in a sensible order, not a mandate.
+
+**Critical path:** 1 → 3 → 4 → 5b → 6 → 7 → 8 → 9 → 11 → 12 (item 10 branches off 7/8/9 when needed;
+items 2 and 5a sit off the path).
+
+**Estimates** (agent turns, three-point, `T = (O + 4M + P) / 6`):
+
+| # | O | M | P | T |
+|---|---|---|---|---|
+| 1 | 1 | 2 | 4 | 2.2 |
+| 2 | 1 | 1 | 2 | 1.2 |
+| 3 | 2 | 3 | 5 | 3.2 |
+| 4 | 1 | 2 | 3 | 2.0 |
+| 5a | 2 | 3 | 6 | 3.3 |
+| 5b | 1 | 1 | 2 | 1.2 |
+| 6 | 1 | 2 | 3 | 2.0 |
+| 7 | 1 | 2 | 3 | 2.0 |
+| 8 | 1 | 2 | 3 | 2.0 |
+| 9 | 1 | 2 | 4 | 2.2 |
+| 10 | 0 | 1 | 3 | 1.3 (contingent) |
+| 11 | 1 | 2 | 3 | 2.0 |
+| 12 | 1 | 2 | 4 | 2.2 |
+
+Total ≈ 26.8 turns expected (≈25 median). Buffer +30% for window scheduling (item 1 must wait for an
+in-window top-of-hour slot), review rounds, and 32k turn-cap truncation retries (AGENTS.md §14):
+**plan at 35 agent turns.**
+
+**Validation (planned):**
+- Syntax: `bash -n` on `install.sh`, `modules/21-quiet-hours.sh`, `quiet-hours/quiet-hours.sh`,
+  `quiet-hours/project-tv-quiet-hours`, `test/scripts/test_quiet_hours.sh`, `test/run_tests.sh` (item 9).
+- Unit/structural: `test/scripts/test_quiet_hours.sh` all `ok` on the team host, no VM needed (item 9).
+- Regression: `test/scripts/test_installer.sh` in-tree, 12/12 including B-01 after item 2 (item 9).
+- Investigation audit: the command list recorded in `## Implementation` contains only the read-only
+  commands from item 1's list (or their recorded sudo variants); DoD "No production changes" is verified
+  from that list, not by assertion.
+- Credential audit: `grep -Ff ~/pass.txt` over the doc returns nothing (item 1 post-check, re-run by
+  Knuckles before push); `Secret Scan Self` CI green on the planning-doc push.
+- Human look: the PR file list (Knuckles shows `git diff --stat` of the merge), the README quiet-hours
+  section (user-facing wording), and the investigation findings (the user's own hypothesis about
+  Jellyfin is confirmed or refuted there).
+
+_(end of chunk 3: plan-work-breakdown-and-validation)_
+
+### Chunk 4 — `## Implementation` pruned detail (superseded by the formal in-window sample, the final regression counts, and `## Test Results` run 2)
+
+**Item 1, interim measurement (superseded by the formal in-window sample kept in the section):**
+`grep -E ' sd[a-z]+ ' /proc/diskstats` snapshots at 20:14:32, 20:27:54 and 20:3x show **identical sda/sdb counters** — zero I/O to the media pool for 13.5+ minutes, spanning the 20:00 hourly event. Lifetime counters since the ~18:14 reboot: ~155MB read / ~13MB written to the pool (boot-time jellyfin library validation + the 18:50 plocate warm-cache walk). **Interim conclusion:** every scheduled pool I/O source in the window is either negligible (4s scan) or once-a-day (~00:00 sanoid, ~00:18 plocate), all quiable; the user's hypothesis "Jellyfin (container)" is confirmed as the *scan* source but the scan itself is 4 seconds, and playback is the only large pool reader and is out of scope by the PM decision. The formal in-window top-of-hour sample straddling 22:00 records the per-process evidence.
+
+**Item 1, exact commands run (remote, as `howard@192.168.1.107`; all read-only; no sudo was ever needed, A6 resolved):**
+- Identity: `hostname`; `head -3 /etc/os-release`; `kubectl get nodes -o wide`; `kubectl get pods -A --no-headers | head -40`
+- Tooling/baseline: `command -v pidstat iotop`; `grep -E ' sd[a-z]+ ' /proc/diskstats` (3 times); `pidstat -d 5 12` (60s post-20:00 sample)
+- Process identity: `ps -o pid,ppid,uid,user,etime,comm -p 13016,13455,14440`; `cat /proc/13016/cgroup /proc/13455/cgroup /proc/14440/cgroup`
+- Storage: `zpool status`; `zfs list -o name,mountpoint,used | head -25`; `zfs list -t snapshot -o name,creation | tail -15`; `df -h /var/lib/project-tv /mnt/vector`
+- Scheduled: `systemctl list-timers --all --no-pager | head -30`; `kubectl -n project-tv get cronjobs`; `kubectl -n project-tv get cronjob jellyfin-library-refresh -o jsonpath='{.spec.schedule} {.spec.suspend} {.spec.concurrencyPolicy}'`; `kubectl -n project-tv get jobs -o wide`
+- Components: `kubectl -n project-tv logs deploy/jellyfin --since=12h --tail=2000 | grep -iE 'scanning|refresh|library' | tail -25`; `journalctl -u sanoid.service --since "12h ago" --no-pager | tail -25`; `journalctl -u plocate-updatedb.service --since "18:00" --no-pager | tail -12`; `kubectl -n project-tv logs deploy/epgstation --since=12h --tail=3000 | grep -iE 'record' | tail -20`; `kubectl -n project-tv logs deploy/epgstation --since=2h --tail=3000 | grep -E '2026-09-07 20:' | tail -15`; `kubectl -n project-tv logs deploy/tubearchivist --since=2h --tail=300 | tail -15`; `kubectl -n project-tv logs deploy/tubearchivist --since=6h --tail=2000 | grep -iE 'download|process|import' | tail -10`
+- Topology: `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`; `cat /proc/diskstats`; `cat /etc/sanoid/sanoid.conf`; `stat -c '%y %n' /etc/sanoid/sanoid.conf`; `cat /etc/plocate.ignore` (→ no such file); `ls -la /var/lib/plocate/`; `ls -ld /mnt/mediapool /mnt/mediapool/youtube`; `df -h /mnt/mediapool`
+- Volume maps: `kubectl -n project-tv get deploy jellyfin -o jsonpath='{range .spec.template.spec.volumes[*]}{.name}={.hostPath.path}{"\n"}{end}'`; same for `epgstation`
+- File activity: `find /mnt/vector/tv /mnt/vector/live_shows -type f -mmin -120 | head -15`; `find /mnt/vector/tv /mnt/vector/live_shows -type f -mtime -1 | head -15`; `find /mnt/vector/tv -type f -printf '%TY-%Tm-%Td %TH:%TM %p\n' | sort -r | head -8`; `ls -lt /mnt/vector/tv | head -8`
+- **Extension of section 5 (recorded, per A2):** read-only MariaDB queries inside the mariadb pod to answer "is anything scheduled to record tonight": `kubectl -n project-tv get secret mariadb-secret -o jsonpath=...` (values kept in remote shell vars, never printed), then `printf '%s\n' "$PW" | kubectl -n project-tv exec -i deploy/mariadb -- mysql -u epgstation -p epgstation -e '...'` running only `SHOW TABLES`, `SHOW COLUMNS FROM reserve; SHOW COLUMNS FROM recorded`, `SELECT COUNT(*) FROM reserve`, `SELECT COUNT(*) FROM recorded`, and column-limited `SELECT ... LIMIT` on `reserve`/`recorded`. No `INSERT/UPDATE/DELETE/CREATE/ALTER/DROP` anywhere.
+- **Credential handling:** the howard password was passed only as `SSHPASS` env to `sshpass -e`; the MariaDB password only via the mysql client's stdin password prompt; neither value appears in any command line, file, or log. Post-hoc `grep -Ff ~/pass.txt` over this doc: run after the final verdict.
+
+**Item 5a, first in-tree run (superseded by the 94/94 final count kept in the section):** first in-tree run 87/94, 7 failures — all in H (module 21 and install.sh wiring not yet written, expected) plus one real bug: C-NY-spring check 33 failed because the test overwrote `E_EPOCH` (06:30 UTC) with 07:30 UTC before the check ran. Fixed by deleting the stray duplicate assignment (test bug, not core bug — the core was never at fault).
+
+**Item 10, checks run (all on the team host, 2026-09-08; counts kept in the section, re-confirmed in `## Test Results` run 2):**
+- `bash -n` on all 7 changed files: 7/7 PASS.
+- shellcheck 0.10.0 `-S warning` on the same 7 files: no new findings; the only remaining hits
+  are the two already classified in `## Review` (SC1090 dynamic source in `install.sh`, SC2120
+  on `load_config` — the test suite passes arguments from another file); SC2034 (`now_hour`) is
+  gone. Two warnings introduced mid-round (SC2034 on a dead `QUIET_K8S_NAMESPACE` global,
+  2× SC1007 on empty-env prefixes in the test) were found and fixed before the final run.
+- `test/scripts/test_quiet_hours.sh "$PWD"`: **118/118 ok**, rc 0, plan `1..118` matches,
+  0 `not ok` (was 94/94 pre-fix; +24 = section I). TAP kept at
+  `/tmp/opencode/task0020-quiet-hours-item10.tap` (team host, not committed).
+- `test/scripts/test_installer.sh "$PWD"`: **12/12 ok**, rc 0. Exit-code fix demonstrated:
+  empty-directory run → 9 `not ok`, **rc 1** (previously 0). TAP kept at
+  `/tmp/opencode/task0020-installer-item10.tap`.
+- Hand verification of the in-place upgrade: a status file with entries 00-20 →
+  `get_module_status 21` rc 0 `pending`; `init_status` backfills exactly one `21:pending`;
+  `set_module_status 21 completed` round-trips; the call survives under `set -e`.
+- Hand verification of the module sandbox (the same stubs section I uses): 7/07 re-prompt fires
+  once and the config gets normalised 7/8; a re-run carries `QUIET_OVERRIDE=1` and prints the
+  carry-over note; `K8S_NAMESPACE=media` lands in the config and in the kubectl detection call;
+  both mkdirs appear in the `log_cmd` record.
+- Credential audit: `grep -Fqf ~/pass.txt` over the 7 task files and this doc: clean.
+- Tree purity: `git status --short` shows only this task's paths (`M install.sh`,
+  `M test/run_tests.sh`, `M test/scripts/test_installer.sh`, `?? modules/21-quiet-hours.sh`,
+  `?? quiet-hours/`, `?? test/scripts/test_quiet_hours.sh`); `git diff --summary` empty (no
+  mode-bit drift).
+
+**Item 10, competing-priorities note (duplicated by the item 10 intro kept in the section):** the
+blob shas are provisional; they identify the working-tree content exactly, but item 12's commit
+supersedes them; every `Resolution:` line says so.
+
+_(end of chunk 4: implementation-pruned-detail)_
+
+### Chunk 5a — `## Review`, full text of closed findings 1-4 (should-fix; fixed in item 10, shipped in the merged sha, pinned by section I)
+
+### k8s namespace is lost between install and runtime
+**Severity:** should-fix
+**Where:** `modules/21-quiet-hours.sh:56`; `quiet-hours/quiet-hours.sh:28,97-102`
+**Problem:** the module detects the CronJob target in the installer-configurable
+`$K8S_NAMESPACE` (`config/defaults.conf:14`), but the config it writes has no namespace key and
+the core only reads `QUIET_HOURS_NAMESPACE` from the environment (default `project-tv`), which
+the systemd service never sets.
+**Failure scenario:** user sets `K8S_NAMESPACE="media"` in `config/defaults.conf` (supported
+customization; module 04 creates that namespace) and runs a fresh install. Detection succeeds in
+`media` and the CronJob is written into the config. Every tick the core then patches the CronJob
+in `project-tv`, where it does not exist: the patch fails, the state file never advances, the
+systemd units churn stop/start with a journal line every 15 minutes, and the real CronJob in
+`media` keeps scanning hourly. The primary target is never silenced and `status` reports
+permanent out-of-sync.
+**Suggested direction:** persist the namespace in the config (new key, honoured by
+`load_config`) or emit a service drop-in with `Environment=QUIET_HOURS_NAMESPACE=` at install
+time, so detection and runtime read the same value.
+**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`) + `0ad1fdb0`
+(`git hash-object quiet-hours/quiet-hours.sh`), working tree on `task-0020-quiet-hours`
+(uncommitted; item 12's release commit supersedes the blob shas). Chose the config key over the
+drop-in: one source of truth the CLI `status` can display, and a later config edit of the
+CronJob list stays consistent with its namespace. The module writes
+`QUIET_K8S_NAMESPACE=${K8S_NAMESPACE}`; `load_config` applies it to `QUIET_HOURS_NAMESPACE`
+only when the env var did not set it (precedence: env test override > config key > default
+`project-tv`, via a provenance marker captured at source time), and validates it as a DNS-1123
+label. Pinned: section I checks "module persists the detection namespace", "detection ran
+kubectl in the configured namespace", "core resolves the namespace from the config key",
+"env QUIET_HOURS_NAMESPACE wins over the config key", "namespace defaults to project-tv".
+
+### Module re-run silently resets a live override
+**Severity:** should-fix
+**Where:** `modules/21-quiet-hours.sh:78-90`
+**Problem:** re-running the module regenerates `/etc/project-tv/quiet-hours.conf` with
+`QUIET_OVERRIDE=0` unconditionally, discarding a live override set by the CLI.
+**Failure scenario:** user runs `project-tv-quiet-hours enable` (per the DoD the override
+persists until `disable`, including reboots). Later the user re-runs module 21 (a supported
+flow; the installer tracks per-module status precisely for re-runs). The config is rewritten
+with `QUIET_OVERRIDE=0`, the forced quiet ends with no disable command, and nothing in the
+module output mentions it.
+**Suggested direction:** read the existing `QUIET_OVERRIDE` from the old config before
+overwriting and write it back; mention the carry-over in the install summary.
+**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
+on `task-0020-quiet-hours` (uncommitted). The module reads the old config's last
+`QUIET_OVERRIDE=` line before rewriting (only a clean 0/1 is honoured; anything else starts
+fresh at 0, matching the core's own flag validation), writes it back, and the summary prints a
+"kept on from the previous install" line when it is 1. Pinned: section I checks "re-run carries
+a live QUIET_OVERRIDE=1", "re-run applies the new window (20/7)", "mentions the override
+carry-over in the summary".
+
+### start==end guard is bypassed by leading-zero input
+**Severity:** should-fix
+**Where:** `modules/21-quiet-hours.sh:33`
+**Problem:** the equality check compares `ask_number` string output, but `ask_number`
+(`lib/prompts.sh:82-87`) accepts leading-zero hours ("07" passes its range test as octal 7) and
+echoes them verbatim, so "7" and "07" compare as different hours.
+**Failure scenario:** user enters start `7` and end `07` (or vice versa). No re-prompt fires,
+the config gets start=end=7, and the core treats `start == end` as a full 24-hour window
+(`quiet-hours.sh:123-125`). The CronJob stays suspended and sanoid/plocate stay stopped
+permanently while the user believes a bounded night window was configured.
+**Suggested direction:** normalise both values before comparing, e.g.
+`(( 10#$start_hour == 10#$end_hour ))`.
+**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
+on `task-0020-quiet-hours` (uncommitted). The guard now compares
+`(( 10#$start_hour == 10#$end_hour ))` exactly as suggested, and both values are additionally
+normalised after the loop (`start_hour=$((10#$start_hour))`), so the config holds plain decimal
+hours ("07" no longer reaches the config file). Pinned: section I checks "leading-zero input
+(7 vs 07) trips the re-prompt" and "config gets the normalised window (7/8, no leading zeros)".
+
+### In-place upgrade kills the installer on the new module number
+**Severity:** should-fix
+**Where:** `install.sh:76-83` (`get_module_status`), `install.sh:57-63` (`init_status`), call sites `install.sh:128,164,179`
+**Problem:** adding `21` to `MODULE_ORDER` exposes a pre-existing trap: when the status file
+has no line for a module, `get_module_status` returns grep's rc 1 (the `grep | cut` pipeline
+under `set -o pipefail` at `install.sh:9`), and `init_status` only seeds entries when the file
+is absent.
+**Failure scenario:** a host installed with a pre-TASK-0020 repo has `logs/.install-status`
+holding entries 00-20. The user updates the checkout in place and re-runs the installer:
+`status=$(get_module_status "21")` (module menu `install.sh:164`, status view `install.sh:128`,
+full install `install.sh:179`) hits the missing line and `set -e` exits the installer. Every
+use of menu options 2/3 and every full install dies. The new `run_module` branch
+(`install.sh:106`) is in a conditional context and is unaffected.
+**Suggested direction:** make `get_module_status` return 0 with empty output when no line
+matches, or have `init_status` append entries for modules missing from an existing file.
+**Resolution:** fixed in `d6bdc59a` (`git hash-object install.sh`), working tree on
+`task-0020-quiet-hours` (uncommitted). Both suggested directions applied, because neither alone
+closes the finding: `init_status` backfills missing `MODULE_ORDER` entries into an existing
+status file (the root fix: `main` calls it before any menu/status path), and
+`get_module_status` is now total (missing line reads as `pending` with rc 0, so no call site can
+trip `set -e` even if the file is hand-edited later). Note: "empty output" was implemented as
+"echo `pending`" instead, because the call sites treat both identically and an explicit status
+word keeps the function's contract (always echo a status) intact. Verified by hand: a 00-20
+status file upgrades cleanly, `21:pending` is backfilled, `21:completed` round-trips. Pinned:
+section I checks "missing status line reads as pending with rc 0", "init_status backfills the
+new module into the old file", "status is recorded for the new module after the backfill".
+
+_(end of chunk 5a: review-findings-1-4)_
+
+### Chunk 5b — `## Review`, full text of closed findings 5-7 (nits; fixed in item 10, shipped in the merged sha, pinned by section I)
+
+### `now_hour` is dead and can raise an arithmetic error
+**Severity:** nit
+**Where:** `quiet-hours/project-tv-quiet-hours:157`
+**Problem:** `now_hour` is computed but never used (shellcheck SC2034); if
+`local_tz_hour` ever returns empty, `$((10#))` raises an arithmetic error to stderr in the
+middle of `status` output.
+**Failure scenario:** `status` on a host where `date -d` fails (broken `/etc/localtime`):
+`bash: 10#: value too great for base` interleaves into the status output; the value is unused
+regardless.
+**Suggested direction:** delete the variable; `cur_state` already carries the current state.
+**Resolution:** fixed in `e81b634d` (`git hash-object quiet-hours/project-tv-quiet-hours`),
+working tree on `task-0020-quiet-hours` (uncommitted). Variable and its assignment deleted from
+`next_transition`; `cur_state` already carries the state. SC2034 no longer fires (shellcheck
+re-run, item 10). Pinned: section I check "dead now_hour is gone from the CLI".
+
+### `trigger_now` fallback ignores the repo-layout core path
+**Severity:** nit
+**Where:** `quiet-hours/project-tv-quiet-hours:142`
+**Problem:** the immediate-apply fallback re-derives the core script as
+`${QUIET_HOURS_LIB:-/usr/local/lib/project-tv/quiet-hours.sh}` instead of reusing
+`core_script_path`, which also resolves the repository layout next to the CLI.
+**Failure scenario:** the CLI is run from a repo checkout on a host with nothing installed
+(the exact structural-test layout): `systemctl start` fails (no unit) and the fallback runs
+the nonexistent `/usr/local` path, so `enable`/`disable` always end in the 15-minute warning
+even though the core script sits next to the CLI.
+**Suggested direction:** have `load_core` remember the resolved core path and `trigger_now`
+execute it.
+**Resolution:** fixed in `e81b634d` (`git hash-object quiet-hours/project-tv-quiet-hours`),
+working tree on `task-0020-quiet-hours` (uncommitted). `load_core` records the resolved path in
+`CORE_PATH` and `trigger_now` executes it (with a `-f` guard, so a stale `QUIET_HOURS_LIB`
+falls through to the 15-minute warning instead of a broken exec), replacing the
+`${QUIET_HOURS_LIB:-/usr/local/lib/project-tv/quiet-hours.sh}` literal. Pinned: section I
+checks "trigger_now fallback uses the resolved core path (CORE_PATH)" (structural), "runs the
+core directly when the unit is absent" and "executed the resolved repo-layout core" (functional
+harness: the CLI functions are extracted next to a stand-in core that logs its own path, and a
+stubbed `systemctl` refuses the unit).
+
+### Two `mkdir -p` calls bypass `log_cmd`
+**Severity:** nit
+**Where:** `modules/21-quiet-hours.sh:70,77`
+**Problem:** every other state-changing command in the module goes through `log_cmd`; the two
+`mkdir -p` calls do not, so the install log has no "Running:" line for them.
+**Failure scenario:** `/usr/local` is unwritable (read-only filesystem): `mkdir` fails, the
+installer dies under `set -e`, and the log shows only the last successful command with no
+record of what failed.
+**Suggested direction:** route the `mkdir` calls through `log_cmd` like their neighbours.
+**Resolution:** fixed in `205554f6` (`git hash-object modules/21-quiet-hours.sh`), working tree
+on `task-0020-quiet-hours` (uncommitted). Both `mkdir -p` calls now go through `log_cmd`; the
+config-directory one targets `$(dirname "$conf_path")`, where `conf_path` defaults to
+`/etc/project-tv/quiet-hours.conf` and is overridable via `QUIET_HOURS_CONF_PATH` (test-suite
+hook, documented in the module header; production behaviour unchanged). Pinned: section I
+checks "lib-directory mkdir is routed through log_cmd" and "config-directory mkdir is routed
+through log_cmd".
+
+_(end of chunk 5b: review-findings-5-7)_
+
+### Chunk 6 — `## Review`, Shadow re-review method and per-finding verdicts (verdicts kept in the section)
+
+**Method.** Verified against the working tree at `/home/howard/Linux/projects/project_tv_rocky_linux`
+(the dispatch brief's `/home/home/...` path is a typo; the doc's path is the real one), branch
+`task-0020-quiet-hours`, tip `b892a70`, tree uncommitted (`git status`: 3 modified
+[`install.sh`, `test/run_tests.sh`, `test/scripts/test_installer.sh`] + 3 untracked task paths;
+`git diff --summary` empty, no mode-bit drift). All seven task files read in full. Per-finding
+verification is by direct content inspection at the cited lines. Re-run this round: `bash -n`
+7/7 PASS on all seven changed files; `shellcheck -S warning` on the same seven, with only the
+hits already classified in the first review (SC1090 `install.sh:121` dynamic source, SC2120
+`quiet-hours/quiet-hours.sh:79` and `quiet-hours/project-tv-quiet-hours:54` — false positives,
+the callers pass arguments); SC2034 for `now_hour` is gone. TAP plan verified statically:
+`test_quiet_hours.sh:19` declares `1..118`; per-section check-site count is A 30, B 2, C 14,
+D 8, E 17, F 2, G 4, H 17 (= 94, the pre-fix plan) + section I 24
+(`test_quiet_hours.sh:444-662`) = 118. Section I's I6 block branches on whether
+`/usr/local/lib/project-tv/quiet-hours.sh` exists, but both branches emit exactly two checks, so
+the plan holds on any host. Limitations of this re-review: `git hash-object` is not in this
+agent's permitted command set, so the blob shas in the item 10 changes table were not
+independently recomputed (content verification stands in for them); the two suites were not
+re-run here, so the 118/118 and 12/12 rc 0 results stand on Tails' recorded runs (item 10,
+`## Implementation`).
+
+**Verdicts on the 11 closed findings:**
+
+1. "k8s namespace is lost between install and runtime" — **VERIFIED FIXED.** The module detects
+   with `$K8S_NAMESPACE` (`modules/21-quiet-hours.sh:65`) and writes the same value into the
+   config (`modules/21-quiet-hours.sh:116`); `K8S_NAMESPACE` is always set because `install.sh:20`
+   sources `config/defaults.conf:14`. The core captures env provenance at source time
+   (`quiet-hours/quiet-hours.sh:38-39`) and `load_config` applies the config key only when the
+   env var did not set it, after a DNS-1123 label check
+   (`quiet-hours/quiet-hours.sh:142-151`). Precedence env > config key > default holds as
+   claimed. `status` displays the resolved namespace
+   (`quiet-hours/project-tv-quiet-hours:205`). Pinned by I3's five checks
+   (`test_quiet_hours.sh:509-540`).
+2. "Module re-run silently resets a live override" — **VERIFIED FIXED**, with one new nit below.
+   The module reads the old config's last `QUIET_OVERRIDE=` line
+   (`modules/21-quiet-hours.sh:88-93`), honours only a clean 0/1, writes it back
+   (`modules/21-quiet-hours.sh:115`), and the summary prints the carry-over line
+   (`modules/21-quiet-hours.sh:131-133`). Pinned by I2's three checks
+   (`test_quiet_hours.sh:488-502`).
+3. "start==end guard is bypassed by leading-zero input" — **VERIFIED FIXED.** The guard compares
+   `(( 10#$start_hour == 10#$end_hour ))` (`modules/21-quiet-hours.sh:40`) and both values are
+   normalised after the loop (`modules/21-quiet-hours.sh:47-48`), so a leading-zero hour never
+   reaches the config. Pinned by I1 (`test_quiet_hours.sh:447-459`).
+4. "In-place upgrade kills the installer on the new module number" — **VERIFIED FIXED.**
+   `init_status` backfills missing `MODULE_ORDER` entries into an existing status file
+   (`install.sh:63-74`) and `main` calls it before the menu loop (`install.sh:245`);
+   `get_module_status` is total, a missing line reads as `pending` with rc 0
+   (`install.sh:91-97`), so no call site (`install.sh:124,146,182,197`) can trip `set -e`.
+   Pinned by I5's three checks (`test_quiet_hours.sh:576-600`), which simulate exactly the
+   pre-upgrade 00-20 file.
+5. "`now_hour` is dead and can raise an arithmetic error" — **VERIFIED FIXED** as stated; the
+   same failure class survives at one live site, logged as a new nit below. `now_hour` has no
+   occurrence left in the 259-line CLI and SC2034 no longer fires. Pinned by I7
+   (`test_quiet_hours.sh:657-662`).
+6. "`trigger_now` fallback ignores the repo-layout core path" — **VERIFIED FIXED.** `load_core`
+   records the resolved path in `CORE_PATH` (`quiet-hours/project-tv-quiet-hours:89-92`) and
+   `trigger_now` executes it under a `-f` guard, with no `/usr/local` literal left in the
+   fallback (`quiet-hours/project-tv-quiet-hours:141-155`). Pinned by I6
+   (`test_quiet_hours.sh:602-655`), structural on hosts with an installed copy, functional
+   (stand-in core + refusing `systemctl` stub) otherwise.
+7. "Two `mkdir -p` calls bypass `log_cmd`" — **VERIFIED FIXED.** Both calls route through
+   `log_cmd` (`modules/21-quiet-hours.sh:96,103`); the config-directory one targets
+   `$(dirname "$conf_path")` with the documented `QUIET_HOURS_CONF_PATH` test hook
+   (`modules/21-quiet-hours.sh:80`). Pinned by I1's two mkdir checks
+   (`test_quiet_hours.sh:465-474`). The adjacent `chmod 0644 "$conf_path"`
+   (`modules/21-quiet-hours.sh:120`) also bypasses `log_cmd`, but a chmod failure on a file the
+   module just created is not a realistic scenario, so it is noted here, not raised as a
+   finding.
+8. `## Security` "Config target lists flow into systemctl/kubectl without allowlist
+   validation" — **VERIFIED FIXED.** `valid_cronjob_list` uses the full DNS-1123 label form and
+   `valid_unit_list` forbids a leading dash (`quiet-hours/quiet-hours.sh:60-72`); both reject
+   the attack token `--foo` (a dash is not in either first-character class) while accepting the
+   legitimate multi-target lists and empty lists. `load_config` fails the whole load on a bad
+   value (`quiet-hours/quiet-hours.sh:128-147`) and `main` exits 0 leaving the current state
+   (`quiet-hours/quiet-hours.sh:404-407`), so the documented fail-soft contract holds. The
+   recorded deviation over Omega's proposed character sets is implemented exactly as described
+   in the Resolution line. Pinned by I4's four checks (`test_quiet_hours.sh:542-566`).
+9. `## Security` "B-11 test check interpolates repo file paths into a python -c string" —
+   **VERIFIED FIXED.** The path now goes via `sys.argv[1]`
+   (`test/scripts/test_installer.sh:122`); nothing from the tree is interpolated into the
+   `-c` string.
+10. `## Test Results` harness bug — **VERIFIED FIXED.** `[[ "$FAIL" == "0" ]]` is the final
+    statement (`test/scripts/test_installer.sh:161`), so the suite's exit code now carries the
+    result and the `run_tests.sh` `ssh | tee` pipeline under `set -euo pipefail` aborts on a
+    failing suite. The `test/run_tests.sh` diff is only the quiet-hours VM-run wiring
+    (4 lines), consistent with item 10's "unchanged this round".
+11. `## Test Results` coverage gaps — **VERIFIED FIXED.** Section I
+    (`test_quiet_hours.sh:409-662`) pins all four should-fix scenarios, Omega low 1, and all
+    three nits; its 24 checks take the plan from `1..94` to `1..118`
+    (`test_quiet_hours.sh:19`), matching the static count above.
+
+_(end of chunk 6: shadow-rereview-method-and-verdicts)_
+
+### Chunk 7a — `## Security`, full text of the two closed low findings (fixed in item 10, shipped in the merged sha, pinned by section I)
+
+### Config target lists flow into systemctl/kubectl without allowlist validation
+**Severity:** low
+**Vector:** input-validation
+**Where:** `quiet-hours/quiet-hours.sh:97-102` (lists stored verbatim), `quiet-hours/quiet-hours.sh:299` (`systemctl "$action" "$unit"`), `quiet-hours/quiet-hours.sh:252-253,276-288` (kubectl patch/list/delete)
+**Attack:** a root-equivalent actor edits `/etc/project-tv/quiet-hours.conf` (root:root 0644, only root can write it) and sets `QUIET_SYSTEMD_UNITS="--foo bar.timer"` or a `QUIET_K8S_CRONJOBS` value containing spaces. The root timer service then word-splits the value and passes the attacker's tokens to `systemctl`/`kubectl`: argument injection into the 15-minute root run.
+**Impact:** none beyond what the actor already holds. Writing the config requires root, and root can already run arbitrary `systemctl`/`kubectl`; this is defense-in-depth, not a privilege escalation. It matters for the future: the plan makes the target list a growing named contract, and a later module or user edit could supply less-controlled values.
+**Fix:** in `load_config`, validate each list value against an allowlist before accepting it (CronJob names: k8s DNS-1123 `[a-z0-9-]+`; unit names: `[A-Za-z0-9._:@-]+`), failing the whole load exactly like an invalid hour does, so a bad value fails soft to the current state.
+**Resolution:** fixed in `0ad1fdb0` (`git hash-object quiet-hours/quiet-hours.sh`), working tree
+on `task-0020-quiet-hours` (uncommitted). `load_config` validates both lists and the new
+namespace key, failing the whole load exactly like an invalid hour. One refinement over the
+suggested character sets, recorded so it is seen as deliberate: the attack token `--foo` itself
+matches both proposed classes (the dash is inside `[a-z0-9-]+` and `[A-Za-z0-9._:@-]+`), so
+CronJob names use the full DNS-1123 label form (alphanumeric first and last) and unit names must
+not start with a dash. Empty lists (no targets) stay valid, because the module writes them when
+nothing is detected. Pinned: section I checks "unit list with an option token is rejected",
+"cronjob list with an option token is rejected", "malformed namespace is rejected", "empty
+target lists are accepted".
+
+### B-11 test check interpolates repo file paths into a python -c string
+**Severity:** low
+**Vector:** injection
+**Where:** `test/scripts/test_installer.sh:119`
+**Attack:** a contributor with push access to `metalllinux/project-tv-rocky-linux-edition` adds a manifest whose filename contains a single quote plus python, e.g. `manifests/x'); import os; os.system('id').yaml` (`find -name '*.yaml'` still matches it). When the suite runs, the assembled command `python3 -c "import yaml; list(yaml.safe_load_all(open('<path>')))"` executes the injected statement as the test-runner user (team-host user or `testuser` in the VM).
+**Impact:** code execution on whatever machine runs the test suite. Does not raise the attacker's ceiling: the same push access can already ship a malicious installer module, which `run_module` sources and executes as root (`install.sh:103`). The interpolation pattern is pre-existing; this diff only changed `safe_load` to `list(safe_load_all(...))` on the same line.
+**Fix:** pass the path via argv instead of string-building: `python3 -c "import sys, yaml; list(yaml.safe_load_all(open(sys.argv[1])))" "$yaml"`.
+**Resolution:** fixed in `ad185f7e` (`git hash-object test/scripts/test_installer.sh`), working
+tree on `task-0020-quiet-hours` (uncommitted). B-11 now passes the path via `sys.argv[1]`
+exactly as suggested; in-tree run 12/12 rc 0.
+
+_(end of chunk 7a: security-two-low-findings)_
+
+### Chunk 7b — `## Security`, Omega re-review: original Resolution-line verifications and fix-round surface analysis (compressed verdicts kept in the section)
+
+**The two Resolution lines (original detail):**
+1. "Config target lists flow into systemctl/kubectl without allowlist validation" —
+   **VERIFIED FIXED.** `valid_cronjob_list` (`quiet-hours/quiet-hours.sh:60-63`) is the full
+   DNS-1123 label form (alphanumeric first and last per token, space-separated, empty valid)
+   and `valid_unit_list` (`:69-72`) forbids a leading dash; both reject `--foo`, `-foo`,
+   `foo-`, `;`, quotes, and `$(...)`. `load_config` fails the whole load on a bad list
+   (`:128-141`) and `main` exits 0 leaving the state untouched (`:404-407`), so the fail-soft
+   contract holds. The recorded deviation over my proposed character sets is implemented
+   exactly as the Resolution line says. Pinned by I4's four checks
+   (`test_quiet_hours.sh:542-566`), verified present and matching the claims. The unquoted
+   word-splitting at the use sites (`:363,:367`) is safe: tokens are allowlisted (no leading
+   dash, no glob characters, line-based parsing rules out newlines) and every
+   `kubectl`/`systemctl` argument is quoted (`:301,:325,:332,:348`); in-flight job names from
+   `get jobs -o name` are DNS labels by k8s naming rules and are quoted at delete (`:332`).
+2. "B-11 test check interpolates repo file paths into a python -c string" —
+   **VERIFIED FIXED.** `test/scripts/test_installer.sh:122` passes the path via
+   `sys.argv[1]`; nothing from the tree is interpolated into the `-c` string.
+
+**Fix-round surface (original per-item analysis, new since the first review):**
+- **Namespace precedence.** Provenance marker captured at source time
+  (`quiet-hours/quiet-hours.sh:38-39`); the config key applies only when the env var did not
+  set the namespace (`:148-150`); env > config key > default. The module detects in
+  `$K8S_NAMESPACE` (`modules/21-quiet-hours.sh:65`, always set: `install.sh:20` sources
+  `config/defaults.conf:14`) and writes the same value into the config (`:116`); `status`
+  displays the resolved namespace (`quiet-hours/project-tv-quiet-hours:205`). I3 pins all
+  three precedence paths, each in a fresh `bash -c` with `$CORE`/`$CONF` as positional
+  arguments, nothing interpolated (`test_quiet_hours.sh:522-540`). Side benefit: a malformed
+  `K8S_NAMESPACE` in `defaults.conf` (e.g. `--foo`) now fails detection at install time and is
+  rejected by the load-time validation, so it can no longer reach kubectl at runtime.
+- **Override carry-over.** The module reads the last `QUIET_OVERRIDE=` line of the old config,
+  honours only a clean 0/1, writes it back, and prints the carry-over note in the summary
+  (`modules/21-quiet-hours.sh:86-93,115,131-133`); the `|| true` at `:89` keeps the grep safe
+  under the installer's pipefail. I2 pins three checks (`test_quiet_hours.sh:476-502`).
+  Shadow's re-review nit on the same code (the regex does not trim, unlike the core's
+  trim-then-validate, so a hand-edited trailing space makes the two disagree) is a behavioural
+  consistency issue reachable only by root hand-edit; tracked in `## Review`, not duplicated
+  here.
+- **`QUIET_HOURS_CONF_PATH` hook.** `${QUIET_HOURS_CONF_PATH:-/etc/project-tv/quiet-hours.conf}`
+  (`modules/21-quiet-hours.sh:80`), documented in the module header (`:12-13`); every use is
+  quoted (`:88,103,104,120`), so a hostile value is a literal path, not a command. The trust
+  boundary is the installer's invoker (root), who already owns the machine; item 10's
+  competing-priorities note records the surface. No escalation.
+- **Section I harness.** The module sandbox stubs `log_cmd` to record without executing
+  (`test_quiet_hours.sh:422-442`), so `install`/`mkdir`/`systemctl` never touch the host;
+  real writes stay in the `mktemp` scratch dir; the `ask_number` stub is fed by a
+  test-controlled answer file. I5 `eval`s function bodies extracted verbatim from
+  `install.sh` (`:571-574`); the eval target is the file under test, and push access to the
+  repo already buys arbitrary root code through `run_module`'s source (`install.sh:121`), so
+  the harness adds no new ceiling. I6's functional branch writes and runs a scratch script in
+  which only `$WORK` (mktemp output) is interpolated (`:627-655`).
+- **install.sh and run_tests.sh.** The backfill (`install.sh:57-75`) and status totality
+  (`:87-101`) touch only fixed `MODULE_ORDER` numbers and fixed status words; the
+  skip-preservation branch (`:121-130`) sits in conditional context and is `set -e` safe.
+  `test/run_tests.sh` adds a 4-line VM invocation block identical in shape to its neighbours;
+  no new surface (the pre-existing `StrictHostKeyChecking=no` toward the throwaway VM was
+  noted in the first review).
+- **Units and CLI.** `project-tv-quiet-hours.{service,timer}` are unchanged and contain no
+  secrets or env material; the CLI's `CORE_PATH` fallback
+  (`quiet-hours/project-tv-quiet-hours:89-92,141-155`) executes only the path
+  `core_script_path` resolved, under a `-f` guard.
+
+_(end of chunk 7b: security-rereview-resolution-and-surface)_
+
+### Chunk 8 — `## Test Results`, run-1 original narrative (compressed summaries kept in the section)
+
+**Checks requested vs run (original):** 7 requested (compile, linter, quiet-hours unit suite,
+installer regression, full VM run, credential audit, installer option visibility), 6 executed,
+1 skipped with explicit reasons (full VM run). No other check was dropped; nothing was reduced
+silently.
+
+**Harness bug found (original, pre-existing, demonstrated):** `test/scripts/test_installer.sh` exits 0 when
+checks fail. The script ends with the results `echo` (`test/scripts/test_installer.sh:151-152`)
+and never exits on `$FAIL`, unlike `test_quiet_hours.sh:411`. Demonstrated 2026-09-08: run against
+an empty directory yields 9 of 12 `not ok` and exit code 0. Any wrapper that checks the exit code
+(the `ssh ... | tee` pipeline in `run_tests.sh` under `set -euo pipefail` would abort the whole
+orchestrator the moment this script started telling the truth) sees a green suite. Fix is one line,
+`[[ "$FAIL" == "0" ]]` at the end; include it in the item 10 round so it ships in the release
+commit. Pre-existing: the file predates this task, which only changed the B-11 line 119.
+**Resolution (Tails, 2026-09-08):** fixed in `ad185f7e` (`git hash-object
+test/scripts/test_installer.sh`), working tree on `task-0020-quiet-hours` (uncommitted).
+`[[ "$FAIL" == "0" ]]` appended after the results echo. Demonstrated: the empty-directory run
+now reports 9 `not ok` and exits 1 (previously 0); the in-tree run is 12/12 rc 0. The
+`run_tests.sh` `set -euo pipefail` + `ssh | tee` interaction is now fail-fast by design: a
+failing suite aborts the orchestrator at the failing step instead of reporting green, so no
+`run_tests.sh` change was needed.
+
+**Coverage gaps vs the review findings (original, input to item 10):** the committed suite does not yet
+exercise any of Shadow's four should-fix scenarios: the namespace lost between install and runtime
+(no test feeds a namespace into the config), module re-run resetting a live override, the
+start==end guard bypassed by leading-zero input, and the in-place-upgrade trap in
+`get_module_status` (`install.sh:76-83`). Omega low 1 (target-list allowlist) is also untested;
+no section D case feeds an injection token such as `--foo` into a list value. The fix round should
+add a regression check for each fix where unit-testable (at minimum the start==end normalisation
+and the namespace persistence) so the fixes stay fixed.
+**Resolution (Tails, 2026-09-08):** fixed in `569befc3` (`git hash-object
+test/scripts/test_quiet_hours.sh`), working tree on `task-0020-quiet-hours` (uncommitted). New
+section I adds 24 regression checks (plan `1..94` → `1..118`): all four should-fix scenarios
+(leading-zero start==end, namespace persistence, override carry-over, in-place upgrade), Omega
+low 1 (allowlist, incl. empty-list acceptance), and the three nits (now_hour gone, trigger_now
+repo-layout fallback via a functional harness, mkdir through log_cmd). Suite: 118/118 ok, rc 0,
+on the team host 2026-09-08.
+
+**Verdict (original, run 1):** PASS for plan item 9 as far as it can run on this tree: every
+executable check is green, the TAP counts match their plans exactly, no check was silently
+dropped, and the credential audit is clean. The tree under test is pre-fix. Shadow's 4
+should-fix + 3 nits (`## Review`) and Omega's 2 low findings (`## Security`) are not resolved
+here and are not yet pinned by tests (see coverage gaps); they drive the item 10 round. The full
+VM run is skipped with explicit reasons and remains a gate after the fixes. The test run itself
+found no code bug in the quiet-hours deliverables; the only defect found is the
+`test_installer.sh` exit-code harness bug, which is a harness bug (Big's finding, one-line fix,
+lands in item 10 with the rest).
+
+_(end of chunk 8: test-results-run1-narrative)_

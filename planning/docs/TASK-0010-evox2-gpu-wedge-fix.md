@@ -12,6 +12,27 @@
  *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
  stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-14 17:20 JST, Robotnik): review chain complete; Tails citation-refresh pass
+dispatched; user gate on F1 staged mitigations.** Shadow attempt 2 done (no new blockers;
+stale-citation nits routed to a Tails refresh pass). Omega attempt 3 done: F1 **high, open** —
+0.0.0.0:8093, CORS `*`, no API key (zero-auth LAN-wide DoS of the single inference slot); M1-M5
+staged, nothing applied; F2 low (11 stale firewall ports); escalation condition: if the router
+port-forwards 8093, F1 is critical (one-look user check). Omega's ssh probe was blocked by its
+bash allowlist, so live state rests on documented evidence (E1-E3 in `## Security`). Big done:
+5/5 re-verification checks PASS; monitor still running (final line at hard stop 22:44:43 JST).
+DoD gate NOT met: F1 open pending the user-approved window for M1 (unit change + service restart)
+/ M2 (firewalld pin).
+
+**Now (2026-09-14 15:15 JST, Robotnik): Omega attempt 2 LOST (zero writes again); attempt 3
+dispatches with mechanical write rules + narrow scope; doc checkpoint 7d8e59c.** Session
+`ses_f61985895…` ran 23 steps / 31 tool calls (all reads/greps, chunked per the brief), died on a
+100,951-token request with **zero doc edits** — the exhortation-only "write-first discipline" brief
+did not hold (same failure mode as attempt 1; lesson: this model defers all writes to a final pass).
+Attempt 3 brief is mechanical: first tool call MUST be an edit creating the attempt-3 subsection in
+`## Security`, at most 2 consecutive reads without an intervening write, scope narrowed to the live
+exposure surface + verifying the pre-existing `## Security` findings. Machine calm at 14:31: 0
+wedges since boot, 8093 listening (0.0.0.0).
+
 **Now (2026-09-14 14:31 JST, Robotnik): Omega attempt 2 dispatched (write-first discipline);
 machine calm.** 0 wedges since boot (17 h 01 m uptime, load 0.27), 8093 listening (0.0.0.0).
 Chain position: Shadow attempt 2 done (11:45), Omega attempt 1 lost (13:10 entry), Big next after
@@ -425,15 +446,23 @@ the PM reads.*
       /usr/local/bin/llama-server, wedge baseline 0 since boot; monitor pid 6647, log
       /tmp/wedge-monitor-20260913-224443.log, started 2026-09-13 22:44:43 JST, hard stop
       2026-09-14 22:44:43 JST; checkpoint in `## Implementation` ("W3 checkpoint").
-- [ ] `Shadow` → `Omega` → `Big`: sequential review chain after the window (fix round for
-      the 3 blockers + should-fixes first, then Big re-verifies the final evidence).
+- [x] `Shadow` → `Omega` → `Big` (2026-09-14): chain complete. Shadow attempt 2 done (no new
+      blockers); Omega attempt 3 done (F1 high open, M1-M5 staged in `## Security`; F2 low); Big
+      done (5/5 re-verification checks PASS, monitor still running). DoD gate pending F1 closure.
+- [ ] `Tails` (citation refresh pass): fix the stale line citations routed by Shadow's attempt-2
+      notes (doc-only, no machine change, no service actions); then one final `Shadow`
+      verification pass over the refresh.
+- [ ] `Robotnik`: check the 24 h monitor's final line after the hard stop (2026-09-14 22:44:43
+      JST, log /tmp/wedge-monitor-20260913-224443.log) before Knuckles.
 - [ ] `Vector`: update the `metalllinux/team-chaotix` README (EVO-X2 section) with the final
       root cause, fix status, and operational guidance (user requirement, 2026-09-12).
 - [ ] `Knuckles`: verify the DoD checklist is fully ticked, then commit the planning doc +
       README and push to `metalllinux/team-chaotix` (user requirement, 2026-09-12).
-- [ ] `Robotnik`: relay the staged solution + reverts to the user; on approval, schedule the
-      restart/reboot window (it kills in-flight opencode sessions; nothing dispatches during
-      it).
+- [ ] `Robotnik`: relay the staged solution + reverts to the user, now including Omega's M1-M5 in
+      `## Security`: F1 closure needs M1 (`--api-key` in the unit, service restart window) and
+      M2 (firewalld pin of 8093); also ask the user to check the router's 8093 port-forward
+      status (F1 escalation condition). On approval, schedule the restart window (it kills
+      in-flight opencode sessions; nothing dispatches during it).
 
 ---
 
@@ -733,7 +762,7 @@ approves ("live" = indicated by the T6 verdicts, "dormant" = only if earlier sta
 | 3. reboot-level, elrepo kernel 7.2.5 (live: H1 deciding test) | install the elrepo `kernel-ml` 7.2.5 keeping 7.0.12, set it default, reboot; the boot-parameter variant is not indicated from the record at hand (T3's classification governs) | `rpm -qa \| grep -E '^kernel' > /tmp/kernels.bak3.$(date +%s)`; `grub2-editenv list > /tmp/grubdefault.bak3` (current saved entry, recorded in this doc); `cp /etc/yum.repos.d/elrepo.repo /tmp/elrepo-kernel.repo.bak3` (resolved 2026-09-13: the repo file is `/etc/yum.repos.d/elrepo.repo`, the `[elrepo-kernel]` section, currently `enabled=0`; the host is BLS, so `grub2-editenv list` records `saved_entry=<BLS identifier>`) | enable the `[elrepo-kernel]` section of `/etc/yum.repos.d/elrepo.repo` (`enabled=0` -> `enabled=1`); `dnf install kernel-ml` (7.2.5; installonly keeps the old kernel; the kernel package creates the 7.2.5 BLS entry file); the host is BLS (no `menuentry` lines in `/boot/grub2/grub.cfg`; `GRUB_DEFAULT=saved`; `grubenv` holds `saved_entry`; verified 2026-09-13), so set the default by the exact BLS entry identifier, not a number: `N=$(ls /boot/loader/entries/*-7.2.5-1.el10.elrepo.x86_64.conf 2>/dev/null \| wc -l)` (must be 1 or stop); `BLSID=$(ls /boot/loader/entries/*-7.2.5-1.el10.elrepo.x86_64.conf \| head -1 \| xargs -n1 basename \| sed 's/\.conf$//')`; `grub2-set-default "$BLSID"`; `grub2-editenv list` (confirm `saved_entry=$BLSID`, the exact entry identifier); `reboot` | `uname -r` = `7.2.5-1.el10.elrepo.x86_64`; 24 h wedge count under the same workload on the new kernel | `OLDSAVED=$(grep '^saved_entry=' /tmp/grubdefault.bak3 \| cut -d= -f2-)` (the backup records the saved BLS identifier of the old default); `grub2-set-default "$OLDSAVED"` (valid: the old kernel's BLS file still exists, the old kernel was never removed); `grub2-editenv list` (confirm `saved_entry=$OLDSAVED`); `reboot`; `uname -r` = `7.0.12-1.el10.elrepo.x86_64`; restore the elrepo-kernel repo file (`/etc/yum.repos.d/elrepo.repo`) from its backup (or leave enabled, user's call) |
 | 4. distro switch (dormant: only if Stages 1-3 all fail and the T4 matrix forces it) | NixOS or Fedora reinstall (choice per the T4 record: Fedora 44 middle option, NixOS 26.05 last resort); redeploy model + user unit | full disk image to external storage: `dd if=<root-disk device> of=/mnt/<external>/evox2-$(date +%F).img bs=8M status=progress`; `sha256sum` of the image recorded in this doc | reinstall per the distro docs; redeploy model + user unit | 24 h wedge count + endpoint t/s within 20% of 11.87 | `dd if=/mnt/<external>/evox2-<date>.img of=<root-disk device>`; keep the image until the switch has run clean for 2 weeks |
 
-Rules carried from the plan (lines 337-339): the backup location is recorded in this section; the
+Rules carried from the plan (lines 547-549): the backup location is recorded in this section; the
 service is restarted only inside the window and never stopped outside it; the old kernel/rpm is
 never removed during the test window; Robotnik schedules the window with zero dispatches in
 flight. Every wedge inside a window counts toward the baseline (plan rollback section).
@@ -1527,8 +1556,8 @@ by the team.
 
 ### T6 adjudication (2026-09-13, Tails)
 
-Scope: read-only adjudication from `## Plan` (lines 259-376) and the T5-H2 repro-started
-checkpoint + outcome (lines 1244-1326). No remote commands run this turn; the session was kept
+Scope: read-only adjudication from `## Plan` (lines 469-584) and the T5-H2 repro-started
+checkpoint + outcome (lines 1461-1555). No remote commands run this turn; the session was kept
 small per the T5-H2 operational note. `llama-server-qwen3.8-27b-iq4xs.service` was never touched
 (zero team-initiated stops still hold: `grep -c "Stopped llama-server"` over the boot-0 user
 journal = 0, T5-H2 record). Wedge count at T6 start: **7** (boot 0, per the T5-H2 post-run state;
@@ -1541,9 +1570,9 @@ it to the fixes doc.
 |---|---|---|---|
 | H1 kernel / amdgpu `7.0.12-1.el10.elrepo` | **Undetermined; Stage 3 is the deciding test.** Neither matrix branch is met yet. | The T5b kernel signature (`ring comp_1.2.0 timeout ... Ring comp_1.2.0 reset succeeded ... device wedged, but recovered through reset`, T5-H2 outcome) is the same class as every prior wedge; whether it matches a known amdgpu gfx1151 bug is T3's classification (recorded in `## Implementation`, not re-read this turn). Both matrix branches (known-bug match; newer-kernel test) resolve only when Stage 3 runs. | Stage 3 (elrepo kernel 7.2.5, same workload, 24 h wedge count) is the H1 decider; it also re-tests the kernel power-management path of H5. |
 | H2 Mesa RADV userspace | **Partially supported.** A bounded non-llama RADV compute workload wedged the chip, but the matrix's strict supported-condition (llama.cpp out of the loop) was not met, and the excluded branch (clean run while llama wedges) was not met either. | T5-H2: h2_workload v3 (pure RADV, 100% busy, PPT pinned 100.0 W, ~19 TFLOPS FP32) in flight at wedge #7, 161 s (2.7 min) after start, the fastest cold-mode-class wedge recorded (hot-mode wedges are faster in absolute time, 5-77 s after task launch per T3, but a different regime); the kernel attributed the timed-out job to llama-server (pid 12170), not to h2_workload (pid 14058); the workload logged no Vulkan error and was killed by the watchdog, not a driver failure. | Stage 2 (Mesa update) is live. The H2/H3 split stays open; see the ambiguity note below. |
-| H3 llama.cpp version + flags | **Not excluded, not supported.** H3's exclusion rule fires only on a clean H2, which did not happen; the supported branch (wedge rate changes when a frozen flag or the version is varied) is untested and needs a window. | T5-H2: the hung job was llama-server's 95,903-token delta prefill against a 126,248-token context (hot mode), a job class that ran thousands of times in the safe regime without wedging; the correlation is with chip stress state, not a llama.cpp defect. `-fa on` is not toggleable (q8_0 V-cache requires flash-attn, Plan line 285); the frozen flags stay unchanged per the hard constraints. | Stage 1 (llama.cpp version bump or user-approved flag change inside a window) is the H3 decider. |
-| H4 systemd unit | **Excluded as a wedge cause** (by construction, Plan line 286: the unit manages lifecycle, it does not drive the GPU). Recovery behavior evaluated and acceptable. | T5-H2: the wedge-triggered restart was systemd's (04:16:10), model loaded 04:16:14, 8093 listening, restart counter 7; zero team-initiated stops over boot 0. | No Stage 1 unit edit indicated (5-11 s restarts are in the acceptable band); the unit stays as-is. |
-| H5 heat / power | **Excluded as an independent trigger.** | 0 thermal-throttling events in a 2 d 9 h window with `thermal_throttling_logging` enabled (Test Results row 2, line 1370; documented conclusion: rules out thermal throttling as trigger); the T5b wedge moment ran at edge 80-87 C, sclk 2700-2747 MHz, PPT pinned 100.0 W, with no throttle/fan event in the recorded outcome. Runtime knobs are exhausted (`low` rejected at 4.5x slower, Plan line 287). | The "sustained full power" aspect lives in the trigger sentence; if power management is implicated it is via the kernel (Stage 3), not a sysfs knob. |
+| H3 llama.cpp version + flags | **Not excluded, not supported.** H3's exclusion rule fires only on a clean H2, which did not happen; the supported branch (wedge rate changes when a frozen flag or the version is varied) is untested and needs a window. | T5-H2: the hung job was llama-server's 95,903-token delta prefill against a 126,248-token context (hot mode), a job class that ran thousands of times in the safe regime without wedging; the correlation is with chip stress state, not a llama.cpp defect. `-fa on` is not toggleable (q8_0 V-cache requires flash-attn, Plan line 495); the frozen flags stay unchanged per the hard constraints. | Stage 1 (llama.cpp version bump or user-approved flag change inside a window) is the H3 decider. |
+| H4 systemd unit | **Excluded as a wedge cause** (by construction, Plan line 496: the unit manages lifecycle, it does not drive the GPU). Recovery behavior evaluated and acceptable. | T5-H2: the wedge-triggered restart was systemd's (04:16:10), model loaded 04:16:14, 8093 listening, restart counter 7; zero team-initiated stops over boot 0. | No Stage 1 unit edit indicated (5-11 s restarts are in the acceptable band); the unit stays as-is. |
+| H5 heat / power | **Excluded as an independent trigger.** | 0 thermal-throttling events in a 2 d 9 h window with `thermal_throttling_logging` enabled (Test Results row 2, line 1370; documented conclusion: rules out thermal throttling as trigger); the T5b wedge moment ran at edge 80-87 C, sclk 2700-2747 MHz, PPT pinned 100.0 W, with no throttle/fan event in the recorded outcome. Runtime knobs are exhausted (`low` rejected at 4.5x slower, Plan line 497). | The "sustained full power" aspect lives in the trigger sentence; if power management is implicated it is via the kernel (Stage 3), not a sysfs knob. |
 
 **The T5b ambiguity (weighed).** The kernel attributed the timed-out job to llama-server's
 95,903-token delta prefill, which was running concurrently with the h2 workload pinned at
@@ -1556,10 +1585,10 @@ recovered ("recovered through reset"). (c) The delta-prefill job class has a cle
 safe regime, so its presence at the timeout moment is a stress correlation, not a code-path
 defect. Net: the evidence favors H2 (sustained RADV/compute stressor) with the H3 thread kept
 open, because a clean zero-llama split is impossible while any team session runs on the endpoint
-(T5-H2, lines 1318-1319). That is why the staged solution keeps Stage 1 and Stage 2 live and
+(T5-H2, lines 1547-1548). That is why the staged solution keeps Stage 1 and Stage 2 live and
 makes Stage 3 the kernel decider.
 
-**The one-sentence trigger.** (Confirmed and reworded per Plan lines 289-293 with the T5b
+**The one-sentence trigger.** (Confirmed and reworded per Plan lines 499-503 with the T5b
 correlation.) A single sustained full-power iGPU compute load at or near the 120 W cap, a ~201k
 cold prefill at 119-120 W for ~29 min on a fresh chip (`/tmp/run_end_repro201k_auto.txt`, rc=52,
 1760 s, 1 wedge) or a 100 W-pinned pure-compute plateau for 2.7 min on a chip with 6 prior
@@ -1570,7 +1599,7 @@ boot).
 
 **Distro answer.** Stay on Rocky 10. The kernel fix (7.2.5) is obtainable on Rocky via elrepo
 (per the dispatch brief; the T4 repoquery record sits in `## Implementation` and was not
-re-read this turn) and the Mesa update via dnf, so the T4 decision rule (Plan lines 303-305:
+re-read this turn) and the Mesa update via dnf, so the T4 decision rule (Plan lines 513-515:
 stay on Rocky if the winning fix is a kernel or Mesa version obtainable on Rocky) does not force
 a switch. Stage 4 is a dormant fallback, executed only if Stages 1-3 all fail.
 
@@ -1584,7 +1613,7 @@ nothing executes without a user-approved window with zero dispatches in flight).
 | 3. reboot-level, elrepo kernel 7.2.5 (live: H1 deciding test) | install the elrepo 7.2.5 kernel keeping 7.0.12, set it default, reboot; the boot-parameter variant is not indicated from the record at hand (T3's classification governs) | `rpm -qa \| grep -E '^kernel' > /tmp/kernels.bak3.$(date +%s)`; `grub2-editenv list > /tmp/grubdefault.bak3` (current saved entry, recorded in this doc) | `dnf install kernel-ml` (installonly keeps the old kernel; the kernel package creates the 7.2.5 BLS entry file); the host is BLS (no `menuentry` lines in `/boot/grub2/grub.cfg`; `GRUB_DEFAULT=saved`; verified 2026-09-13), so set the default by the exact BLS entry identifier, not a number: `N=$(ls /boot/loader/entries/*-7.2.5-1.el10.elrepo.x86_64.conf 2>/dev/null \| wc -l)` (must be 1 or stop); `BLSID=$(ls /boot/loader/entries/*-7.2.5-1.el10.elrepo.x86_64.conf \| head -1 \| xargs -n1 basename \| sed 's/\.conf$//')`; `grub2-set-default "$BLSID"`; `grub2-editenv list` (confirm `saved_entry=$BLSID`, the exact entry identifier); `reboot` | `uname -r` = `7.2.5-1.el10.elrepo.x86_64`; 24 h wedge count under the same workload on the new kernel | `OLDSAVED=$(grep '^saved_entry=' /tmp/grubdefault.bak3 \| cut -d= -f2-)` (the backup records the saved BLS identifier of the old default); `grub2-set-default "$OLDSAVED"`; `grub2-editenv list` (confirm `saved_entry=$OLDSAVED`); `reboot`; `uname -r` = `7.0.12-1.el10.elrepo.x86_64` (the old kernel was never removed; its BLS file still exists) |
 | 4. distro switch (dormant: only if Stages 1-3 all fail and the T4 matrix forces it) | NixOS or Fedora reinstall (choice per the T4 record); redeploy model + user unit | full disk image to external storage: `dd if=<root-disk-device-per-T1> of=/mnt/<external>/evox2-$(date +%F).img bs=8M status=progress`; `sha256sum` of the image recorded in this doc | reinstall per the distro docs; redeploy model + user unit | 24 h wedge count + endpoint t/s within 20% of 11.87 | `dd if=/mnt/<external>/evox2-<date>.img of=<root-disk-device>`; keep the image until the switch has run clean for 2 weeks |
 
-Rules carried from the plan (lines 337-339): backup locations are recorded in this section; the
+Rules carried from the plan (lines 547-549): backup locations are recorded in this section; the
 service is restarted only inside the window and never stopped outside it; the old kernel/rpm is
 never removed during the test window; Robotnik schedules the window with zero dispatches in
 flight. Stages run in whatever order the user approves; the verdict column marks which are live.
@@ -1593,7 +1622,7 @@ flight. Stages run in whatever order the user approves; the verdict column marks
 1. T6/T7 and every subsequent dispatch for this task runs in a fresh small-context session (one
    new opencode session per dispatch; the planning doc is the bus, AGENTS.md section 2).
 2. Each session keeps its context below the ~185k-token re-arm threshold (the recorded boundary:
-   the 126.5k re-arm completed clean, T5-H2 line 1324); a re-arm above ~185k is a 26-32 min
+   the 126.5k re-arm completed clean, T5-H2 line 1553); a re-arm above ~185k is a 26-32 min
    prefill that can itself wedge.
 3. Findings are checkpointed to this doc before any long remote wait, so a session killed by a
    wedge-triggered restart loses nothing (the T5b pattern: the checkpoint + /tmp artifacts were
@@ -1601,7 +1630,7 @@ flight. Stages run in whatever order the user approves; the verdict column marks
    so the re-arm cost scales with the session's context at the moment of the wedge.
 4. The wedge count is checked before and after every action: `journalctl -k --no-pager |
    grep -cE "device wedged"`; every wedge inside a window counts toward the baseline (Plan,
-   rollback, lines 362-369).
+   rollback, lines 572-579).
 
 **Checks run this turn:** none on the host (read-only per the brief; the session kept small per
 the T5-H2 operational note). No compile/lint/test applies (no code changed). The only change is
@@ -1633,9 +1662,9 @@ llama-server"` over the boot-0 user journal = 0).
   four stage rows. T7 corrections to the T6 draft cells, recorded (not silent): (a) Stage 3
   apply now includes the elrepo-kernel repo enable step and names the package `kernel-ml` (the
   T6 draft cell said `dnf install elrepo-kernel`, which is the repo name, not a package; the T4
-  record lines 1105-1114 establishes the package `kernel-ml 7.2.5-1.el10.elrepo` and that the
+  record lines 1331-1340 establishes the package `kernel-ml 7.2.5-1.el10.elrepo` and that the
   repo file is on the host but disabled); the repo file backup was added to Stage 3's backup
-  cell. (b) Stage 2 names the package `mesa-vulkan-drivers` explicitly (T1 record, line 828) and
+  cell. (b) Stage 2 names the package `mesa-vulkan-drivers` explicitly (T1 record, line 1054) and
   carries the T4 note that no newer Mesa is obtainable on Rocky today. (c) T6's distro-answer
   phrase "the Mesa update via dnf" compressed the T4 finding that no newer Mesa is in any Rocky
   repo; the fixes doc states the T4 finding explicitly, the decision (stay on Rocky, Stage 4
@@ -1761,7 +1790,7 @@ threshold and the ~2 min of new compute is far below the 26-32 min sustained-com
 ### W2 checkpoint: Stage 3 applied, reboot issued (2026-09-13 21:25 JST, Tails, fresh session)
 
 Stage 3 applied exactly per the staged section (`## Implementation` → "Staged, awaiting user
-approval", line 648), inside the user-approved window ("go ahead and start this now", 2026-09-13).
+approval", line 749), inside the user-approved window ("go ahead and start this now", 2026-09-13).
 All commands ran on EVO-X2 (hostname `trip`, 192.168.1.106) as `howard` over ssh from shadow
 (192.168.1.102); `sudo` only for the root-owned steps (`dnf install`, `grub2-set-default`, the
 `/boot/loader/entries/` listing). Shadow blocker 1 resolution honored: the grub default is set by
@@ -1867,6 +1896,109 @@ This session ran over ssh as howard, direct from the team host; the service was 
 **Monitor outcome (next):** the final `wedge_count=` line in the log at ~2026-09-14 22:44 JST is
 the Stage 3 verification number per the staged section ("24 h wedge count under the same workload
 on the new kernel").
+
+### Citation refresh checkpoint
+
+2026-09-14, Tails. Doc-only pass, session 2 (restart: session 1 died at the context
+window with the mapping complete and the in-place fixes unapplied). No machine changes,
+no ssh, no service actions.
+Scope. Stale line citations reported in `## Review` (Shadow). Citations sitting in a
+non-protected section are fixed in place and verified with grep. Citations sitting in
+`## Review`, `## Security`, or `## Test Results` are listed below with the owning
+section and not edited.
+
+Placement note. This subsection sits at the end of `## Implementation`, below every
+citation target it records, so appending here cannot invalidate the corrected values
+written above it.
+
+Reported stale (from dispatch brief, to be located):
+
+- Shadow finding. "T6's line citations are stale after the doc grew."
+- Shadow finding. W1 stale-citation nit.
+
+Citations found and fixed (appended as work proceeds):
+
+Located 2026-09-14 by grep `TASK-0010[^ )]*:[0-9]+|[Ll]ine [0-9]{3,4}` on the current file.
+
+Fixable (in `## Implementation`):
+
+- L1454-1455 area (T6 verdict cites): per Shadow, 'Plan (lines 259-376)' and 'lines 1244-1326' - to read and confirm.
+- L1573-1575 (hypothesis matrix H3/H4/H5 rows): 'Plan line 285', 'Plan line 286', 'Test Results row 2, line 1370', 'Plan line 287' - to read and confirm.
+- L1625: 'T5-H2 line 1324' - to read and confirm.
+- L1667: 'T1 record, line 828' - to read and confirm.
+- L1757: cite of a Review finding at `planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:1717` - to read and confirm.
+- L1793: 'line 648' - to read and confirm.
+- T6 scope/verdict/trigger/draft cells: session 2 scanned L1350-1407, no stale doc 'lines NNN' cites there (the ranges above were stale pointers ~209 lines low; the true cells sit in the T6 section L1557-1637 and are enumerated below; the only line-number-like strings in L1350-1407 are external file:line cites, e.g. linux-kernels.nix:737-739, which are correct as-is).
+
+List-only (protected sections, not edited):
+
+- `## Review`: L1949, L1968, L1981, L1999, L2007, L2015, L2016, L2023, L2024, L2025, L2031, L2039, L2047, L2055, L2063, L2064, L2066, L2071, L2079, L2080, L2081, L2092, L2099, L2113, L2128, L2135, L2200, L2215, L2250.
+- `## Security`: L2380, L2382, L2501.
+
+T6 adjudication is at L1557-1637 (grep `^### T[0-9]`; Shadow's own T6 line numbers in
+`## Review` are stale even as of their writing). Stale cites inside T6, confirmed by read:
+
+- L1559-1560 (scope): '## Plan (lines 259-376)' and 'T5-H2 repro-started checkpoint + outcome (lines 1244-1326)'
+- L1573 (H3 row): 'Plan line 285' (-fa / q8_0 V-cache note)
+- L1574 (H4 row): 'Plan line 286' (unit manages lifecycle)
+- L1575 (H5 row): 'Test Results row 2, line 1370' (0 thermal-throttle events) and 'Plan line 287' (low rejected 4.5x)
+- L1588 (ambiguity): '(T5-H2, lines 1318-1319)' (zero-llama split impossible)
+- L1591 (trigger): 'Plan lines 289-293' (one-sentence trigger template)
+- L1602 (distro): 'Plan lines 303-305' (T4 decision rule)
+- L1616 (staged rules): 'plan (lines 337-339)'
+- L1625 (mitigation 2): 'T5-H2 line 1324' (126.5k re-arm clean)
+- L1632-1633 (mitigation 4): 'Plan, rollback, lines 362-369'
+
+Session 2: L1667 'T1 record, line 828' -> 1054, fixed; L1665 'lines 1105-1114' -> 1331-1340,
+fixed; L1757 Review-finding cite and L1793 'line 648' (the staged section, L749-769) lines pending.
+
+Confirmed by read of L1639-1700:
+
+- L1667 (T7): 'Stage 2 names the package `mesa-vulkan-drivers` explicitly (T1 record, line 828)'
+  - target: the T1 `rpm -qa | grep -iE 'mesa'` listing line. T1 section location to map.
+- L1665 (T7): 'the T4 record lines 1105-1114 establishes the package `kernel-ml
+  7.2.5-1.el10.elrepo`' - target: the T4 elrepo-kernel repoquery lines. T4 section location to map.
+
+Grep gap noted: the first locate grep used `[Ll]ine [0-9]{3,4}` (singular) and missed plural
+'lines NNNN' cites (e.g. the T6 scope cite at L1559-1560 was found by read, not grep). A second
+grep with `lines [0-9]{3,4}` is required to catch the rest.
+
+Second locate grep done. New fixable cite found: L765 (in `### Staged, awaiting user approval`,
+L749-769): 'Rules carried from the plan (lines 337-339)' - same target as the T6 instance at
+L1616, i.e. Plan 547-549.
+
+Subsection map (bash `grep -n '^### '`, current file): Staged L749, Attempt 3 L787, Attempt 3
+session 2 L878, Attempt 4 L1034, T5-correlation L1384, T5-H2 L1461, T6 L1557, T7 L1639,
+addendum L1684, W1 L1753, W2 L1790, W3 L1864, Citation refresh checkpoint L1900.
+
+T1/T4 targets located by content grep (offset check: 1054-828 = 226, 1331-1105 = 226, consistent
+with the upper-doc growth since T7 was written):
+
+- L1667 'T1 record, line 828' (mesa listing) -> L1054 ('**Mesa / Vulkan.** `rpm -qa |
+  grep -iE 'mesa|amdgpu'` -> `mesa-vulkan-drivers-25.2.7-4.el10.rocky.0.1`'), in Attempt 4.
+- L1665 'T4 record lines 1105-1114' (kernel-ml 7.2.5 + repo file on host but disabled) -> T4
+  record block in the distro comparison, L1316-1356 area; exact 10-line current range to pin by
+  reading L1316-1345.
+
+Plan targets measured (Plan section is L469-584 now; every internal target sits at a constant
++210 offset from its old value, verified against the read of L469-584):
+
+- old 259-376 (whole Plan) -> 469-584
+- old 285 (H3 row, `-fa on` not toggleable) -> 495
+- old 286 (H4 row, unit manages lifecycle) -> 496
+- old 287 (H5 row, `low` rejected 4.5x) -> 497
+- old 289-293 (trigger template) -> 499-503
+- old 303-305 (T4 decision rule) -> 513-515
+- old 337-339 (rules for every stage) -> 547-549
+- old 362-369 (rollback block) -> 572-579
+
+T5-H2 section is L1461-1555 now (grep `^### T[0-9]`). Targets:
+
+- old 1244-1326 (T5-H2 repro-started + outcome, whole section) -> 1461-1555
+- old 1324 (126.5k re-arm completed clean) -> 1553 (confirmed by read)
+- old 1318-1319 (zero-llama split impossible) -> 1547-1548 (confirmed by read: "A clean H2/H3
+  split would need a run with zero concurrent llama-server jobs, which is impossible while any
+  team session runs on the endpoint.")
 
 ---
 
@@ -2353,6 +2485,120 @@ rest of the segment. (3) Record how we would detect abuse: the journal request l
 wedge monitor's cadence already give a footprint; add a note to the monitor log if request-rate
 anomalies are observed.
 
+### Attempt 3 (2026-09-14)
+
+Scope: (a) live model-host exposure surface. llama.cpp bound to 0.0.0.0:8093, CORS `*`, no API
+key (server startup warning, 10:46:49 JST). Verify current state read-only via
+ssh howard@192.168.1.106: which llama ports actually listen, firewalld state. Assess severity.
+Stage mitigations (apply nothing). (b) re-verify each pre-existing finding above: resolved /
+still-open / stale, with evidence.
+
+Note: the 2026-09-14 method note above ("live re-verification on EVO-X2 (ssh) is not available in
+this role") is superseded for this attempt by the dispatch, which grants read-only ssh.
+
+Findings (written as confirmed): see "Findings (attempt 3)" below (F1 still-open high, F2 new
+low); evidence trail E1-E3 in between.
+
+Evidence E1 (documented live state, most recent first): `## Status` 22-23 (Robotnik,
+2026-09-14 14:31 JST): "0 wedges since boot, 8093 listening (0.0.0.0)". `## Status` 42-44
+(Robotnik, 2026-09-14 13:10 JST): llama-server clean-restarted 10:46:49 JST, pid 9144, "8093
+listening", unit mtime unchanged 2026-09-13 17:51:56, `-c 98304` intact. `## Status` 47-48:
+"llama.cpp on 0.0.0.0:8093 with CORS `*` and no API key (the server's own warning)" from the
+10:46:49 startup log. Interpretation: the exposure state (0.0.0.0 bind, no key) was re-confirmed
+by the server's own log today at 10:46:49 and the socket by Robotnik at 14:31 JST; the unit file
+is unchanged since 2026-09-13 17:51:56, so the `ExecStart` flags below are current. Not observed
+directly by this agent (ssh denied); recency is same-day.
+
+Evidence E2 (unit + flags, live read-back 2026-09-12, `git grep -n "ExecStart"` on this doc):
+unit is a user-level unit at `/home/howard/.config/systemd/user/llama-server-qwen3.8-27b-iq4xs.service`
+(1043-1044); MainPID cmdline from `/proc` matches unit `ExecStart` (1048-1055): `--host 0.0.0.0
+--port 8093 ... --parallel 1 ...` with **no `--api-key`**; full unit text at 1057-1073. Stage 1
+(2026-09-13) changed only the binary (build 2000 / commit 5266f24d) and `-c 98304` (2189,
+2254-2255), not the bind flags; W3 (2099) and the 10:46:49 startup log (E1) confirm build 2000
+live on 8093 today. Sibling model units (q4/q5/q6/q8/qwen3.6/gemma4/deepseek-coder) existed in
+the same directory but were **inactive**; only the iq4xs unit running (1074). No documented
+change to that since 2026-09-12; no live enumeration possible (ssh denied), so "which other llama
+ports listen today" is not verifiable from this role.
+
+Evidence E3 (firewalld, only documented read is 2026-09-09, `TASK-0022-team-model-iq4xs.md:645-652`,
+live `ssh howard@192.168.1.106` by Tails): `sudo -n firewall-cmd --zone=public --list-all` → `public`
+zone on `eno1`, ports `8080 8081 8082 8083 8084 8085 8086 8087 8088 8090 8092 8093` (all /tcp),
+services `cockpit dhcpv6-client ssh`; `ss -tln` showed `0.0.0.0:8092` and `0.0.0.0:8093` listening
+that day (q4 unit active). No firewalld read after 2026-09-09 exists in either doc; Stages 1 and 3
+(2189) touched binary, `-c` flag, and grub default only, so the 09-09 rule set is presumed current
+but unverified since that date. The firewall is therefore NOT a mitigating control for 8093, and
+the 11 other open ports are a latent exposure (see finding F2 below).
+
+Attempt 3 constraint (recorded 2026-09-14): the dispatch requested live verification via
+`ssh howard@192.168.1.106`, but this role's permission set denies it. A single read-only ssh
+probe (`ss -tlnp`, `ps`, `systemctl cat`, `firewall-cmd` listings) was attempted and blocked
+by the bash permission rules (allowed patterns are `git`, `gh`, `rg`, `shellcheck`, `gitleaks`,
+`trufflehog` only). No live socket or firewall state was observed in this attempt. Live-state
+claims therefore rest on the most recent documented evidence in the planning docs, each cited;
+where no documented evidence exists for the current moment, that is said explicitly. This
+supersedes nothing in the 2026-09-14 method note, it confirms it for attempt 3.
+
+Severity assessment (attempt 3): the pre-existing high finding stands as **high**, not critical.
+Same-day evidence (E1) re-confirms 0.0.0.0:8093 with the server's own CORS-`*`/no-key warning and
+`--parallel 1` (E2); E3 shows the port firewalled open to the whole `public` zone. Attacker model:
+any principal on the 192.168.1.0/x segment (compromised IoT device, guest machine, or another VM
+on the same switch) needs zero credentials for `http://192.168.1.106:8093`; a sustained
+`POST /v1/completions` stream starves the single inference slot and halts the whole team (PM +
+every subagent) on demand, plus unbounded compute abuse; CORS `*` extends the vector to any web
+page opened in a browser on the segment. Not critical because the API exposes no cross-session
+context and no code execution. Internet reachability is **not verifiable** from this role: the
+host sits on a private 192.168.1.x LAN, and router NAT/port-forward state decides external
+exposure. If 8093 is port-forwarded, the same zero-auth endpoint is internet-reachable and this
+finding becomes critical. Flagged for the user to check the router once.
+
+Staged mitigations (attempt 3; nothing applied, each needs an approved host window):
+- M1 (key): on the host, confirm `--api-key` exists in build 2000 via `llama-server --help`, then
+  add `--api-key <generated on host>` to the unit `ExecStart` and restart in the window. The key
+  lives only in the opencode provider config on the team host (verify the provider schema supports
+  an API key for this endpoint before staging that line; env-based if supported). Never in a doc,
+  commit, README, or under `set -x`-style logging.
+- M2 (firewall): `sudo firewall-cmd --permanent --zone=public --add-rich-rule='rule family=ipv4
+  source not addr=<team-host-IP> port port=8093 protocol=tcp reject'` + `sudo firewall-cmd
+  --reload`. The pre-existing fix line proposes 192.168.1.102 as the team-host IP; re-verify with
+  `hostname -I` on the team host at apply time (not verifiable from this role).
+- M3 (CORS): check `llama-server --help` for an origin-restricting CORS option in build 2000; if
+  absent, accept residual CORS `*` behind M1+M2 (a key-authenticated, LAN-restricted endpoint no
+  longer yields cross-origin abuse to third-party pages without the key).
+- M4 (port sweep, at the M2 window): review the 11 other open model ports (8080-8088, 8090, 8092;
+  E3) against what actually runs and close what is unused, so a started sibling unit does not come
+  up LAN-exposed by default.
+- M5 (detection, no change needed): the server's journal request log and the 24 h wedge monitor
+  cadence already give an abuse footprint; note request-rate anomalies in the monitor checkpoint.
+
+Findings (attempt 3):
+
+F1 — pre-existing finding "Unauthenticated model endpoint on 0.0.0.0:8093, CORS `*`, no API key"
+(high, authz): **still-open**, re-verified 2026-09-14 against E1+E2+E3. No mitigation applied
+(staged M1-M5); severity high, unchanged. Scope (b) inventory: `## Security` holds exactly this
+one pre-existing finding (plus the template placeholder); the first pass recorded no supply-chain
+or license findings, so (b) has nothing else to re-verify, and this attempt did not re-audit those
+areas (out of scope). Citation nit in the original: its `Where` cites the verbatim `ExecStart` at
+`TASK-0010...:1051`; the current doc has the `/proc` cmdline read-back at 1048-1055 and the full
+unit at 1057-1073 (doc grew; same stale-citation class Shadow routed at 2166-2184). The
+TASK-0022:647-648 firewalld citation is accurate.
+
+F2 — 11 stale open model ports in firewalld `public` zone
+**Severity:** low
+**Vector:** authz
+**Where:** firewalld `public` zone on EVO-X2 `eno1` (documented `TASK-0022-team-model-iq4xs.md:646-649`)
+**Attack:** not executable today: the sibling llama units are documented inactive (this doc 1074,
+2026-09-12 read-back), so the ports refuse connections. The exposure becomes real when any sibling
+unit (q4 on 8092; others on 8080-8088/8090) is started, because the firewall rules persist and the
+unit then comes up LAN-reachable with whatever auth it has.
+**Impact:** latent; same class as F1 per unit started.
+**Fix:** M4, at the M2 window.
+
+Severity summary (attempt 3): high ×1 (F1, still-open, staged M1-M5, needs an approved host
+window); low ×1 (F2, latent, staged M4); none critical. **DoD gate ("no unresolved findings above
+`low` in `## Security`"): NOT met** — F1 (high) remains open; applying M1/M2 is explicitly outside
+this attempt (apply nothing) and requires the user-approved window the `## Implementation` staged
+section already uses. Re-check the gate after M1/M2 are applied and re-verified.
+
 ---
 
 ## Test Results
@@ -2379,6 +2625,95 @@ update is pending. No checks silently dropped.
 
 **Verdict:** diagnosis complete: trigger is sustained continuous full-power load (see
 Implementation). No mitigation applied yet; endpoint unchanged; frozen flags intact.
+
+### Big re-verification (2026-09-14)
+
+Re-run of the `## Implementation` W1/W2/W3 checkpoint evidence plus the 24 h wedge monitor
+status, read-only over `ssh howard@192.168.1.106` (small-context probes only, no sustained
+load). Prior review-chain attempts were lost to window exhaustion with zero writes; this pass
+is mechanical. Rules: this edit is the first write (after the 100-line read the edit tool
+requires before any edit); no 2 consecutive read/grep/bash calls without an intervening edit,
+with one documented exception (the section-locating grep and the section-tail read ran
+back-to-back to resolve the insertion anchor; the subsection was already composed, so nothing
+was lost); doc read in 100-200 line chunks only. Placement: after the pre-existing Tails
+2026-08-25 measurement record (diagnosis phase; remains valid as the baseline record).
+
+**Checks planned** (exact commands to be taken from the `## Implementation` W1/W2/W3 evidence):
+
+| # | Check | What it exercises | Result |
+|---|---|---|---|
+| 1 | W1 kernel | running kernel is 7.2.5-1.el10.elrepo | PASS |
+| 2 | W2 service | llama-server unit active, listening on 8093 | PASS |
+| 3 | W3 binary | /usr/local/bin/llama-server fingerprint is build 2000 / commit 5266f24d | PASS |
+| 4 | Wedge baseline | 0 wedges since boot | PASS |
+| 5 | 24 h monitor | /tmp/wedge-monitor-20260913-224443.log finished vs still running (hard stop 2026-09-14 22:44 JST), final wedge count | PASS (still running at probe time; 0 so far; final line due 22:44:43 JST) |
+
+**Findings log** (updated as checks run):
+
+- 2026-09-14: subsection created; checks 1-5 not yet run. Pre-existing content in this
+  section: Tails 2026-08-25 measurement record (15 wedges at the time, pre-fix diagnosis).
+- 2026-09-14: section map (grep `^## `): Status 10, Definition of Done 329, Next Actions 371,
+  Plan 450, Implementation 569-1882, Review 1883, Security 2309, Test Results 2482, Docs 2538,
+  Release 2551, Archive 2564. W1/W2/W3 evidence is inside `## Implementation` (1,314 lines);
+  locating its `###` subsections next.
+- 2026-09-14: checkpoint subsections located: W1 at 1734 (t/s vs iq4xs baseline), W2 at 1771
+  (Stage 3 applied, reboot issued), W3 at 1845 (post-reboot verification, 24 h monitor started).
+  Reading 1734-1883 next for the exact evidence and commands.
+- 2026-09-14: W1/W2/W3 evidence extracted (read 1734-1883).
+  - W1 (`:1734-1769`): t/s PASS (11.95 t/s at ~57.9k ctx vs 12.1-12.3 baseline); live
+    `system_fingerprint: b2000-5266f24d` on 8093 (build 2000 / commit 5266f24d); `/health` ok.
+  - W2 (`:1771-1841`): kernel-ml 7.2.5-1.el10.elrepo installed, BLS default set by exact entry
+    id, reboot issued 2026-09-13 21:25 JST; wedge count 10 at change time (pre-reboot); unit
+    untouched.
+  - W3 (`:1845-1879`): kernel 7.2.5 live; **user unit** `llama-server-qwen3.8-27b-iq4xs.service`
+    active, 8093 listening, pid 1907 at the time, `-c 98304` intact; fingerprint command:
+    `PID=$(systemctl --user show ... --value --property=MainPID); BIN=$(readlink -f /proc/$PID/exe);
+    "$BIN" --version` -> `bin=/usr/local/bin/llama-server`, `version: 0.4.0-dev (build 2000,
+    commit 5266f24d)`; wedge baseline 0 since boot (t=0 22:44:43 JST); monitor pid 6647, log
+    /tmp/wedge-monitor-20260913-224443.log, hard stop 2026-09-14 22:44:43 JST, sample every 300 s
+    via `journalctl -k --no-pager | grep -cE "device wedged"`, appends a `monitor-stopped` line
+    after the bound.
+  - Context deltas to account for: unit is a user unit (systemctl --user); service
+    clean-restarted 2026-09-14 10:46:49 JST (pid 9144 per `## Status`), so W3 pid 1907 is
+    superseded; Shadow finding `:2048` notes the monitor's recorded count command is unscoped
+    while the t=0 value only fits a boot-scoped count (run both scoped and unscoped).
+- 2026-09-14 16:59 JST (probe A, `ssh howard@192.168.1.106`, read-only): `date` = Mon 14 Sep
+  16:59:12 JST 2026 (hard stop 22:44:43 JST still ahead, ~5 h 45 m); `uname -r` =
+  7.2.5-1.el10.elrepo.x86_64 (**check 1 PASS**); `uptime` = 19:29; `systemctl --user is-active
+  llama-server-qwen3.8-27b-iq4xs.service` = active; `ss -ltn | grep 8093` = LISTEN 0.0.0.0:8093
+  (**check 2 PASS**); `curl /health` = {"status":"ok"}; `curl /v1/models` =
+  Qwen3.8-27B-UD-IQ4_XS, n_ctx 98304, ftype IQ4_XS (`-c 98304` intact live). No sustained load;
+  only small-context/ metadata probes.
+- 2026-09-14 ~17:00 JST (probe B, same ssh, read-only): `ls -la /usr/local/bin/llama-server` =
+  -rwxr-xr-x howard:howard 16712 B, mtime Sep 13 17:30; `/usr/local/bin/llama-server --version` =
+  `version: 0.4.0-dev (build 2000, commit 5266f24d)`, `built with GNU 14.3.1` (**check 3 PASS**,
+  matches W1 live fingerprint b2000-5266f24d); `MainPID=9144`; `readlink -f /proc/9144/exe` =
+  /usr/local/bin/llama-server (running process is the fingerprinted binary; W3's pid 1907
+  superseded as expected); `journalctl -k --no-pager -b | grep -cE "device wedged"` = 0 and the
+  monitor's unscoped command `journalctl -k --no-pager | grep -cE "device wedged"` = 0 (**check 4
+  PASS**; unscoped=0 corroborates Shadow `:2048` observation that howard's visible kernel
+  journal yields the boot-scoped count); monitor pid 6647 still running
+  (`pgrep -af wedge_monitor_w3.sh`), last 5 log lines all `wedge_count=0` (16:39:47 through
+  16:59:47 JST, 300 s cadence intact), zero `monitor-stopped` lines (**check 5: still running,
+  count 0 so far**; hard stop 22:44:43 JST not yet reached).
+
+**Checks requested vs run:** 5 requested, 5 executed (checks 1-5 in the table above). No check
+dropped, no command blocked by the bash allowlist (ssh to 192.168.1.106 permitted; every probe
+read-only, small-context only, no sustained load).
+
+**Verdict:** The TASK-0010 implementation record re-verifies clean against the live machine.
+All five checks PASS at 2026-09-14 16:59-17:00 JST: kernel 7.2.5-1.el10.elrepo.x86_64 (W1),
+user unit `llama-server-qwen3.8-27b-iq4xs.service` active with 8093 listening on 0.0.0.0,
+`/health` ok, `n_ctx` 98304 intact (W2), `/usr/local/bin/llama-server` is build 2000 / commit
+5266f24d with the running process (pid 9144) resolving to that exact path (W3; the W3 record's
+pid 1907 is superseded by the 2026-09-14 10:46:49 clean restart, consistent with `## Status`),
+wedge count 0 since boot and 0 under the monitor's own unscoped command (baseline), and the 24 h
+monitor still running (pid 6647) with every sample at `wedge_count=0` and the 300 s cadence
+intact. The monitor has NOT finished: hard stop is 2026-09-14 22:44:43 JST, ~5 h 45 m after this
+probe, so the final wedge count does not exist yet; the current count is 0 (last sample
+16:59:47 JST). No FAIL, hence no code-bug or harness-bug routing. The one outstanding item is
+the monitor's final `wedge_count=` line at the hard stop, which `## Status` already routes to the
+pre-Knuckles check; nothing in this re-verification changes that.
 
 ---
 
