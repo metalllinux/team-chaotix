@@ -12,6 +12,50 @@
  *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
  stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-14 14:31 JST, Robotnik): Omega attempt 2 dispatched (write-first discipline);
+machine calm.** 0 wedges since boot (17 h 01 m uptime, load 0.27), 8093 listening (0.0.0.0).
+Chain position: Shadow attempt 2 done (11:45), Omega attempt 1 lost (13:10 entry), Big next after
+Omega. If Omega attempt 2 also returns empty, check the session DB (finish=tokens.output per
+AGENTS.md §14) before re-dispatching a third time.
+
+**Now (2026-09-14 13:10 JST, Robotnik): truncation mechanism pinned; Omega attempt 1 LOST (zero
+writes), re-dispatch with write-first discipline; service clean-restarted 10:46:49 JST.**
+- Empty task results on today's dispatches are **server-side window exhaustion**: the EVO-X2
+  journal shows Omega's final request at `n_tokens = 98303, truncated = 1` (12:39:40 JST, session
+  end 12:39:40) — accumulated session context filled the `-c 98304` window, the server truncated
+  the turn (finish=length, no text/tool part → empty result). Not the 32k output clamp (separate,
+  still real). The session-DB per-message `tokens.input` is NOT the full request context (Omega's
+  final turn reported in=181 in the DB; the server saw 98,303) — the server journal is the truth.
+- Shadow attempt 2: work survived (incremental writes; only the closing summary lost). Omega
+  attempt 1: work LOST (111 parts of investigation, zero doc edits — all writes deferred to a
+  final pass that never happened). Re-dispatching with write-first discipline.
+- llama-server clean-restarted 10:46:49 JST (systemd Stopping/Stopped/Started, no crash, wedge
+  count 0; unit mtime unchanged 2026-09-13 17:51:56, `-c 98304` intact, pid 9144, 8093
+  listening). Provenance consistent with the user's 10:46 reconfiguration (opencode.json edit
+  10:46:27, opencode start 10:46:40); the W3 pid-1907 record is superseded. The 24 h monitor is
+  still valid (kernel-journal based). Big's box-13 live verification covers current state.
+- Security lead for Omega from the 10:46:49 startup log: llama.cpp on 0.0.0.0:8093 with CORS `*`
+  and no API key (the server's own warning).
+
+**Now (2026-09-14 11:45 JST, Robotnik): Shadow attempt 2 DONE (empty result verified, not a
+death).** Shadow returned an empty task result; session-DB check (ses_f6255d03…): final turn
+finish=length, in=4,632 out=382, reasoning-only part, no text part, no doc part — the closing
+summary turn truncated, not the 32k reasoning pattern (the session never approached the 98,304
+window; the aligned client limits + incremental writes held). The `## Review` "Attempt 2
+verification" subsection (2140-2261) is complete: passes 1, 2, 3a-3d all marked done with a clean
+terminator; lost content is summary-level only (a stale-citation note at W1 1693, same known
+stale-citation nit class that pass 2 already routes to Tails's refresh pass). No new blockers from
+Shadow. Omega dispatches next in the chain.
+
+**Now (2026-09-14 11:00 JST, Robotnik): client config aligned; Shadow re-dispatches on the fresh
+session.** The user set the iq4xs limit to context 98304 / output 49152
+(`~/.config/opencode/opencode.json:148-151`; output 49152 vs the 32000 requested, harmless — the
+gateway's 32,000 output clamp is independent of the client declaration, TASK-0019). Config mtime
+10:46:27 JST precedes this opencode start (pid 51205, 10:46:40 JST), so this session and every
+subagent loaded the aligned limits. Machine calm: 0 wedges since boot (13.5 h uptime, load 0.32),
+8093 listening, 24 h monitor running (last sample 10:59:45 JST wedge_count=0, hard stop 22:44 JST).
+Shadow dispatches now with incremental `## Review` writes.
+
 **Now (2026-09-14 07:40 JST, Robotnik): Shadow attempt 1 died to window exhaustion; client config
 mismatch identified, change requested from the user.** Shadow's session (87 parts) accumulated to
 the 98,304 window across many turns; the FIRST request was only 10,408 tokens, so the b1867bf
@@ -2123,10 +2167,132 @@ the window (kernel-ml 7.2.5 installed, `saved_entry` changed, elrepo-kernel repo
 **Failure scenario:** a reader scanning `## Implementation` for what changed on the host stops at
 the Changes table (the section's first summary table) and concludes EVO-X2 is unchanged,
 contradicting the W2/W3 checkpoints ~900 lines below.
-**Suggested direction:** Tails updates the row in the post-monitor pass: EVO-X2 now carries the
-Stage 3 change set (kernel, grubenv, repo file) with the W2/W3 checkpoint references; the sysfs
+**Suggested direction:** Tails updates the row in the post-monitor pass: EVO-X2 now carries
+the Stage 3 change set (kernel, grubenv, repo file) with the W2/W3 checkpoint references; the sysfs
 claim can stay scoped to sysfs if that is what was meant.
 **Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Attempt 2 verification (Shadow, 2026-09-14, re-dispatch after the attempt 1 window-exhaustion death)
+
+Scope: verify the three blocker fixes (B1-B3) landed as specified in their Resolution lines,
+re-confirm the open should-fix/nit state against the current doc, and compare the window changes
+(Stage 1: llama.cpp v0.4.0 build 2000 / commit 5266f24d + `-c 98304`; Stage 3: grub default to
+7.2.5 by exact BLS identifier + reboot) against `## Definition of Done` (275-314) and the
+`## Implementation` records (T6 adjudication, staged section, W1/W2/W3 checkpoints). Read
+discipline: grep-first (`rg -n`), chunked reads of ~200 lines; no full-doc read. Live EVO-X2
+state is not re-probed from this toolset (no ssh in Shadow's permissions); that is Big's
+box-13 job. Findings below are recorded pass by pass as each completes, so a mid-review death
+leaves verified results in the doc.
+
+**Pass 1 (done): Review-section state + staged section (676-695) + `## Changes` header (697-699).**
+Staged Stage 3 (689) carries the B1 fix in its final form: default set by exact BLS entry
+identifier derived from `/boot/loader/entries/` with the `N=1` guard, `grub2-set-default "$BLSID"`,
+`grub2-editenv list` confirm of `saved_entry=$BLSID` before `reboot`; the revert reads `OLDSAVED`
+from `/tmp/grubdefault.bak3`; the repo-file placeholder is resolved to
+`/etc/yum.repos.d/elrepo.repo` `[elrepo-kernel]` `enabled=0`. Staged Stage 1 (687) and Stage 2
+(688) retain the open should-fix defects exactly as the status table (2026-2039) states: 11.87
+baseline in the Stage 1/4 verify cells (687, 690) and `dnf reinstall /tmp/rpmbak2/<file>` in the
+Stage 2 revert (688). The `## Changes` table (697+) is checked for the 2117 nit in the next pass.
+
+**Pass 2 (done): `## Changes` table (697-703) cross-check for the 2117 nit.**
+Nit confirmed; remains open as a nit. Line 701 is unchanged: `| EVO-X2 sysfs | **no changes yet**
+(read-only so far) |`. The sysfs scope itself is net accurate: checkpoints 3.3/3.4 (880-943) wrote
+to sysfs as root (`power_dpm_force_performance_level` auto/low/high/manual verified by write +
+readback, the `low` probe, `pp_dpm_sclk` / `pp_od_clk_voltage` EINVAL probes) and reverted
+everything to `auto` (verified after each experiment, 915-916, 943) against the prior state at
+633-652; the net sysfs state equals the pre-task state, but "read-only so far" understates those
+transient writes. The nit's host-level scenario holds: the table (699-703) lists only sysfs, the
+three diagnosis scripts, and this doc; the Stage 1 change set (unit `ExecStart`: build 2000
+binary + `-c 98304`, user-applied per W1) and the Stage 3 change set (kernel-ml 7.2.5-1
+installed, `saved_entry` set to the 7.2.5 BLS identifier, `[elrepo-kernel]` enabled=1, per W2)
+and the W3 monitor script `/tmp/wedge_monitor_w3.sh` are absent from the table. Scope note for
+Tails's update pass: the nit's Where line (682) and the verification round's own scope citations
+(2057-2060) are +19 stale against the current doc (row now at 701; staged 676-695, W1 1680-1716,
+W2 1717-1790, W3 1791-1828, Changes 697-703, Test Results 2170) — same stale-citation class as
+the 2102 nit; refresh in the same pass.
+
+**Pass 3a (done): DoD (275-315) + T6 adjudication (1484-1564) cross-check against the window
+changes.**
+DoD box mapping for the applied window: box 5 (staged solution, exact commands/backups/reverts,
+user-approved window) met for Stages 1+3 — staged table 685-690 is complete and the user approval
+is recorded in `## Status` 107-114 ("go ahead and start this now", both stages in one window, the
+Stage 1 vs Stage 3 attribution ambiguity accepted as a recorded decision, 109-111). Box 6 (frozen
+config unchanged, or explicit user approval recorded in `## Status`) met for the
+`-c 262144` → `-c 98304` change: `-c 262144` is on the staged frozen-flag list (687), the user
+confirmed 98304 (Status 97-105) and re-confirmed keeping it over 122880/131072 (Status 57-62);
+the staged cell's frozen-flag exception ("unless the user approves a specific frozen-flag
+change") is exactly this case. Box 8 (prior-state backups, location recorded; fixes doc updated)
+met for Stage 1 — the staged-name backups are recorded in Status 81-84 (`llama-unit.bak1.1789287454`
+plus `llama-bin-bak1.1789287454/`, `llama-libs-bak1.1789287454/`, `cmdline.bak1`, build log
+`/tmp/llama-build-v0.4.0.log`); the fixes-doc header staleness remains the open 2008 finding.
+Box 3 (distro question) met per the T6 distro answer 1527-1531 (stay on Rocky 10; kernel 7.2.5
+obtainable via elrepo; Stage 4 dormant). Boxes 1, 2, 4, 7, 9, 10, 11, 12, 13 unchanged from the
+prior rounds: box 1 unmet per SF8 (H1/H2/H3 third states; closure path is the post-monitor verdict
+plus Robotnik's box-1 wording decision); box 2 per SF7; boxes 4/7 per SF9 + SF10; box 9 met
+(baseline count + monitoring command recorded, Test Results 2174-2195 and the W3 monitor); boxes
+10-13 await Vector/Knuckles, this review's close, Omega, and Big. T6 cross-check: the verdict
+table (1496-1502) drives the staged rows correctly (H1 undetermined → Stage 3 decider; H2
+partial → Stage 2 live; H3 neither → Stage 1 decider; H4 excluded → no unit edit indicated; H5
+excluded → no sysfs knob); the B2-fixed superlative wording is present in the T6 H2 cell (1499).
+The T6 draft staged table (1536-1541) still carries the open SF1 (1539) and SF3 (1538, 1541)
+defects and lacks the T7 Stage 3 additions (repo-file backup + `/etc/yum.repos.d/elrepo.repo`
+resolution, 689) — expected, the staged section 685-690 is canonical per T7. The T6 trigger
+sentence (1518-1525) still carries the SF7 defects; the T6 scope line citations remain stale per
+the open nit. No new T6 defects this pass.
+
+**Pass 3b (done): Stage 1 record (W1 1680-1715 + `## Status` 57-95) verification.**
+The Stage 1 change (llama.cpp v0.4.0 build 2000/5266f24d + `-c 98304`) is consistently recorded:
+W1 confirms build 2000/5266f24d live on 8093 via `system_fingerprint: b2000-5266f24d` and
+`n_ctx` 98304 from `/v1/models` (1699-1700, 1712), t/s PASS at 11.95 t/s against the iq4xs
+baseline 12.1-12.3 (1706-1710), service untouched by Tails (1684-1685, 1713-1715). Status records
+the application: user-applied between 16:17 and 17:51 JST, unit diff vs backup = only the
+`-c 98304` flag, service under the user unit since 17:51:56 JST (77-95). **Correction to the W1
+finding at 2001-2006 (post-window round):** two of its three claims are refuted by `## Status`,
+which that round's read scope (1991-1992) did not include — the staged pre-change backups ARE
+recorded (Status 81-84, staged-name paths matching the staged backup cell 687 plus binary/libs
+backups the staged cell does not name) and the build 2000 deployment timestamp IS recorded
+(17:51:56 JST, Status 91-92). The open remainder of that finding narrows to: no explicitly
+labeled 24 h before/after wedge pair for Stage 1 alone — the record brackets the deployment with
+count 10 since boot at 13:20:49 JST (last wedge) and count 10 through the W1 benchmark (Status
+50), i.e. zero wedges 17:51:56 → 21:29 JST, and the single-window design makes Stage 1-alone
+attribution ambiguous by the recorded decision (Status 109-111); the W3 monitor is the 24 h
+verification for the combined window state. Resolution direction for Tails: point the finding's
+Resolution at Status 81-84 and 91-92 for the two refuted claims and record the 10→10 bracket as
+the Stage 1 before/after evidence.
+
+**Pass 3c (done): Stage 3 record (W2 1717-1789) verification.**
+Verified against the staged Stage 3 cell (689): all three staged backups taken at the exact staged
+paths with contents recorded (kernels 16 packages incl. 7.0.12, `grubdefault.bak3` holding
+`saved_entry=...7.0.12...`, repo backup; 1730-1736); the exact planned kernel 7.2.5-1 installed,
+installonly, 7.0.12 kept (1746-1747); repo enable via section-scoped sed because
+`dnf config-manager` is absent, diff-verified to exactly one line (1740-1745); the BLS guard ran
+with N=1, the exact identifier `aad6cfa1c71c461bbc6543c87712d7f1-7.2.5-1.el10.elrepo.x86_64`
+derived, `grub2-set-default "$BLSID"`, and `grub2-editenv list` confirmed `saved_entry=$BLSID`
+before the reboot (1758-1766) — the blocker 1 resolution executed as designed. The planned revert
+is recorded verbatim with the real `OLDSAVED` value from the backup content, the old kernel was
+never removed, and the repo-file restore leaves the enabled/restore choice to the user (1768-1778).
+The DKMS `ryzen_smu` side effect is documented with the `modinfo amdgpu` evidence that the in-kernel
+driver is unaffected and the deliberate decision not to build mid-test (1748-1757). The reboot was
+issued at 21:25 JST only after the checkpoint was written and flushed, session deaths expected and
+approved (1780-1782). Wedge count at change time 10 since boot, matching `## Status` (1726), which
+closes the pre-deployment side of the Stage 1/3 bracket. No new findings; the two deviations (sed,
+atomic guard script) are the minimal documented set.
+
+**Pass 3d (done): post-reboot state (W3 1791-1827) verification.**
+Staged Stage 3 verify item 1 met: `uname -r` = `7.2.5-1.el10.elrepo.x86_64`, service
+`llama-server-qwen3.8-27b-iq4xs.service` active (auto-started), 8093 listening, pid 1907,
+`-c 98304` intact (1794-1797). Binary fingerprint: `version: 0.4.0-dev (build 2000, commit
+5266f24d)` via `/proc/1907/exe` → `/usr/local/bin/llama-server`, matching the W1 live fingerprint
+b2000-5266f24d (1801-1805). Item 2 (24 h wedge count) in progress under the bounded monitor:
+`/tmp/wedge_monitor_w3.sh` (scp'd, 1446 bytes), log `/tmp/wedge-monitor-20260913-224443.log`,
+pid 6647 cross-verified three ways, start 2026-09-13 22:44:43 JST, hard stop 2026-09-14 22:44:43
+JST, 300 s cadence, t=0 `wedge_count=0` consistent with 0 since boot (1806-1817, 1823-1825). The
+recorded count command (1813-1814, `journalctl -k --no-pager | grep -cE "device wedged"`, no boot
+scope) plus the t=0 value 0 (1806) corroborate the premise of the open W3 monitor count-scope
+finding (1994-1999); its suggested direction (quote the script's exact journal line and boot scope
+in the post-monitor checkpoint) is unchanged. `## Status` 28-32 (07:20 JST Sep 14) confirms the
+monitor still running with `wedge_count=0` as of this morning; the Stage 3 verification number is
+therefore still pending the monitor's final line. No new findings.
 
 ---
 
@@ -2142,6 +2308,50 @@ claim can stay scoped to sysfs if that is what was meant.
 **Impact:** what they get.
 **Fix:** the specific change.
 **Resolution:** *(filled by `Tails`)*
+
+### Security review (Omega, 2026-09-14)
+
+Scope: attack surface of the EVO-X2 model endpoint (0.0.0.0:8093, llama.cpp), secrets exposure,
+supply chain (llama.cpp build 2000 / commit 5266f24d, elrepo kernel 7.2.5-1), and license
+compliance. Findings are appended below as each pass settles, one edit at a time.
+
+Method note (2026-09-14): Omega's permission set is read-only repo commands (`git`, `rg`,
+`gitleaks`, `trufflehog`, `shellcheck`). Live re-verification on EVO-X2 (ssh) is not available
+in this role, so live-state claims rest on the documented evidence cited below (Status 10:46:49
+journal warning, unit `ExecStart` verbatim, firewalld reads recorded in TASK-0022). Anything I
+could not verify is said so.
+
+### Unauthenticated model endpoint on 0.0.0.0:8093, CORS `*`, no API key
+**Severity:** high
+**Vector:** authz
+**Where:** unit `llama-server-qwen3.8-27b-iq4xs.service` `ExecStart` (verbatim at
+`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:1051` and `TASK-0022-team-model-iq4xs.md:42`,
+`--host 0.0.0.0 --port 8093`, no `--api-key`); startup warning recorded at
+`planning/docs/TASK-0010-evox2-gpu-wedge-fix.md:31-32` (Status, 10:46:49 JST journal: "CORS is
+set to allow all origins ('*') and no API key is set"); firewalld `8093/tcp` open in the `public`
+zone on `eno1`, verified 2026-09-09 (`TASK-0022-team-model-iq4xs.md:647-648`).
+**Attack:** any principal on the EVO-X2 LAN segment (192.168.1.0/x) — a compromised device, a
+guest, or another VM on the same switch — reaches `http://192.168.1.106:8093` with zero
+authentication. The server runs `--parallel 1`: one inference slot, no rate limiting. A sustained
+stream of `POST /v1/completions` requests starves the single slot; the PM session and every
+subagent run on this endpoint, so the attacker halts the whole team on demand (the documented
+failure mode where an endpoint death kills the PM session). CORS `*` additionally lets any web
+page a host's browser visits issue cross-origin requests and read the responses, i.e. remote
+resource abuse without even being on the LAN if a browser on the LAN is the vector.
+**Impact:** team-wide denial of service plus model-compute abuse. No direct read of other
+sessions' contexts (each request is an independent context; the API does not expose other slots'
+prompts), and no code execution — that is why this is high, not critical. Blast radius if abused:
+every dispatched task fails or stalls until the server is restarted by a human.
+**Fix:** (1) the 10:46:49 warning text references an API-key setting, so this build likely
+supports `--api-key`; confirm with `llama-server --help` on the host before staging, and if
+present add `--api-key <generated>` to the unit `ExecStart`, restart in an approved window. Store
+the key only in the opencode provider config on the team host (env-based if opencode supports
+it), never in the README, the planning doc, or any committed file, and never print it under
+`set -x`-style logging. (2) Regardless of the key: restrict firewalld `8093/tcp` to the team
+host's IP with a rich rule (deny from `not src=192.168.1.102`), keeping the port closed to the
+rest of the segment. (3) Record how we would detect abuse: the journal request log lines and the
+wedge monitor's cadence already give a footprint; add a note to the monitor log if request-rate
+anomalies are observed.
 
 ---
 
