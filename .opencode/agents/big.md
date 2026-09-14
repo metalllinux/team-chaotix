@@ -26,6 +26,12 @@ the verdict that a change is safe.
 
 You read `## Plan` and `## Implementation`, and you write `## Test Results`.
 
+## Context
+
+You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
+fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
+planning doc, not in session memory.
+
 ## Your two jobs
 
 1. **Build and maintain the test infrastructure** — the workflows, custom actions, and test harnesses

@@ -39,9 +39,11 @@ agent may touch, not where config is discovered.
 
 ## 2. The planning-doc contract
 
-**This is the most important rule in this file.** Automatic compaction is disabled
-(`compaction.auto: false`), so a context that fills up **hard-fails** rather than degrading. The
-planning-doc discipline below is the only thing that makes that safe.
+**This is the most important rule in this file.** Automatic compaction is enabled
+(`compaction.auto: true`, user decision 2026-09-14), so a context that fills up **compacts**
+rather than hard-failing. Compaction degrades nuance, so the planning-doc discipline below
+remains binding. The doc, not session memory, is where anything that must survive a compaction
+lives.
 
 ```
 planning/
@@ -306,8 +308,9 @@ opencode
 The EVO-X2 endpoint caps every turn at **32,000 output tokens**. Verified 2026-09-02 in
 TASK-0019, three consecutive subagent turns truncated at exactly 32,000 tokens with
 `finish_reason: "length"` and zero visible output. The llama.cpp server default is unlimited
-(`max_tokens: -1`) and the opencode provider config declares a 131,072 output limit, so the clamp
-applies in the EVO-X2 gateway layer. Consequence. A turn that spends its whole budget on hidden
+(`max_tokens: -1`) and the opencode provider config declares a 120,000 context limit with a
+60,000 output limit, so the clamp applies in the EVO-X2 gateway layer. Consequence. A turn that
+spends its whole budget on hidden
 reasoning produces no tool call and no text, the session ends with an **empty result that still
 reports "completed"**, and the dispatcher sees silence. This killed three consecutive `Espio`
 dispatches while pruning a 945-line planning doc: the model drafted the entire multi-edit plan,

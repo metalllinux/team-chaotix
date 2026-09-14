@@ -14,22 +14,19 @@
   // further subagents, however hard they try.
   "subagent_depth": 1,
 
-  // `auto: false` means a full context HARD-FAILS instead of silently
-  // degrading. That is deliberate: silent compaction drops the middle of a
-  // planning doc and the loop then runs on facts that are no longer there.
-  // The planning-doc contract in AGENTS.md section 2 is the only thing that
-  // makes this safe, so do not flip this to true to "fix" a context error.
-  // Fix the doc discipline instead.
+  // `auto: true` (user decision 2026-09-14): a full context compacts instead
+  // of hard-failing. Compaction degrades nuance, so the planning-doc contract
+  // in AGENTS.md section 2 stays binding. The doc, not session memory, is
+  // where anything that must survive a compaction lives.
   "compaction": {
-    "auto": false,
+    "auto": true,
     "prune": true
   },
 
   // Caps a single tool result at 400 lines. A `git log` or a test dump that
-  // blows past this would otherwise eat the context that `auto: false` will
-  // not rescue.
+  // blows past this would otherwise eat context that a compaction cannot
+  // fully restore.
   "tool_output": {
     "max_lines": 400
-  },
-
+  }
 }

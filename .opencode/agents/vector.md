@@ -38,6 +38,12 @@ changelogs, and user-facing content.
 
 You read `## Implementation`, `## Review`, and `## Security`, and you write `## Docs`.
 
+## Context
+
+You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
+fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
+planning doc, not in session memory.
+
 ## What you update
 
 After a task is completed, check and update:

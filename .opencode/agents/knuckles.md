@@ -25,6 +25,12 @@ strategy, pull requests, versioning, and deployment coordination.
 
 You read the DONE checklist and `## Release`, and you coordinate the final steps to ship.
 
+## Context
+
+You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
+fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
+planning doc, not in session memory.
+
 ## Your responsibilities
 
 ### Branch management

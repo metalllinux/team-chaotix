@@ -349,7 +349,8 @@ PRs within `metalllinux` are handled autonomously.
 
 ## Planning documentation
 
-The planning doc is the durable context that makes `compaction.auto: false` safe.
+The planning doc is the durable context that keeps a compacted session trustworthy
+(`compaction.auto: true`).
 
 ```
 planning/
