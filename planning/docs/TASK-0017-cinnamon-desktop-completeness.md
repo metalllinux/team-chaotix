@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-17, post-control-center): control-center FAIL fixed (Tails).** Five Python RPMs
+source-built at the Fedora ref's versions (`setproctitle` 1.3.7, `pillow` 12.3.0, `tinycss2`
+1.5.1, `webencodings` 0.5.1, `xapp` 3.0.2); `cinnamon` bumped to `3.el10` with `Requires:` for
+all settings-app modules. Repo re-published (64 RPMs). Verified on `gdm-login-vm`: default,
+themes, and backgrounds panels run with empty logs; setproctitle title confirmed in `ps`. Project
+commit `5583e94` on `feature/TASK-0017-cinnamon-desktop-completeness`, planning doc `a613f1b`.
+Remaining parity FAIL before 3.1: terminal (item 1.4). Next: Tails 1.4 → Big 3.1 fresh-VM
+end-to-end.
+
 **Now (2026-09-17, post-2.2): items 2.2 + 0.3 complete (Big); parity matrix 9/11 PASS.**
 Wallpaper fix re-verified: the initially-dark 2.2 capture was the **night variant** of the
 animated Gemstone Skies wallpaper (screenshot stats match
@@ -229,10 +238,13 @@ the PM reads.*
       wallpaper variant explained the dark capture; fix holds); ref baseline captured; 11-row
       parity matrix written (9 PASS both sides; Rocky FAILs: control-center deps, terminal).
       Evidence in `## Test Results` + `vm-test/parity/`.
-- [ ] `Tails`: control-center Python dependency fix — `setproctitle`, `PIL`, `tinycss2` absent
-      from every EL10/EPEL repo (root cause per Big's 2.2 entry); source-build them or patch the
-      imports (decide + record in `## Implementation`), republish the repo, verify
-      cinnamon-settings opens on `gdm-login-vm`.
+- [x] `Tails` (2026-09-17): control-center dep fix — 5 Python RPMs source-built at ref versions,
+      `cinnamon` 3.el10 with `Requires:`, repo at 64 RPMs, verified live on `gdm-login-vm`
+      (empty logs, screenshots). Project `5583e94` (feature branch).
+- [ ] `Tails`: plan item 1.4 — gnome-terminal source-build as an RPM (decision 1-pager
+      `planning/decisions/TASK-0017-terminal-choice.md`: EL10 dependency-chain verification is the
+      first turn; fallbacks konsole/xterm with recorded deviation), install-set update, verify it
+      opens from the Cinnamon session on `gdm-login-vm`.
 - [ ] `Tails`: plan items 1.x/2.x — the `cinnamon-rocky-defaults` RPM (wallpaper + branding),
       spec fixes, install-set + `run-tests.sh` EXPECTED-list updates, Cinnamon-Settings-menu fix.
 - [ ] `Big`: plan items 3.x — fresh-VM end-to-end + the parity comparison run vs
@@ -1072,6 +1084,82 @@ recorded in its spec. Naming follows Fedora (`python3-setproctitle`, `python3-pi
 - What remains for this item: nothing on the build side. Big's 3.1 fresh-VM verification should
   (a) install from the repo on a clean session and confirm the app opens with no manual
   `dnf install` steps, and (b) visually confirm the three panels render.
+
+---
+
+**Item 1.4, turn 1 (2026-09-17, Tails): EL10 dependency-chain verification. Verdict: chain PASSES; build gnome-terminal 3.54.5 from source. Konsole/xterm fallback not triggered.**
+The ref's version 3.60.0 is installable on EL10 only if the VTE floor is met, and it is not: ref
+Requires `vte291(x86-64) >= 0.79.90`, EL10 ships vte291 0.78.6. The newest upstream release whose
+meson vte floor fits 0.78.6 is **3.54.5** (floor 0.78.0). Every other runtime and build dependency
+of 3.54.5 is present in the EL10 repos (versions below). Upstream license for 3.54.5 is
+GPL-3.0-or-later (programme); it ships as a standalone RPM, no relicense, no merge into the GPL-2.0
+Cinnamon tree, so no license conflict.
+
+Ref stack (live on `ref-overlay-task0017`, 192.168.122.85, as `howard`):
+- `rpm -q --requires gnome-terminal`: 3.60.0-1.fc44 requires gtk3 >= 3.24.0, libhandy >= 1.6.0
+  (`libhandy-1.so.0`), `vte291(x86-64) >= 0.79.90` (`libvte-2.91.so.0`), glib2 >= 2.52,
+  gsettings-desktop-schemas, dbus, libX11, libcairo, libuuid, pango.
+- `ldd /usr/libexec/gnome-terminal-server`: `libgtk-3.so.0`, `libhandy-1.so.0`,
+  `libvte-2.91.so.0`. **Correction to plan item 1.4: the ref terminal is GTK3 + libhandy1 + VTE 2.91,
+  not gtk4** (the plan's "gtk4, VTE" assumption is wrong; a gtk4 stack was never needed).
+- Ref VTE runtime is 0.84.1 (python3 gi `Vte.MAJOR/MINOR/MICRO` probe).
+
+Version selection. vte floors read from `meson.build` of each tag, fetched 2026-09-17 from
+`https://raw.githubusercontent.com/GNOME/gnome-terminal/<tag>/meson.build`:
+
+| tag | vte-2.91 floor | verdict |
+|---|---|---|
+| 3.60.0 (ref) | 0.79.90 (ref rpm Requires) | incompatible |
+| 3.56.3 | 0.80.0 | incompatible |
+| **3.54.5** | **0.78.0** | **chosen, newest compatible** |
+| 3.52.4 | 0.76.0 | compatible, superseded |
+| 3.50.1 | 0.74.0 | compatible, superseded |
+| 3.48.3 | 0.72.2 | compatible, superseded |
+
+Tags 3.58.x, 3.59.90, 3.97.0 postdate 3.56.3, so their floors are >= 0.80 and they are excluded
+without individual fetch. (3.97.0 is an unexplained tag name at commit `204c243`; irrelevant since
+any post-3.56.3 floor fails on EL10.) 3.48.3 has no libhandy requirement at all; 3.50+ do
+(floor 1.6.0, EL10 has 1.8.3).
+
+EL10 closure (host `shadow`, `dnf --assumeno --disablerepo='nxadm-pkgs-rakudo-pkg*' repoquery
+--qf '%{name} %{version}-%{release} (%{reponame})'`, run 2026-09-17):
+- Runtime: vte291 0.78.6-1.el10 (appstream), gtk3 3.24.43-5.el10 (appstream), glib2
+  2.80.4-12.el10_2.22 (baseos), libhandy 1.8.3-4.el10 (appstream), pcre2 10.44-1.el10.3 (baseos),
+  gsettings-desktop-schemas 47.1-4.el10 (baseos), libuuid 2.40.2-18.el10 (appstream),
+  libX11 1.8.10-1.el10 (appstream), dbus 1.14.10-5.el10 (baseos).
+- Build: meson 1.4.1-5.el10 (crb; floor 0.62.0), ninja-build 1.11.1-9.el10 (crb),
+  gettext 0.22.5-6.el10 (baseos), gcc 14 (gnu++14, floor 4.8.1), glib2-devel 2.80.4-12.el10_2.22
+  (appstream), gtk3-devel 3.24.43-5.el10 (appstream), libhandy-devel 1.8.3-4.el10 (crb),
+  vte291-devel 0.78.6-1.el10 (crb), pcre2-devel 10.44-1.el10.3 (appstream),
+  libuuid-devel 2.40.2-18.el10 (appstream), libX11-devel 1.8.10-1.el10 (appstream).
+- `dnf repoquery gnome-terminal` returned nothing across all enabled repos (baseos, appstream,
+  crb, epel, local). **gnome-terminal is in no EL10 repo**; source-build is the only path, which
+  confirms the decision 1-pager Option A.
+- `dnf repoquery --whatprovides 'pkgconfig(x11)'` → `libX11-devel` 1.8.10-1.el10 (appstream).
+  There is no `xorg-x11-devel` package on EL10; meson's `dependency('x11')` resolves through that
+  pkgconfig, so the BuildRequires line is `libX11-devel`.
+
+Spec-turn notes carried from this verification:
+- 3.54.5 meson also runs `find_program('glib-compile-schemas')` (provided by glib2-devel, present)
+  and `find_program('xsltproc')` (libxslt; confirm present on the build turn).
+- `get_option('nautilus_extension')` gates `libnautilus-extension-4`. Disable it in the spec; our
+  file manager is nemo (libnemo-extension API), not GNOME Nautilus. Check the option default in
+  `meson_options.txt` when the tarball lands.
+- Pass `-Ddocs=false`. Help would pull the gtk-doc/itstool/yelp toolchain and help is not in the
+  parity matrix.
+- meson defines `GLIB_VERSION_MAX_ALLOWED=2.68` against EL10's glib 2.80.4. That is a compile-time
+  define; 3.54-era code predates the newer APIs, so no action.
+- Version delta vs ref (3.54.5 vs 3.60.0) is the recorded deviation. The parity row is "terminal
+  opens and renders input in a live Cinnamon session", not package-version equality.
+
+Host note, out of scope for this item: the host dnf config carries a broken repo
+`nxadm-pkgs-rakudo-pkg` (cloudsmith; `repomd.xml GPG signature verification error: Signing key not
+found`). All queries above ran with `--disablerepo='nxadm-pkgs-rakudo-pkg*'`.
+
+Next (turn 2): fetch `https://download.gnome.org/sources/gnome-terminal/3.54/gnome-terminal-3.54.5.tar.xz`
+plus the published `.sha256` (verify before use), write `spec/gnome-terminal.spec` (Requires per the
+runtime list above; BuildRequires per the build list plus libxslt), rpmbuild, then `rpm -q
+--requires` and payload check.
 
 ---
 
