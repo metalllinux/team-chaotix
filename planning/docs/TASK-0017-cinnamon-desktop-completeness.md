@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-17, post-1.4): item 1.4 complete (Tails) — all build items done.**
+`gnome-terminal-3.54.5-1.el10` (newest VTE-compatible; deviation recorded) built from the
+official tarball, sha256-verified, closure exact. Repo at 67 RPMs; `run-tests.sh` EXPECTED list
+updated. Live open on `gdm-login-vm` **PASS** (AT-SPI tree shows the Terminal frame + VTE surface
++ rendered prompt; screenshot in `vm-test/parity/`). Project `20f8648`, planning `1c119e6`,
+both pushed. Flagged for the harness: `gdm-a11y.py` hard-filters the app node name
+`gnome-shell`, so its tree/text/has/wait commands see nothing in a Cinnamon session — needs the
+app name parameterised (e.g. `A11Y_APP` env) before 3.1's a11y waits on the terminal. Remaining
+open work: Tails harness fix → Big 3.1 fresh-VM end-to-end + 3.2 parity run → review trio →
+Vector → Knuckles.
+
 **Now (2026-09-17, 1.4 turn 1): item 1.4 chain gate PASS (Tails).** The EL10 dependency chain for
 gnome-terminal exists in the official repos (no konsole/xterm contingency). The plan's gtk4
 assumption was wrong: the ref terminal (3.60.0) is **GTK3 + libhandy1 + VTE 2.91**. Version
@@ -249,10 +260,12 @@ the PM reads.*
 - [x] `Tails` (2026-09-17): control-center dep fix — 5 Python RPMs source-built at ref versions,
       `cinnamon` 3.el10 with `Requires:`, repo at 64 RPMs, verified live on `gdm-login-vm`
       (empty logs, screenshots). Project `5583e94` (feature branch).
-- [ ] `Tails`: plan item 1.4 — gnome-terminal source-build as an RPM (decision 1-pager
-      `planning/decisions/TASK-0017-terminal-choice.md`). **Turn 1 done** (chain gate PASS; build
-      3.54.5, GTK3+VTE291; closure verified; commit `65b86a6`). Remaining: spec + rpmbuild +
-      republish + install-set update + live verification on `gdm-login-vm`.
+- [x] `Tails` (2026-09-17): plan item 1.4 — gnome-terminal 3.54.5 built + published (67 RPMs) +
+      live open PASS on `gdm-login-vm` (AT-SPI + rendered prompt). Project `20f8648`, planning
+      `1c119e6`.
+- [ ] `Tails`: harness fix — parameterise the app name in `vm-test/gdm-a11y.py` (hard-coded
+      `gnome-shell` filter blinds all a11y waits in a Cinnamon session; use an `A11Y_APP` env or
+      equivalent, defaulting to current behaviour) so Big's 3.1 can wait on the terminal.
 - [ ] `Tails`: plan items 1.x/2.x — the `cinnamon-rocky-defaults` RPM (wallpaper + branding),
       spec fixes, install-set + `run-tests.sh` EXPECTED-list updates, Cinnamon-Settings-menu fix.
 - [ ] `Big`: plan items 3.x — fresh-VM end-to-end + the parity comparison run vs
@@ -1288,6 +1301,51 @@ Item 1.4 acceptance (re-publish + dnf resolves; install from the repo on the tes
 evidence) is fully met. Nothing remains on 1.4; Big's 3.1 fresh-VM end-to-end re-runs the whole
 matrix on a fresh VM through the harness, and `EXPECTED` in `run-tests.sh` now carries
 `gnome-terminal` (commit `34e479b`).
+
+---
+
+**Harness fix: `A11Y_APP` app selector in `gdm-a11y.py` (2026-09-17; project commit `eafa476`).**
+Fixed the gap flagged in the 1.4 turn-3 entry. The file is `tasks/lib/gdm-a11y.py` (the item's
+`vm-test/gdm-a11y.py` path is a misnomer; it is staged to the VM as `/root/gdm-harness/gdm-a11y.py`
+per `vm-test/test-gdm-login.sh:87`). The single hard filter was in `greeter_nodes()`
+(`!= "gnome-shell"` on the app node name); every command (tree/text/has/wait/find/findrole/
+waitvis/waitvisrole/findrolex/waitvisrolex/textof/textofext) goes through that one function, so
+one change covers all of them.
+
+Change: the selector is now the `A11Y_APP` env var, defaulting to `gnome-shell` (the exact current
+behaviour). Selection is an exact app-node-name match first; when nothing matches exactly, a
+case-insensitive substring match with `.` and `-` treated as equivalent separators applies. The
+fallback exists because the terminal's a11y app node is named `org.gnome.Terminal` (the
+GApplication id, observed in the turn-3 probe), so a pure exact match would never let
+`A11Y_APP=gnome-terminal` find it; `gnome-terminal` → `gnometerminal` matches inside
+`orggnometerminal`. On the greeter the default exact match always finds `gnome-shell`, so the
+fallback is never consulted there and greeter behaviour is byte-identical to before. Alternatives
+considered: (a) exact match only, forcing `A11Y_APP=org.gnome.Terminal` — rejected because the
+brief's example form `gnome-terminal` would not work and Big would trip on it; (b) exact match
+only when the env var is set, substring when unset — rejected as inconsistent semantics. A
+registered-app-missing result stays an empty node list, which the wait commands already treat as
+"target never appeared" (the existing Shadow-finding-9 semantics, preserved).
+
+Verification on `gdm-login-vm` (live Cinnamon session, user `gdmtest`; the turn-3 terminal,
+`gnome-terminal-server` pid 47530, still running and still a11y-registered, so no
+`toolkit-accessibility` toggle was needed): updated script scp'd to `/root/gdm-harness/` and
+`/tmp/` on the VM. Battery, all as `gdmtest` with `A11Y_USER=gdmtest`:
+(1) `A11Y_APP=gnome-terminal tree 3` → `[application] 'org.gnome.Terminal'` → `[frame]
+'gdmtest@localhost:~' @(0,0 708x572)` with header-bar buttons;
+(2) `A11Y_APP=gnome-terminal has "gdmtest@localhost"` → exit 0;
+(3) `A11Y_APP=gnome-terminal wait "gdmtest@localhost" 10` → exit 0 (found immediately);
+(4) default (no `A11Y_APP`) `tree 2` → empty, exit 0 (unchanged in a Cinnamon session, where the
+old filter also saw nothing);
+(5) `A11Y_APP=cinnamon tree 2` → the shell tree (`[application] 'cinnamon'`, window 1280x800),
+proving the selector works generically, not just for the terminal. A `BrokenPipeError` in check
+5 is an artifact of piping the tree into `head -8` (the script kept printing after the pipe closed),
+not a script defect.
+
+Big's 3.1 can now wait on the terminal in a Cinnamon session, e.g.
+`A11Y_USER=<user> A11Y_APP=gnome-terminal gdm-a11y.py waitvis "gdmtest@localhost" 30`. Note for
+3.1: apps only register with at-spi when `toolkit-accessibility` is true (or the app is launched
+after it is set true); on a fresh VM the harness should set the key before launching apps it wants
+to wait on via a11y.
 
 ---
 
