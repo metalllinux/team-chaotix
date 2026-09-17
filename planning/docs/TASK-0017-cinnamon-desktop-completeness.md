@@ -1232,6 +1232,65 @@ the verification result here.
 
 ---
 
+**Item 1.4, verification turn (2026-09-17; project commit `20f8648`).**
+Live-session verification on `gdm-login-vm` (192.168.122.15; session user `gdmtest`, uid 1000,
+graphical session 426 on seat0/tty2) — **PASS**: the terminal opens in a live Cinnamon session and
+renders input; the window and the VTE surface are on-screen.
+
+Step 1, repo re-publish (host): `rm -rf rpms/repodata && createrepo_c .` in `rpms/` → 67 RPMs in
+the published set; `dnf --assumeno makecache --disablerepo='*' --enablerepo=cinnamon-rocky10` →
+"Metadata cache created"; `dnf --assumeno repoquery --disablerepo='*' --enablerepo=cinnamon-rocky10
+gnome-terminal` → `gnome-terminal-0:3.54.5-1.el10.x86_64`. `rpms/repodata/` is gitignored
+(house `.gitignore`), so the re-publish carries no repo commit.
+
+Step 2, install from the repo (VM, root over the pinned harness channel, `~/.ssh/cinnamon-test-key`
++ per-VM pin file, `HostKeyAlias=gdm-login-vm`): `rsync -a --delete rpms/ → /root/rpms/` (217M,
+idempotent) plus `repo-setup/ → /root/repo-setup/`; on the VM `rm -rf /root/rpms/repodata && bash
+/root/repo-setup/setup-repo.sh /root` (house 1.2 pattern, `file:///root/rpms`); VM `dnf --assumeno
+repoquery --disablerepo='*' --enablerepo=cinnamon-rocky10 gnome-terminal` → resolves; `dnf -y
+install gnome-terminal` → installed `gnome-terminal-3.54.5-1.el10.x86_64`, auto-pulling
+`vte291-0.78.6-1.el10`, `libhandy-1.8.3-4.el10`, `vte-profile-0.78.6-1.el10` from the Rocky repos
+(the exact turn-1 closure); `gnome-terminal --version` → "GNOME Terminal 3.54.5 using VTE 0.78.6
++BIDI +GNUTLS +ICU +SYSTEMD".
+
+Step 3, live open (VM): launched inside the `gdmtest` session with
+`runuser -u gdmtest -- env XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 gnome-terminal`; `gnome-terminal-server` runs as `gdmtest`
+(pid 47530). Screenshot: `sudo virsh screenshot gdm-login-vm` →
+`vm-test/parity/rocky10/2026-09-17-1.4-01-terminal-live-open.png` (working copy in the gitignored
+`vm-test/results/`).
+
+Primary evidence is the AT-SPI tree (this model cannot view PNGs, and the a11y tree is the harness's
+standard text observation channel): the session's a11y desktop (`/run/user/1000/at-spi/bus_0`)
+enumerates the app nodes `cinnamon`, `nemo-desktop`, `csd-*`, … and `org.gnome.Terminal`; the
+terminal subtree is `[application] 'org.gnome.Terminal' → [frame] 'gdmtest@localhost:~' (0,0 708x572)`
+with the header bar (Minimize/Maximize/Close), the full menu bar (File/Edit/View/Search/Terminal/
+Help: New Terminal, Copy, Paste, Preferences, Find…, Full Screen, Zoom, profiles 80×24 to 132×43,
+About), and `[terminal] 'Terminal' (26,85 642x458)` plus scroll bar — window and VTE surface
+on-screen (extents all ≥ 0). Reading the VTE widget's AT-SPI Text interface returns the rendered
+prompt `[gdmtest@localhost ~]$`. The parity row "terminal opens and renders input in a live Cinnamon
+session" is met on Rocky.
+
+Gotchas on this turn: (1) `gdm-a11y.py`'s tree/text/has/wait commands all walk `greeter_nodes()`,
+which hard-filters the app node name `gnome-shell` (the greeter's shell); in the Cinnamon session the
+shell app node is `cinnamon` and the terminal is a *separate* app node, so the script prints nothing
+there — the terminal subtree was walked with an inline AT-SPI probe instead (no harness file changed).
+**Harness gap for 3.1:** if the fresh-VM end-to-end needs a11y waits against the Cinnamon session
+(terminal or any non-shell app), `greeter_nodes()` needs the app name parameterised (e.g. an
+`A11Y_APP` env alongside `A11Y_USER`); as written it only sees the `gnome-shell` app. (2)
+`org.gnome.desktop.interface toolkit-accessibility` was `false` in the session, so no apps registered
+with at-spi (empty tree by design); it was set `true` for the observation window, the terminal was
+relaunched so the server registered, and the key was restored to `false` afterwards. (3) the harness
+copy under `/root/gdm-harness/` is mode 700 and unreadable to `gdmtest`; a copy was staged to
+`/tmp/gdm-a11y.py` on the VM.
+
+Item 1.4 acceptance (re-publish + dnf resolves; install from the repo on the test VM; live open with
+evidence) is fully met. Nothing remains on 1.4; Big's 3.1 fresh-VM end-to-end re-runs the whole
+matrix on a fresh VM through the harness, and `EXPECTED` in `run-tests.sh` now carries
+`gnome-terminal` (commit `34e479b`).
+
+---
+
 ## Review
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
