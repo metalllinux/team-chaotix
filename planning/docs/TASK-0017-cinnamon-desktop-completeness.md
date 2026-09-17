@@ -12,6 +12,50 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-17, post-2.2): items 2.2 + 0.3 complete (Big); parity matrix 9/11 PASS.**
+Wallpaper fix re-verified: the initially-dark 2.2 capture was the **night variant** of the
+animated Gemstone Skies wallpaper (screenshot stats match
+`rocky-default-10-gemstone-skies-night.png` almost exactly; the capture ran at night) — the fix
+holds. Ref-side baseline capture (0.3) complete. 11-row parity matrix vs
+`fedora-cinnamon-ref`: PASS on both sides — panel applets, wallpaper, themes, screensaver, main
+menu, nemo, session/power controls. Rocky FAILs: (1) **Cinnamon Settings (control-center)** —
+3 Python modules absent from every EL10 and EPEL repo (`setproctitle`, `PIL`, `tinycss2`; the
+unguarded import at `cinnamon-settings.py:11` kills the whole app) — routed to `Tails`
+(source-build the modules or patch the imports, decision recorded); (2) **terminal** — expected,
+item 1.4 pending. Next: Tails control-center dep fix → Tails 1.4 → Big 3.1 fresh-VM end-to-end.
+
+**Now (2026-09-17): 2.1 defect root-caused + fixed (Tails).** The `gnome-bg` image branch of
+`libcinnamon-desktop` built its surface with an API that does not composite on the
+gtk-layer-shell/Wayland background window, so photo wallpapers painted black (the solid-color
+branch was already correct — flat colors showed, photos did not). Fix: patch (Patch0) rendering
+onto a window-similar surface, `cinnamon-desktop` rebuilt as `6.7.2-2.el10`, plus a new
+`gdk-pixbuf-parsers` RPM (stock EL10 `gdk-pixbuf2` ships no PNG/JPEG loaders). Verified on
+`gdm-login-vm` fresh first login (nonblack 1.000, colorful 0.950, 2551 distinct colors). Repo
+re-published with the fixed set (specs + patch in the canonical `spec/` dir). Next: Big item 2.2
+re-verification, then Tails 1.4 (terminal source build) and the 3.x end-to-end + parity runs.
+
+**Now (2026-09-15, post-2.1): item 2.1 complete (Big) — one open defect.** GDM login, panel,
+menu-button branding, and wallpaper config all **PASS** (the Rocky logo renders in the panel; the
+A5 pixmaps gap is closed). Wallpaper **render FAIL**: the desktop region is 100% black (VNC +
+`virsh screenshot` agree) — the nemo-desktop Wayland surface is not composited on the virtio-vga
+path while the panel is; static-PNG, nemo-desktop respawn, and desktop-icon tests all negative.
+Ref A/B not run (`fedora-cinnamon-ref` has no logged-in Cinnamon session path yet; greeter-only
+capture saved). Open question: defect vs environment limitation. Decision: `Tails` investigates
+with a disposable **qcow2 overlay** of the ref disk for the A/B (the pristine golden ref is never
+touched; methodology recorded). If the ref renders on identical VM hardware, it is our defect and
+gets fixed; if the ref is also black, it is an environment limitation and gets recorded in `##
+Status` as a deviation with evidence.
+
+**Now (2026-09-15, post-1.2): item 1.2 complete (Tails).** Host repo baseurl fixed;
+`cinnamon-rocky-defaults-1.0-1.el10.noarch` built, published (49 RPMs), verified install/uninstall
+on `gdm-login-vm`. Two evidence-forced plan deviations recorded in `## Implementation`: the dconf
+override ships flat at `/etc/dconf/db/local.d/` (EL10 dconf reads only that path, A/B tested live),
+and no icon file is shipped (the `fedora-logo-icon` hicolor entry from rocky-logos is provably the
+Rocky logo; avoids the trademark clause). Cross-item correction: the wallpaper files are owned by
+`rocky-backgrounds`, not `rocky-logos` (plan fact 1 wrong; both in the install set, the RPM
+`Requires:` both). Commit `a971031` on `feature/TASK-0017-cinnamon-desktop-completeness`. Next:
+Big item 2.1 (live-session render check).
+
 **Now (2026-09-15): item 0.1 complete (Big); plan refinements owed.** A1 **FAIL** (gnome-terminal
 in no Rocky 10 or EPEL repo — the terminal decision reopens; Amy's plan fallback must be made
 concrete). A2 PASS refined (the Cinnamon background schema has `picture-uri` but no
@@ -167,8 +211,28 @@ the PM reads.*
       branding = Rocky logo as icon-theme entry + compiled gschema override (Fedora baseline
       pattern); dead-baseurl fix is the first step of item 1.2; ref-VM repair-boot trap re-check in
       the baseline-capture procedure. Budget: 47 dispatch turns (2 consumed).
-- [ ] `Tails`: plan item 1.2 (first step: fix the dead host `cinnamon-rocky10.repo` baseurl, then
-      per the plan); write to `## Implementation`.
+- [x] `Tails` (2026-09-15): plan item 1.2 — host repo baseurl fixed; `cinnamon-rocky-defaults`
+      built + published (49 RPMs) + verified on `gdm-login-vm`; two evidence-forced deviations
+      recorded in `## Implementation` (dconf flat path; no icon shipped — uses `fedora-logo-icon`);
+      cross-item correction: wallpaper owned by `rocky-backgrounds` (plan fact 1). Commit `a971031`.
+- [x] `Big` (2026-09-15): plan item 2.1 — live-session render check. PASS: GDM login, panel,
+      menu-button branding (Rocky logo rendered), wallpaper config. **FAIL: wallpaper render**
+      (desktop 100% black; nemo-desktop Wayland surface not composited on virtio-vga). Ref A/B not
+      run (no logged-in Cinnamon path on the ref yet). Evidence in `## Test Results` +
+      `vm-test/parity/` PNGs.
+- [x] `Tails` (2026-09-17): 2.1 defect resolved — root cause: `gnome-bg` image branch surface
+      API does not composite on the gtk-layer-shell/Wayland background window (photo → black;
+      solid color was fine). Fix: Patch0 + `cinnamon-desktop` 6.7.2-2.el10 + new
+      `gdk-pixbuf-parsers` RPM; verified on `gdm-login-vm` fresh first login. Record in `##
+      Implementation`. Re-verification via Big (item 2.2).
+- [x] `Big` (2026-09-17): plan item 2.2 (+ 0.3 baseline) — wallpaper fix re-verified (night
+      wallpaper variant explained the dark capture; fix holds); ref baseline captured; 11-row
+      parity matrix written (9 PASS both sides; Rocky FAILs: control-center deps, terminal).
+      Evidence in `## Test Results` + `vm-test/parity/`.
+- [ ] `Tails`: control-center Python dependency fix — `setproctitle`, `PIL`, `tinycss2` absent
+      from every EL10/EPEL repo (root cause per Big's 2.2 entry); source-build them or patch the
+      imports (decide + record in `## Implementation`), republish the repo, verify
+      cinnamon-settings opens on `gdm-login-vm`.
 - [ ] `Tails`: plan items 1.x/2.x — the `cinnamon-rocky-defaults` RPM (wallpaper + branding),
       spec fixes, install-set + `run-tests.sh` EXPECTED-list updates, Cinnamon-Settings-menu fix.
 - [ ] `Big`: plan items 3.x — fresh-VM end-to-end + the parity comparison run vs
@@ -675,6 +739,340 @@ render correctly in a logged-in Cinnamon session (item 2.1, `Big`, with VNC evid
 and `rocky-backgrounds` in the documented install set and the harness install list (item 1.4, Tails,
 then 3.2 Vector for the docs).
 
+### Item 2.1 wallpaper-render FAIL: the reference A/B (defect vs environment limitation), 2026-09-16
+
+**Question.** `gdm-login-vm` (Rocky 10) composites the Cinnamon panel but the nemo-desktop Wayland
+surface is 100% black (Big 2.1, B5/B6). Open question in `## Status`: defect in our RPM set vs
+environment limitation of the virtio-vga + Wayland path. This entry settles it.
+
+**Method (disposable overlay; pristine golden never touched).** qcow2 overlay
+`/home/howard/vm-disks/fedora-cinnamon-ref-task0017-overlay.qcow2` backed by the pristine
+`/home/howard/vm-disks/fedora-cinnamon-ref.qcow2` (Fedora 44, Cinnamon 6.6.7); domain
+`ref-overlay-task0017`, MAC `52:54:00:7f:23:ae`, DHCP `192.168.122.85`. All changes live only in the
+overlay. To give the reference a logged-in Cinnamon session (the piece missing from Big 2.1's B7): the
+overlay runs GDM (the golden ships lightdm, plan fact 9) with a GDM auto-login config
+(`/etc/gdm/custom.conf` `[daemon] AutomaticLoginEnable=True / AutomaticLogin=howard`; original backed
+up to `/root/custom.conf.bak-task0017`), and `sshd` is enabled. Two overlay-side obstacles fixed
+before the session would start, both recorded: (1) the reference's re-armed repair-boot trap, repaired
+per Big 0.1; (2) `/etc/shadow` had lost its SELinux label (`unlabeled_t`) because `chpasswd` ran in an
+`init=/bin/bash` shell with SELinux disabled, so PAM/GDM accounting failed and no session started
+(AVC denials for `unix_chkpwd` / `systemd-userdbd` / `accounts-daemon` reading `shadow`); fixed with
+`chcon system_u:object_r:shadow_t:s0 /etc/shadow`.
+
+**Forcing the exact path under test.** The reference has both Cinnamon and GNOME installed. GDM
+auto-login first picked GNOME (gnome-shell / mutter) — the wrong compositor for this A/B. Our VM runs
+**Cinnamon Wayland (muffin)** and B5 is specifically the nemo-desktop **Wayland** surface, so the
+reference must run Cinnamon Wayland. On the overlay, `mv`'d `/usr/share/wayland-sessions/gnome.desktop`
+and both `/usr/share/xsessions/cinnamon*.desktop` to `/root/*.bak-task0017`, leaving
+`cinnamon-wayland.desktop` (`Exec=cinnamon-session-cinnamon --wayland`) as the only session. (A first
+reboot without removing the X sessions gave Cinnamon **X11** — `gdm-x-session` / `Xorg` /
+`cinnamon --x11` — which also rendered non-black, but that is not the surface under test.)
+
+**Result: the reference renders the Cinnamon Wayland desktop (2026-09-16).**
+- `virsh screenshot` → `/tmp/opencode/ref-cinnamon-wayland.png`: **100% non-black**, a blue gradient
+  wallpaper (top colors (0,64,192) / (0,64,160) / (0,96,192) / (0,32,160) / (0,32,128)) — a real
+  wallpaper image (multi-shade gradient), not a solid compositor fallback.
+- Session processes (user howard): `gdm-wayland-session --handle-registration
+  cinnamon-session-cinnamon --wayland` → `cinnamon-session-binary --session cinnamon-wayland` →
+  `/usr/bin/cinnamon --replace` (compositor backend **muffin**, confirmed by its
+  `Xwayland ... muffin-Xwaylandauth` child) → `/usr/bin/nemo-desktop`. `loginctl` → `Type=wayland`,
+  `State=active`; `/run/user/1000/` holds the `wayland-0` socket and `.muffin-Xwaylandauth.*`.
+
+**Verdict: defect in our RPM set, not an environment limitation.** Identical virtio-vga + Wayland
+hardware composites a full non-black nemo-desktop wallpaper under the reference Cinnamon 6.6.7 Wayland
+(muffin) session. The environment demonstrably can do it; our Rocky 10 build (Cinnamon 6.7.4-1.el10)
+does not, so the black nemo-desktop surface is a defect in our stack. This closes Big 2.1's B7 caveat
+("cannot be settled until the ref is put in a session").
+
+**Confounds, handled.** (a) Reference is Fedora 44 / Cinnamon 6.6.7 vs our Rocky 10.2 / 6.7.4-1.el10;
+the A/B isolates the *environment* (hardware + display path) — the reference proves that environment
+composites the surface, so the difference is in the OS/RPM layer (our build), not the hardware. (b)
+The reference session is Wayland (muffin), the same compositor path as our VM's nemo-desktop surface
+(B5). (c) The rendered blue is a multi-shade image, so nemo-desktop is compositing a wallpaper, not
+muffin's solid default.
+
+**Next (root cause, still Tails).** Both VMs are now directly comparable: reference Cinnamon Wayland
+healthy at `192.168.122.85`; our Rocky black at `192.168.122.15`. Big 2.1 already found our
+nemo-desktop is "software-rendering (no DRM fd, libcairo only)" while the panel composites — that is
+the first lead. Diagnosis next: compare the two nemo-desktop rendering paths, the muffin / Cinnamon
+build flags (`-Dwayland`, `-Dnative_backend`), and the background dconf values; fix; re-verify via
+Big 2.1.
+
+### Item 2.1 wallpaper-render FAIL: root cause (Tails), 2026-09-16
+
+**Root cause: our `nemo` RPM was built without the gtk-layer-shell Wayland backend, so
+nemo-desktop forces the X11 backend even in a Wayland session, and the desktop background is
+never composited by muffin.**
+
+Evidence chain (all verified 2026-09-16):
+1. Journal A/B (`journalctl _UID=1000`), both sessions are `cinnamon-wayland`
+   (XDG_SESSION_TYPE=wayland, GDMSESSION=cinnamon-wayland, WAYLAND_DISPLAY=wayland-0):
+   - Reference (nemo 6.6.3-3.fc44): `nemo-desktop: session is cinnamon, establishing proxy`
+     (no "using X11").
+   - Our Rocky (nemo 6.7.4-1.el10): `nemo-desktop: using X11` then
+     `nemo-desktop: session is x11 cinnamon, establishing proxy`.
+   - Only nemo env difference: reference has `XDG_SESSION_EXTRA_DEVICE_ACCESS=render:accel`,
+     ours does not.
+2. Setting the wallpaper to a plain PNG (`gsettings set ... picture-uri
+   file:///usr/share/backgrounds/rocky-default-10-gemstone-skies-day.png`) + respawn did NOT
+   change the black result (`analyze-shot.py` non-black 0.001). Rules out the GNOME `*-time.xml`
+   slideshow content as the cause.
+3. Source (linuxmint/nemo `src/nemo-desktop-main.c:121-134`): the Wayland backend is behind
+   `#ifdef HAVE_GTK_LAYER_SHELL`. Our RPM logged the `#else` line ("using X11"), so
+   `HAVE_GTK_LAYER_SHELL` was **not** defined at build time. That branch also calls
+   `gdk_set_allowed_backends("x11")`, overriding any `GDK_BACKEND` env.
+4. meson: `meson_options.txt:15` `option('gtk_layer_shell', type:'boolean', value:false, ...)`
+   defaults **false**; `meson.build:142-146` only sets HAVE_GTK_LAYER_SHELL when the option is on
+   and `dependency('gtk-layer-shell-0','>=0.8')` is found.
+5. Spec `/home/howard/rpmbuild/SPECS/nemo.spec` (changelog 6.7.4-1 "Initial port to Rocky Linux
+   10"): BuildRequires has no gtk-layer-shell-devel; `%build` `meson setup` (lines 56-61) passes
+   `-Dxmp=false -Ddeprecated_warnings=false` but **no `-Dgtk_layer_shell=true`**. The port never
+   enabled it.
+6. `rpm -q gtk-layer-shell` on gdm-login-vm → not installed; `dnf list available
+   gtk-layer-shell*` across appstream/baseos/crb/extras/epel/cinnamon-rocky10 → no match. It is not
+   shipped for Rocky 10, so it must be built.
+
+**Fix decision (Tails, in progress).** Rebuild nemo with the Wayland backend:
+1. Build `gtk-layer-shell` from source (wmww/gtk-layer-shell, MIT) as a Rocky 10 RPM; add to the
+   `cinnamon-rocky10` local repo.
+2. Update the nemo spec: add `BuildRequires: gtk-layer-shell-devel` and runtime
+   `Requires: gtk-layer-shell`; add `-Dgtk_layer_shell=true` to the `meson setup` line.
+3. Rebuild the `nemo` RPM; add to the local repo.
+4. Install `gtk-layer-shell` + the new `nemo` on gdm-login-vm; restart the cinnamon session or
+   reboot.
+5. Re-verify: nemo-desktop must log `using Wayland backend, gtk-layer-shell supported` (not
+   "using X11") and the desktop renders non-black (Big 2.1 re-run).
+
+**Alternatives rejected.** (a) `GDK_BACKEND=wayland` env — the `#else` path calls
+`gdk_set_allowed_backends("x11")`, overriding the env; the backend is compiled in. (b) Patch
+nemo-desktop to force Wayland without gtk-layer-shell — gtk-layer-shell IS the designed Wayland
+backend (renders the background as a `zwlr_layer_shell` layer surface); that is the upstream
+approach, and a patch would duplicate it. (c) Ship the reference Fedora nemo RPM — version mismatch
+(6.6.3 vs 6.7.4) and not our build.
+
+Note: multiple nemo spec/build locations exist on the host (`/home/howard/rpmbuild/SPECS/nemo.spec`,
+`/home/howard/Linux/projects/cinnamon-for-rocky10/spec/nemo.spec`, build tree
+`/home/howard/Linux/projects/cinnamon_4_rocky10/nemo/`). Confirm the authoritative build path before
+rebuilding; the installed 6.7.4-1.el10 RPM's changelog matches the `rpmbuild/SPECS/nemo.spec` one.
+
+### Item 2.1 wallpaper-render: final fix, gnome-bg image branch (Tails), 2026-09-17
+
+**Status: FIXED and verified on first login.** The prior entry's nemo / gtk-layer-shell
+prerequisite (nemo 6.7.4-2) was necessary but not sufficient: after that rebuild the desktop
+still rendered black. The second and final root cause is in the shared `gnome-bg` image branch
+of `libcinnamon-desktop`. The wallpaper is a photo, so the image branch runs; that branch built
+its `cairo_surface_t` with `gdk_cairo_surface_create_from_pixbuf()`, and a pixbuf-derived surface
+does not composite on the gtk-layer-shell / Wayland background window, leaving it black. The
+solid-color branch was already correct, which is why a flat `primary-color` showed but the photo
+did not.
+
+**Root cause (verified 2026-09-17).**
+1. The defect is in the shared library, so one fix covers both background renderers.
+   `csd-background` calls `gnome_bg_create_and_set_gtk_image`
+   (`cinnamon-settings-daemon/plugins/background/csd-background-manager.c:100`), and the function
+   is `gnome-bg.c:1811`; `nemo-desktop` links the same `libcinnamon-desktop`.
+2. Original image branch (`gnome-bg.c`, ~line 1855, the non-color `else`):
+   `surface = gdk_cairo_surface_create_from_pixbuf (pixbuf, scale, window);`. A pixbuf-derived
+   surface paints black when composited into the Wayland layer-shell window.
+3. GSettings rule out a misconfigured dark fallback. As `gdmtest`
+   (`sudo -u gdmtest env XDG_RUNTIME_DIR=/run/user/1000
+   DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus gsettings get
+   org.cinnamon.desktop.background <key>`), the schema has `primary-color` = `#00ff00`,
+   `secondary-color` = `#000000`, `picture-options` = `zoom`, `picture-uri` =
+   `file:///usr/share/backgrounds/rocky-default-10-gemstone-skies-day.png`.
+4. The "black" screenshots captured during diagnosis were the live wallpaper dimmed to ~30% by the
+   idle screen (no input for > `idle-delay` = 900 s), not a render failure. Example pixel pair,
+   bright top-left `(158,46,86)` vs idle "black" `(47,14,26)`; `(47,14,26)` is ~0.30x of
+   `(158,46,86)`. No sysfs backlight node and no input-injection tooling existed on the VM to wake
+   the display, so a fresh GDM login was used to re-arm it.
+
+**Fix (Tails, applied).**
+1. Patched the image branch to render the pixbuf onto a window-similar surface the same way the
+   solid-color branch does: `gdk_window_create_similar_image_surface()` (or
+   `cairo_image_surface_create()` with no window), then `gdk_cairo_set_source_pixbuf()` +
+   `cairo_paint()`. Patch: `gnome-bg-wayland-surface.patch`, now at
+   `/home/howard/Linux/projects/cinnamon-for-rocky10/spec/gnome-bg-wayland-surface.patch`.
+2. Rebuilt `cinnamon-desktop` as `6.7.2-2.el10` with `Patch0` applied (`%patch0 -p1`):
+   `/home/howard/rpmbuild/SPECS/cinnamon-desktop.spec`, now synced to
+   `/home/howard/Linux/projects/cinnamon-for-rocky10/spec/cinnamon-desktop.spec`.
+3. Added the missing gdk-pixbuf loaders as a separate RPM, `gdk-pixbuf-parsers-2.42.12-1.el10`
+   (spec `.../cinnamon-for-rocky10/spec/gdk-pixbuf-parsers.spec`), which installs
+   `libpixbufloader-png.so` / `libpixbufloader-jpeg.so` and regenerates `loaders.cache` in `%post`.
+   The stock `gdk-pixbuf2-2.42.12-4.el10_1.5` ships neither the PNG/JPEG loaders nor
+   `gdk-pixbuf-query-loaders`.
+
+**Verification (all on gdm-login-vm, 2026-09-17, re-checked after the fix).**
+1. Installed library is the patched build: `/usr/lib64/libcinnamon-desktop.so.4.0.0` is 451936
+    bytes, md5 `cc58f80f19bb3b353851efde2250018c`
+    (`md5sum /usr/lib64/libcinnamon-desktop.so.4.0.0`); a freshly built unpatched control library
+    is 452992 bytes, md5 `c1b9fd3a7e1ccf94bd3bdc942781b7c1`. They differ, proving the patch is in
+    the installed RPM.
+2. Loaders present and cache current: `loaders.cache` lists gif/jpeg/png/svg/tiff
+    (`grep -oE 'libpixbufloader-[a-z]+\.so' /usr/lib64/gdk-pixbuf-2.0/2.10.0/loaders.cache`); a
+    fresh `gdmtest` process decodes the wallpaper via a PyGDK pixbuf load (`PNG OK 4000 2250`).
+3. Fresh first login (`systemctl restart gdm` to force a clean autologin), captured with
+    `sudo virsh screenshot gdm-login-vm /tmp/opencode/TASK0017-freshlogin.png`, renders the
+    wallpaper: center `(67,18,56)`, nonblack `1.000`, colorful `0.950`
+    (`python3 /tmp/opencode/analyze-shot2.py /tmp/opencode/TASK0017-freshlogin.png`); multi-region
+    `2551` distinct colors, saturated fraction `0.955`
+    (`python3 /tmp/opencode/analyze-multi.py /tmp/opencode/TASK0017-freshlogin.png freshlogin`);
+    the 64x64 grid matches the earlier verified green state (top-left `(158,46,86)`, panel row
+    `(51,51,55)`).
+
+**Durable artifacts.** In the local `cinnamon-rocky10` DNF repo
+(`/home/howard/Linux/projects/cinnamon-for-rocky10/rpms/`, VM mirror `/root/rpms/`,
+`baseurl=file:///root/rpms`), freshly resolved by `createrepo_c` (repodata verified to contain
+each):
+- `cinnamon-desktop-6.7.2-2.el10.x86_64.rpm` (+ `-devel`), supersedes the broken `6.7.2-1.el10`.
+- `gdk-pixbuf-parsers-2.42.12-1.el10.x86_64.rpm` (PNG/JPEG loaders + cache helper).
+- Prerequisite rebuilds from the prior entry: `nemo-6.7.4-2.el10` (gtk-layer-shell Wayland
+  backend), `gtk-layer-shell-0.10.1-1.el10`, `cinnamon-settings-daemon-6.7.2-2.el10`.
+
+Specs and the gnome-bg patch are now in the canonical project `spec/` dir; the host
+`/home/howard/rpmbuild/` tree remains the authoritative build path (per the note above). The `-2`
+RPMs, `-devel`, and specs are staged in the working repo for `Knuckles` to commit/publish;
+`repodata/` is generated and not tracked.
+
+**Alternatives rejected.** (a) Keep unpatched `cinnamon-desktop-6.7.2-1` and set a solid
+`primary-color` instead of a photo: the DoD requires the Gemstone Skies photo, not a flat color,
+and the image branch is the real defect. (b) Patch nemo-desktop's background code directly rather
+than the shared `gnome-bg`: that duplicates the gnome-bg logic and leaves `csd-background` still
+broken, since both consume `libcinnamon-desktop`. (c) Ship the Fedora reference
+`libcinnamon-desktop`: version mismatch and it is not our build.
+
+Note: the "black" screenshots during diagnosis were idle screen dimming (~30% of the live image),
+not a regression from adding `gdk-pixbuf-parsers`. The green evidence and the fresh-login evidence
+above are the valid render results.
+
+### Cinnamon Settings (control-center) Python deps: source-build the three modules as RPMs (Tails, 2026-09-17)
+
+**Decision: source-build the missing Python modules as RPMs in this repo and add `Requires:` to
+`spec/cinnamon.spec`. Do not patch the imports.** The full closure (discovered progressively on the
+live VM, see work log): source-build `python3-setproctitle-1.3.7`, `python3-pillow-12.3.0`,
+`python3-tinycss2-1.5.1`, `python3-webencodings-0.5.1` (tinycss2's declared dependency, absent from
+EL10), and `python3-xapp-3.0.2` (imported at `bin/SettingsWidgets.py:10` and `xapp.os` at
+`cinnamon-settings.py:33`; source is the separate `linuxmint/python3-xapp` project, also absent
+from EL10). `psutil` is a runtime dependency of `xapp.os` but **is not source-built**:
+`python3-psutil-5.9.8-6.el10` ships in EL10 appstream and is a `Requires:` of
+`python3-xapp.spec`. Final spec state: `cinnamon.spec` at 3.el10 with `Requires:` for
+`python3-setproctitle`, `python3-pillow`, `python3-tinycss2`, `python3-xapp`.
+
+**Option A — source-build the three modules (chosen).** The Fedora ref carries exactly this
+solution: `rpm -q --requires cinnamon` on `ref-overlay-task0017` shows the ref's
+`cinnamon-6.6.7-7.fc44` Requires `python3-pillow(x86-64)`, `python3-setproctitle(x86-64)`,
+`python3-tinycss2`; the ref imports all three (verified 2026-09-17: `PIL 12.3.0`,
+`tinycss2 1.5.1`, `setproctitle 1.3.7` import OK on its Python 3.14.7). Building the same modules
+and adding the same `Requires:` keeps our installed Cinnamon source tree byte-identical to
+upstream 6.7.4 (zero divergence) and the runtime behavior identical to the ref. Versions match the
+ref's upstream versions exactly, so parity is on module behavior, not just module presence. All
+modules build cleanly on the host's Python 3.12.13 (same as the VM): setproctitle is a small C
+extension (BuildRequires gcc, python3-devel), tinycss2 is pure Python, pillow is a C extension
+built against libjpeg-turbo 3.0.2 + libpng 1.6.40 + zlib headers, giving JPEG/PNG support like the
+ref's full-featured Pillow. EL10 note: there is no `zlib-devel` package; the headers come from
+`zlib-ng-compat-devel` (`rpm -qf /usr/include/zlib.h` → `zlib-ng-compat-devel-2.2.3-3.el10_1`),
+which is what the pillow spec BuildRequires.
+
+**Option B — patch the imports to optional (rejected).** (1) It diverges from upstream: the fix
+would be sed/patch hunks in the `cinnamon` spec touching `cinnamon-settings.py:11` (unguarded
+`from setproctitle import setproctitle`), `bin/imtools.py:21-24`, `bin/eyedropper.py:6`,
+`modules/cs_backgrounds.py:16`, `modules/cs_user.py:17` (unguarded PIL), and `modules/cs_themes.py:5`
+(unguarded `import tinycss2`), every one of them carried and re-verified on every upstream refresh.
+(2) It degrades behavior instead of restoring it: the unguarded imports are functional, not
+cosmetic. Dropping `setproctitle` loses the process title (cosmetic, but a diff vs the ref);
+dropping PIL breaks the wallpaper preview render (`imtools`, `cs_backgrounds`), the color
+eyedropper, and the user panel's image handling; dropping `tinycss2` at `cs_themes.py:5` takes the
+theme panel's CSS-override path out of the build (only `CinnamonGtkSettings.py:7` is already
+guarded, and that guard exists upstream, so the panel is expected to have the module). The parity
+goal is "features match the Fedora Cinnamon VM"; B guarantees a mismatch on every panel that uses
+one of the three.
+
+**Spec target correction.** The app in the FAIL row is the Python GTK app `cinnamon-settings`,
+shipped by the **`cinnamon` shell RPM**, not by `cinnamon-control-center` (verified on
+`gdm-login-vm` 2026-09-17: `rpm -qf /usr/bin/cinnamon-settings` → `cinnamon-6.7.4-1.el10`; tree at
+`/usr/share/cinnamon/cinnamon-settings/`; `cinnamon-settings-default.desktop` and all 33
+`cinnamon-settings-*.desktop` entries `Exec=cinnamon-settings <module>`). The C
+`cinnamon-control-center` package (`/usr/bin/cinnamon-control-center`, compiled panels) is a
+separate legacy host that does not import the three modules; the `Requires:` go in
+`spec/cinnamon.spec`.
+
+**Build notes (EL10-specific).** Host and VM both run Python 3.12.13, so host-built RPMs are
+binary-compatible with the VM. EL10's `python3-rpm-macros` (3.12-11.el10) is the reduced variant:
+it defines `python3_sitelib` (`/usr/lib/python3.12/site-packages`) but **no** `%pyproject_build` /
+`%pyproject_install` / `%pybytecompile` macros and no `brp-python-bytecompile` *package* in the
+minimal set, so the pip-based specs install via
+`python3 -m pip install --no-cache-dir --no-deps --target %{buildroot}%{python3_sitelib} .` from
+the verified sdist and ship the dist-info. Correction to an earlier note in this entry: byte
+compilation is **not** skipped. The brp *scripts* ship with the `rpm` package itself
+(`/usr/lib/rpm/redhat/brp-python-bytecompile` exists and ran during every build; only the
+standalone `brp-python-bytecompile` package is absent), so the RPMs ship `.pyc`/`__pycache__`
+files (verified in the pillow RPM file list, 308 files). `python3-xapp` is the exception: it has
+no pip metadata, so its spec builds with `meson setup build -Dprefix=/usr` +
+`DESTDIR=%{buildroot} ninja -C build install` (the default `/usr/local` prefix would land the
+package outside the RPM; `-Dprefix=/usr` puts it on `%{python3_sitelib}` exactly). pip's hash
+verification against PyPI metadata is the checksum step for the pip-built modules; the sdist
+sha256s are recorded in each spec, and `python3-xapp`'s sha256
+(`2078766e2553eea0ff2ee598212d4883a226df63d014d060756c6274db024823`, GitHub tag tarball) is
+recorded in its spec. Naming follows Fedora (`python3-setproctitle`, `python3-pillow`,
+`python3-tinycss2`, `python3-xapp`) so `Requires:` and `repoquery` match the ref.
+
+**Work log (Tails, 2026-09-17).**
+
+- Specs added to `spec/`: `python3-setproctitle.spec` (BSD-3-Clause), `python3-pillow.spec`
+  (HPND and MIT), `python3-tinycss2.spec` (BSD-3-Clause), `python3-webencodings.spec` (BSD),
+  `python3-xapp.spec` (LGPLv2+). All carry `%global debug_package %{nil}`, a sha256 comment under
+  Source0, and a `6.7.4-.../3.0.2-1.el10` changelog entry.
+- rpm spec gotchas hit and fixed while authoring: (1) a `%section` name inside a `#` comment
+  opens a section in the scanner (`# ... in %install` → `error: second %install`; minimal repro
+  kept in `/tmp/opencode/spectest/`), comments reworded; (2) without `%global debug_package
+  %{nil}` the auto `debuginfo` subpackage collides; (3) `%setup -q` needs `-n <sdist-dir>` for the
+  pip sdists (top dirs lack the `python3-` prefix); (4) pillow's dist-info dir is PEP 503
+  normalized `pillow-12.3.0.dist-info`, not `PIL-...`; (5) `ninja` takes DESTDIR from the
+  environment, not as a positional.
+- Built in `/home/howard/rpmbuild/RPMS/x86_64/`: `python3-setproctitle-1.3.7-1.el10`,
+  `python3-pillow-12.3.0-1.el10` (308 files, `_imaging.cpython-312-x86_64-linux-gnu.so` with
+  `jpeg_start_compress@LIBJPEG_6.2` per `nm -D`), `python3-tinycss2-1.5.1-1.el10`,
+  `python3-webencodings-0.5.1-1.el10`, `python3-xapp-3.0.2-1.el10` (77 files: 12 `.py` + 60 `.mo`
+  + license), and `cinnamon-6.7.4-3.el10` + debuginfo/debugsource.
+- `spec/cinnamon.spec`: 1.el10 → 3.el10, four `Requires:` (the three above + `python3-xapp`),
+  two changelog entries (2.el10, 3.el10). Pre-existing `bogus date in %changelog` warning on the
+  `Sun Aug 10 2026` entry is not from this change.
+- Repo `rpms/`: now 64 RPMs + `repodata/` (`createrepo_c` after each change). Removed
+  `cinnamon-6.7.4-1.el10`/`2.el10` main+debuginfo+debugsource as superseded. Verified via
+  `zstd -d -c repodata/*-primary.xml.zst`: `cinnamon 6.7.4-3.el10` carries the four python
+  requires; `python3-xapp` requires `python3-psutil`, `xapps-lib`, `python3-gobject`.
+- VM (`gdm-login-vm`): repo `file:///root/rpms` rsynced; `dnf install`/`upgrade` succeeded.
+  Installed set: the five new RPMs, `python3-psutil-5.9.8-6.el10` (appstream, not our repo),
+  `cinnamon-6.7.4-3.el10`. The first `dnf upgrade` attempt failed on
+  `python3.12dist(webencodings) >= 0.4 needed by python3-tinycss2` — that failure is what added
+  `python3-webencodings` to the plan.
+- Missing-module chain found live on the VM (each fix unblocked the next import):
+  `setproctitle` (`cinnamon-settings.py:11`) → `xapp` (`bin/SettingsWidgets.py:10`,
+  `cinnamon-settings.py:32`) → `psutil` (`xapp/os.py:4` via `cinnamon-settings.py:33`
+  `import xapp.os`). The `xapp` Python package is not in the `xapps`/`xapp` C-library source
+  (checked tags 3.0.1/3.2.3/3.3.3: only `pygobject/XApp.py`), it comes from the separate
+  `linuxmint/python3-xapp` project (ref package `python3-xapp-3.0.2-2.fc44`, LGPLv2+, meson
+  build); our build matches the ref's file list.
+- Verification on the VM (all as `gdmtest` in the Wayland session,
+  `WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000
+  DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus`):
+  - Import probes pass in the app's own form: `from setproctitle import setproctitle`,
+    `from xapp.SettingsWidgets import SettingsWidget, SettingsLabel`, `tinycss2 1.5.1`,
+    `PIL 12.3.0` with JPEG support True and JPEG+PNG roundtrips OK.
+  - Live app: `cinnamon-settings default` runs (empty log, no traceback; PID stable across
+    minutes), `cinnamon-settings themes` runs (tinycss2 path), `cinnamon-settings backgrounds`
+    runs (PIL path). `ps` shows comm `cinnamon-settin` / args `cinnamon-settings` — the
+    setproctitle process title is applied, direct evidence the module is live.
+  - Screenshot evidence in `vm-test/parity/rocky10/`:
+    `2026-09-17-control-center-01-desktop.png` (baseline), `-02-settings-main.png`,
+    `-03-settings-themes.png`, `-04-settings-backgrounds.png`. Captured with `sudo virsh
+    screenshot gdm-login-vm` (host side; `tasks/lib/vnc-grab.py` times out on this VM's VNC
+    5900/5903). `-02` differs from the baseline (252 KB vs 529 KB, different md5) consistent
+    with the settings window open; image content not visually inspected (no vision in this
+    model) — flag for Big's 3.1 re-verification to eyeball the panels.
+- What remains for this item: nothing on the build side. Big's 3.1 fresh-VM verification should
+  (a) install from the repo on a clean session and confirm the app opens with no manual
+  `dnf install` steps, and (b) visually confirm the three panels render.
+
 ---
 
 ## Review
@@ -781,6 +1179,103 @@ brief), 4 executed. Plus the environment facts above.
 - A4 passes as-is; the plan's "34" is dir count, verified exactly.
 - A5 passes with two actionable facts for the implementation: the icon is controlled by the single schema key `org.cinnamon app-menu-icon-name` (override-able via gschema override file or dconf system db, Fedora precedent is the former), and the asset must land in an icon-theme directory, not pixmaps. The ref's own icon rendering (sprite not theme-resolvable) stays unverified until a Sparky/VNC screenshot; that does not change A5, which asked for the icon name and mechanism.
 - Environment side effects to carry forward: use `virsh -c qemu:///system` on this host; fix the broken `cinnamon-rocky10.repo` baseurl before item 1.2; treat the ref repair-trap re-arm as an open process gap.
+
+*Entry 2026-09-15: plan item 2.1, live-session render check on `gdm-login-vm` (Rocky) and
+`fedora-cinnamon-ref` (Fedora 44 ref). Like entry 0.1 this was direct VM verification, not a CI
+workflow run, so the compile/linter/unit/integration/Sparky rows of the standard table do not
+apply to this entry. Evidence PNGs live under `vm-test/parity/` in the project repo at commit
+`a971031` (branch `feature/TASK-0017-cinnamon-desktop-completeness`). Captures are 1280x800 from
+QEMU VNC (127.0.0.1:5900/5901) via a purpose-built grabber; the session frame was independently
+re-confirmed with `virsh screenshot`, so the grab path is not a variable.*
+
+**Checks:**
+
+| Check | What it exercises | Result | Notes |
+|---|---|---|---|
+| B1 GDM login to Cinnamon (Wayland) | harness drives the greeter to a real session | PASS | session 53, wayland, active, seat0/tty2 |
+| B2 panel render | compositor surfaces the panel | PASS | bottom 40px, bg (26,26,31), white icons |
+| B3 menu button branding | Rocky logo replaces the Cinnamon logo | PASS | green (16,185,129) logo, icon owned by `rocky-logos` |
+| B4 wallpaper config | wallpaper files + dconf value | PASS | animated XML + day/night PNGs present, `picture-uri` set |
+| B5 wallpaper render | nemo-desktop composites the background | FAIL | desktop region 100% black, see below |
+| B6 desktop icon render | nemo-desktop composites icons | FAIL | test file on `~/Desktop` not rendered |
+| B7 ref comparison | Fedora ref desktop A/B | NOT RUN | ref has no live Cinnamon session, no login path |
+
+**Checks requested vs run:** 2 requested (wallpaper render, menu button branding), 2 executed.
+B1, B2, B4, B6 are supporting checks. B7 was not runnable for the reason recorded below; that
+coverage drop is explicit, not silent.
+
+**B1 (PASS) - login:** `source /root/gdm-harness/gdm-drive.sh; gdm_login gdmtest /root/gdmtest.pass cinnamon-wayland` -> rc=0; `gdm_wait_session gdmtest 120 cinnamon-session` -> rc=0. `loginctl` -> session 53, type=wayland, state=active, seat0/tty2; processes `cinnamon-session` (13714), `cinnamon` (13771), `nemo-desktop` (15027 after respawn). The greeter pre-capture `vm-test/parity/rocky10/2026-09-15-2.1-01-greeter-before.png` shows black with a thin gray-170 text band (x 520..748, y 386..398); the ref shows the identical regime, so the black greeter screen is normal GDM Wayland state on this virtio display, not a defect.
+
+**B2 (PASS) - panel:** in `vm-test/parity/rocky10/2026-09-15-2.1-02-cinnamon-session.png` the bottom 40px (y 760..800) render: bg (26,26,31), border (51,51,55), white icons/text, Cinnamon green (16,185,129) accent.
+
+**B3 (PASS) - menu button is the Rocky logo:**
+
+- Session capture, bottom-left panel: green logo, sampled (16,185,129) + alpha, matching the Cinnamon accent hue.
+- `gsettings get org.cinnamon app-menu-icon-name` -> `'fedora-logo-icon'`; `system-icon` -> `'fedora-logo-icon'`. Value comes from the compiled gschema override in `cinnamon-rocky-defaults` (`spec/cinnamon-rocky-defaults.spec`, `Requires: rocky-logos`), the same mechanism Fedora uses (A5).
+- `/usr/share/icons/hicolor/{16,22,24,32,48,64,128,256}px/apps/fedora-logo-icon.png` -> `rpm -qf` -> `rocky-logos-100.5-3.el10.x86_64`. The name is a Fedora upstream naming holdover; the asset is the Rocky logo from the official `rocky-logos` package. Local analysis of the 256px copy (`/tmp/opencode/fedora-logo-icon-256.png`): monochrome green (16,185,129,255) + alpha, shape = rounded mass + diagonal + center diamond.
+- This closes the A5 gap: the ref's `fedora-logo-sprite` is pixmaps-only and unresolvable by the icon theme; the Rocky implementation installs the asset as a real icon-theme entry under hicolor/apps, resolvable by the active theme (`gnome`).
+
+**B4 (PASS) - wallpaper config:** dconf (read as gdmtest) `org.cinnamon.desktop.background picture-uri` = `file:///usr/share/backgrounds/rocky-default-10-gemstone-skies-time.xml` (animated day/night), `picture-options` = `'zoom'`. The XML plus `rocky-default-10-gemstone-skies-day.png` (6.2MB) and `-night.png` (3.8MB) all exist under `/usr/share/backgrounds/`, owned by `rocky-backgrounds`.
+
+**B5/B6 (FAIL) - the nemo-desktop surface is not composited:**
+
+- Desktop region (y 0..758) of the session capture is 100% pure black, 0 non-black pixels; `virsh screenshot` independently matches the VNC capture.
+- Static test: `picture-uri` set to the plain `rocky-default-10-gemstone-skies-day.png` (dconf written as gdmtest via `runuser -u gdmtest` with `XDG_RUNTIME_DIR`/`DBUS_SESSION_BUS_ADDRESS`; as root dconf fails with "Broken pipe") -> still 99.6% black. Rules out the animated-XML path.
+- Process test: `kill -9` of nemo-desktop, respawn -> still black. Rules out a wedged process state.
+- Icon test: created `/home/gdmtest/Desktop/TASK0017-wptest.txt` -> icon not rendered (0 non-black pixels in the top-left quadrant). Background and icons live on the same nemo-desktop surface, and no fullscreen app was running to occlude the desktop, while the panel (a mutter surface) composites fine.
+- nemo-desktop itself is healthy: alive, software-rendering (no DRM fd, libcairo only), ~40MB RSS, no errors in journal.
+- Classification: a compositing failure of the nemo-desktop Wayland surface on the virtio-vga display path. Not a wallpaper file or config problem. Defect in the Rocky/Cinnamon stack vs environment limitation: undetermined, because the ref could not be put in a session for the A/B (B7).
+
+**B7 (NOT RUN) - ref comparison:** `vm-test/parity/fedora-ref/2026-09-15-2.1-01-greeter-current.png` captured (greeter only). The ref has no live Cinnamon session: only a lingering headless `howard` session (39 user, 40 manager, no seat/tty), no cinnamon/gdm/nemo processes, `~/Desktop` absent. Login as howard is impossible (no root, no `/root/gdm-harness` access, no login password). The ref's greeter regime (black + centered gray-170 text) matches the Rocky greeter capture, which is what B7 could still confirm.
+
+**Cleanup:** wallpaper restored to the original animated XML; test file removed; `~/Desktop` empty. VM left in logged-in session 53 (gdmtest, wayland).
+
+**Verdict:** menu button branding PASS. Wallpaper config PASS, wallpaper render FAIL.
+
+- B3 is a full pass on both the pixel evidence and the package-ownership evidence, and it closes the A5 icon-theme gap by design (hicolor/apps entry, not pixmaps).
+- B5/B6 is not a harness bug: the harness logged in, the capture was triple-verified (VNC, virsh, diagnostic re-captures), and the config was proven correct by the static-PNG test. The black desktop is a compositing failure of the nemo-desktop surface. It goes to `Tails` as the suspected defect with one open caveat: "defect vs virtio-vga environment limitation" cannot be settled until the ref is put in a Cinnamon session, which needs a howard login path on `fedora-cinnamon-ref` (password or harness access).
+- B7's coverage drop is recorded above; the ref comparison side exists only as a greeter capture.
+
+---
+
+*Entry 2026-09-17: plan item 2.2 (Rocky parity re-run on `gdm-login-vm` after the 2.1 wallpaper fix) plus plan item 0.3 (Fedora reference baseline). Direct VM verification, not a CI workflow run, so the standard table's compile/linter/unit/integration/Sparky rows do not apply to this entry (same scope note as the prior entries). Evidence in the project repo at `vm-test/parity/rocky10/` and `vm-test/parity/fedora-ref/` (uncommitted at time of writing; `vm-test/parity/` is a new untracked directory; the Tails spec and RPM changes in that repo are separate from this entry). The ref baseline was captured on `ref-overlay-task0017` (192.168.122.85, libvirt id 79), a disposable qcow2 overlay of the reference disk per the 2026-09-15 post-2.1 decision. The pristine `fedora-cinnamon-ref` was powered off and untouched throughout; the 0.3 repair-trap re-check is N/A (the pristine reference was never booted and the overlay is a fresh definition that cannot inherit the trap).*
+
+**Parity matrix (item 2.2):** rows = DoD minimum set plus wallpaper plus branding. Ref = Fedora 44, Cinnamon 6.6.7, lightdm. Rocky = Rocky 10.2, Cinnamon 6.7.4, GDM (DM and version delta are pre-accepted deviations, plan lines 485-487).
+
+| Row | Fedora ref (expected) | Rocky 10 (actual) | Status |
+|---|---|---|---|
+| Panel applets | 14 enabled: menu, show-desktop, grouped-window-list, keyboard, systray, xapp-status, notifications, printers, removable-drives, network, nightlight, power, calendar, sound; 34 available; icons render (0.3-01) | 15 enabled: same set with separator, favorites, cornerbar in place of show-desktop and nightlight; 34 available; icons render (2.2-01) | PASS both; composition delta is a default layout difference, not a defect |
+| Wallpaper | `tiles/default_blue.jpg` renders (0.3-01) | `rocky-default-10-gemstone-skies-time.xml` (day 8AM-6PM, night after) renders the night variant: screenshot mean rgb (33.1, 1.6, 24.9) vs night PNG (34.0, 0.1, 23.9), nonblack 0.788 vs 0.735, colorful 0.217 vs 0.251 (2.2-01, identical thresholds) | PASS both; 2.1 fix holds; the 2.1 verification numbers (nonblack 1.000, colorful 0.950, 2551 colors) came from a daytime capture, and the day PNG measures nonblack 1.000 at the same threshold |
+| Branding | `fedora-logo-sprite` configured; asset is pixmaps-only and unresolvable by the icon theme (A5 gap) | `fedora-logo-icon` from the `rocky-logos` hicolor entry renders in the panel (2.2-01; B3) | Rocky PASS; ref renders per the A5 note |
+| Themes | Mint-Y-Dark-Aqua (cinnamon-themes package) applied; dark aqua UI in every capture | default Cinnamon theme, GTK Adwaita, icon theme gnome (inventory) | PASS both (default applies); the selector UI on Rocky is blocked by the settings crash |
+| Extension/applet/desklet manager | opens; applet list renders (0.3-06b); 34 applets, 3 desklets, 0 shipped extensions | cannot open; `cinnamon-settings` crashes (see below) | ref PASS; Rocky FAIL |
+| Screensaver | `cinnamon-screensaver-6.6.1` package, lock enabled, service inactive | in-shell at 6.7 (`js/ui/screensaver`), lock enabled, `cinnamon-screensaver-command` present | PASS both; lock enabled on both sides; service architecture differs by design |
+| Cinnamon Settings | opens (PID 9573), home icon grid renders (0.3-03); singleton module switch works (applet view, 0.3-06b) | crash on launch: `ModuleNotFoundError: No module named 'setproctitle'` (detail below); 2.2-03 shows desktop only | ref PASS; Rocky FAIL |
+| Main menu | opens via the applet API, `isOpen: true`, 83,874 px diff vs desktop, search band and app grid render (0.3-02); settings entry registered (inventory) | opens; search, app grid and settings category render (2.2-02) | PASS both; settings submenu not visually confirmed on ref (data present per inventory) |
+| nemo | 6.6.3 opens; home dir icon view with sidebar and grid (0.3-04) | 6.7.4 opens (2.2-04) | PASS both |
+| Terminal | gnome-terminal 3.60.0 (VTE 0.84.1) opens; typed input and output render (0.3-05) | absent (A1: no package in EL10 or EPEL); 2.2-05 not captured | ref PASS; Rocky FAIL (1.4 source build pending) |
+| Session/power controls | power popover opens (0.3-06); contents Power Saver, Balanced, Performance, Power Settings (API label walk); power panel registered; idle 900; wayland session only | power popover opens (2.2-06); power panel registered; idle 900; wayland and X sessions; session settings panel absent on both sides (consistent) | PASS both |
+
+**Checks requested vs run:** item 0.3 requested the trap re-check, boot, login, inventory, and baseline files. Executed: trap re-check N/A (documented above), boot PASS, login PASS (howard active session), inventory saved (`inventory-fedora-ref-0.3.txt`, 209 lines), 8 screenshots saved (01-06 plus 06b). Item 2.2 requested the wallpaper re-verify, inventory, the 11-row matrix, and the gap list. Executed: wallpaper re-verify PASS (measured, row above), inventory saved (`inventory-rocky10-2.2.txt`, 228 lines), all 11 rows populated, 5 screenshots saved (the 05/06/11 staged captures are not possible on Rocky because the settings app cannot start; single root cause, no separate evidence needed). No checks silently dropped.
+
+**Rocky FAIL detail, Cinnamon Settings (code bug, goes to Tails):**
+
+- Launch as gdmtest in the session environment: `cinnamon-settings` -> `cinnamon-settings.py` line 11 `from setproctitle import setproctitle` -> `ModuleNotFoundError: No module named 'setproctitle'` (reproduced 2026-09-17).
+- Import probe (python3, gdmtest): `setproctitle` MISSING, `PIL` MISSING, `tinycss2` MISSING, `gi` OK, `XApp` typelib OK (xapps-lib ships it).
+- Usage in the tree: `setproctitle` only at `cinnamon-settings.py:11` (process title; the unguarded import kills the whole app); `PIL` in `bin/imtools.py:21-24`, `bin/eyedropper.py:6`, `modules/cs_backgrounds.py:16`, `modules/cs_user.py:17`; `tinycss2` unguarded at `modules/cs_themes.py:5`, guarded at `bin/CinnamonGtkSettings.py:7`.
+- Repo availability: `dnf --assumeno repoquery --available` across appstream, crb, baseos, extras, epel: no `python3-setproctitle`, no `python3-pillow`, no `python3-tinycss2` in any repo. A plain `Requires:` cannot close this; Tails must source-build the three (setproctitle and tinycss2 are small; pillow needs the libjpeg, libpng, zlib dev packages) or patch the imports to optional.
+- Screenshot: `vm-test/parity/rocky10/2026-09-17-2.2-03-settings-power.png` (desktop only, no settings window).
+
+**Rocky FAIL detail, terminal (repo fact, 1.4 pending):** A1 (entry 0.1) verified gnome-terminal absent from AppStream, CRB, BaseOS, Extras, EPEL. The ref runs 3.60.0. The 1.4 source build (Tails) closes this; not a harness bug.
+
+**Environment notes (2026-09-17):**
+
+- Ref access is howard-only: no root, no sudo, no input group, `/dev/uinput` is root:root 0600, no `ukey` on the ref.
+- The ref VNC pointer is dead: the guest QEMU USB Tablet (event4) has broken sysfs (no `name`/`capabilities`/`abs_*`, PROP=0), so absolute pointer events are dropped; PS/2 relative gave zero diff. Input paths used instead: keyboard via `virsh send-key` (codeset linux), applet menu and popover open/close via LookingGlass D-Bus (`org.Cinnamon` on the user bus, object `/org/Cinnamon/LookingGlass`, `Eval` + `GetResults`; applets located through `Main.AppletManager.definitions`, driven via `applet.menu.open()`/`.close()`).
+- Rocky environment fixes made during 2.2, recorded for reproducibility: `usermod -aG input gdmtest` + re-login (the ukey harness needs `/dev/uinput`); `gsettings set org.cinnamon.desktop.screensaver idle-activation-enabled false` as gdmtest (stops the two idle lock events during captures; the lock itself stays enabled).
+- The applet composition delta ref vs Rocky (show-desktop + nightlight vs separator + favorites + cornerbar) is the default panel layout difference between 6.6.7 and 6.7.4; recorded as a deviation, not a defect.
+
+**Verdict:** wallpaper re-verify PASS (2.1 fix holds; the night variant matches the source PNG statistics). Parity matrix complete: PASS on both sides = panel applets, wallpaper, themes (default applies), screensaver, main menu, nemo, session/power controls. FAIL (Rocky, all code or repo fact, all go to Tails via 3.1): Cinnamon Settings and everything hosted inside it (extension/applet/desklet manager UI, themes selector, power settings panel) = 3 missing Python modules, none available in EL10 or EPEL repos; terminal = A1 repo fact with the 1.4 build pending. No harness bugs in this entry. Both FAIL rows need recording in `## Status` as deviations (Robotnik).
 
 ---
 
