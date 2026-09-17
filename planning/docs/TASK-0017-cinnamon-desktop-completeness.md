@@ -12,6 +12,14 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-17, 1.4 turn 1): item 1.4 chain gate PASS (Tails).** The EL10 dependency chain for
+gnome-terminal exists in the official repos (no konsole/xterm contingency). The plan's gtk4
+assumption was wrong: the ref terminal (3.60.0) is **GTK3 + libhandy1 + VTE 2.91**. Version
+decision: build **3.54.5** (newest compatible with EL10's vte291 0.78.6; the ref's 3.60.0 needs
+vte >= 0.79.90) — version delta vs ref recorded as a deviation. Full closure verified present.
+Commit `65b86a6`. Session ended after turn 1 (32k discipline); spec + rpmbuild + republish + live
+verification are the next turns (Tails session resumed).
+
 **Now (2026-09-17, post-control-center): control-center FAIL fixed (Tails).** Five Python RPMs
 source-built at the Fedora ref's versions (`setproctitle` 1.3.7, `pillow` 12.3.0, `tinycss2`
 1.5.1, `webencodings` 0.5.1, `xapp` 3.0.2); `cinnamon` bumped to `3.el10` with `Requires:` for
@@ -242,9 +250,9 @@ the PM reads.*
       `cinnamon` 3.el10 with `Requires:`, repo at 64 RPMs, verified live on `gdm-login-vm`
       (empty logs, screenshots). Project `5583e94` (feature branch).
 - [ ] `Tails`: plan item 1.4 — gnome-terminal source-build as an RPM (decision 1-pager
-      `planning/decisions/TASK-0017-terminal-choice.md`: EL10 dependency-chain verification is the
-      first turn; fallbacks konsole/xterm with recorded deviation), install-set update, verify it
-      opens from the Cinnamon session on `gdm-login-vm`.
+      `planning/decisions/TASK-0017-terminal-choice.md`). **Turn 1 done** (chain gate PASS; build
+      3.54.5, GTK3+VTE291; closure verified; commit `65b86a6`). Remaining: spec + rpmbuild +
+      republish + install-set update + live verification on `gdm-login-vm`.
 - [ ] `Tails`: plan items 1.x/2.x — the `cinnamon-rocky-defaults` RPM (wallpaper + branding),
       spec fixes, install-set + `run-tests.sh` EXPECTED-list updates, Cinnamon-Settings-menu fix.
 - [ ] `Big`: plan items 3.x — fresh-VM end-to-end + the parity comparison run vs
@@ -1160,6 +1168,67 @@ Next (turn 2): fetch `https://download.gnome.org/sources/gnome-terminal/3.54/gno
 plus the published `.sha256` (verify before use), write `spec/gnome-terminal.spec` (Requires per the
 runtime list above; BuildRequires per the build list plus libxslt), rpmbuild, then `rpm -q
 --requires` and payload check.
+
+---
+
+**Item 1.4, build turn (2026-09-17; project commit `34e479b` on
+`feature/TASK-0017-cinnamon-desktop-completeness`).**
+Built `gnome-terminal-3.54.5-1.el10.x86_64` (+`-debuginfo`, +`-debugsource`) from
+`https://download.gnome.org/sources/gnome-terminal/3.54/gnome-terminal-3.54.5.tar.xz` (1.9 MiB).
+sha256 `132699f818341779c8aa9c0d049b778cbc6f82c1c37a17530354a47049962551`, verified with
+`sha256sum -c` against the published `.sha256sum`. Fetch note: `download.gnome.org` (CDN77-Turbo)
+returns 404 to `curl` GET but 200 to HEAD and `wget`; the tarball was fetched with `wget`. Host state
+change (flagged): installed build deps on `shadow` via `sudo -n dnf install -y libhandy-devel
+vte291-devel gsettings-desktop-schemas-devel` (passwordless sudo). The `gsettings-desktop-schemas.pc`
+pkgconfig lives in `gsettings-desktop-schemas-devel`, not the runtime package
+(`dnf repoquery --whatprovides 'pkgconfig(gsettings-desktop-schemas)'`).
+
+Spec: `spec/gnome-terminal.spec`, house style per `python3-xapp.spec`/`nemo.spec` (bare-filename
+`Source0` + dated sha256 comment; changelog `* Thu Sep 17 2026 Team Chaotix <chaotix@metallinux.dev>
+- 3.54.5-1.el10`). `License: GPLv3+ AND GFDL-1.3-only` (programme GPLv3+; both installed appstream
+metainfo files are GFDL-1.3-only). No `.so` shipped (nautilus extension off), so no `%post` ldconfig.
+
+Meson config: `-Dprefix=/usr -Dlibdir=%{_libdir} -Dnautilus_extension=false -Ddocs=false
+--wrap-mode=nodownload`; `search_provider` left at its default true (inert data on Cinnamon, preserves
+ref parity). Built with explicit `meson setup build` + `ninja -C build` + `DESTDIR=%{buildroot} ninja
+-C build install` (xapp house pattern) because the EL10 `%meson`/`%ninja_build` macro pair is
+inconsistent: `%meson` configures into `redhat-linux-build/` but `%ninja_build` runs ninja in the
+source dir. `vte.wrap` is fallback-only; the system `vte291-devel` 0.78.6 was used.
+
+Payload (verified `find BUILDROOT` + `rpm -qlp`): `%{_bindir}/gnome-terminal`,
+`%{_libexecdir}/gnome-terminal-server`, `%{_libexecdir}/gnome-terminal-preferences`,
+`%{_prefix}/lib/systemd/user/gnome-terminal-server.service`, `%{_libdir}/gnome-terminal/gschemas.compiled`,
+both desktop files, the `xdg-terminals` symlink, `dbus-1/services/org.gnome.Terminal.service`, the
+gschema, the search-provider ini, 4 hicolor icons (scalable + symbolic apps), both metainfo files
+(`org.gnome.Terminal` and `.Nautilus` variants; the install rule keeps both), 98 locale `.mo` files via
+`%find_lang --with-gnome`, `README.md` doc, `COPYING` + `COPYING.GFDL`. D-Bus interface XMLs are
+gdbus codegen inputs only and are not installed.
+
+`rpm -q --requires` on the built RPM matches the turn-1 runtime closure exactly: dbus, glib2 >= 2.52.0,
+gsettings-desktop-schemas, gtk3 >= 3.22.27, libX11, libhandy >= 1.6.0, libuuid, pcre2, vte291 >= 0.78.0,
+plus the NEEDED `.so.0` symbols (all present in the verified EL10 closure). Note: no `libpcre2-8.so.0`
+DT_NEEDED appears in the aggregate requires (pcre2 is used only in the server binary path); the explicit
+`Requires: pcre2` covers runtime availability.
+
+Build gotchas hit and fixed this turn: (1) missing `%prep`/`%setup -q` made meson setup fail with
+"meson.build not found"; (2) the explicit meson line initially omitted `-Dprefix=/usr`, so the payload
+landed under `/usr/local/` (meson's default prefix) and every runtime file was "File not found" in
+BUILDROOT; (3) RPM expands macros even inside comments, so comments naming `%meson`/`%ninja_build`
+spliced macro bodies into the build script, and one left a "Macro expanded in comment" warning; all
+rephrased; (4) the systemd user unit installs to hardcoded `prefix/lib/systemd/user` (upstream comment:
+"this is what systemd uses"), not `%{_libdir}`; EL10's unitdir macro is `/usr/lib/systemd/system` and
+cannot be used for user units, so the spec lists the explicit path.
+
+Repo + harness integration (in commit `34e479b`): the three RPMs were copied to `rpms/` (65 to 68
+files; the house repo publishes debuginfo too), and `vm-test/run-tests.sh` gained `gnome-terminal` in
+the `EXPECTED` list and `rocky-backgrounds` + `rocky-logos` in the phase-2 system-deps dnf list (the
+turn-1 note's placement of the item-1.2 wallpaper packages; both are in baseos). The `SYSTEM_DEPS`
+array in that script is dead code (declared, never consumed); the inline remote dnf list is the live
+one and is what was edited.
+
+Next (turn 3): republish the local repo (delete `repodata/` first, per R7), install on `gdm-login-vm`,
+open the terminal from a live Cinnamon session, capture `sudo virsh screenshot` evidence, and record
+the verification result here.
 
 ---
 
