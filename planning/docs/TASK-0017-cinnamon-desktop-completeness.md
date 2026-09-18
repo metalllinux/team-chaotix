@@ -43,6 +43,20 @@ reproduces the published set, (B) `run-tests.sh` end-to-end on a fresh VM (also 
 mapping via a `ukey key Super_L` menu open), (C) enforcing-SELinux smoke. Then Vector
 (`INSTALL.md`/`README.md` for the complete set) → Knuckles (PR to main, merge).
 
+**Now (2026-09-19): review fixes complete (Tails) — all 15 findings closed; re-verifications A/B/C PASS.**
+`spec/` is canonical for every published RPM (provenance blocks: upstream commit by full tree diff,
+fetchable by-SHA ref, tarball sha256); all five fixable RPMs ship their license files (`%license`
+verified, the LGPL §4 obligation for `gdk-pixbuf-parsers` met); `tinycss2` Requires fixed; dead
+URLs fixed; `rpms/` republished to exactly the published set (64 RPMs); 3.1/3.2 evidence
+committed; `ukey.c` Super→`KEY_LEFTMETA` (commit `55e37bd`, proven end-to-end — `Super_L` opens
+the main menu); `run-tests.sh` install-rc gate + dead Phase 2 removed + `install-set.txt` encodes
+the 22-package set. Re-verifications: **A** clean-checkout rebuild reproduces the published set;
+**B** fresh VM `t17-revB` (192.168.122.18) — single-dnf install of all 64 RPMs on attempt 1,
+22/22 verified, GDM Wayland login, five surfaces; **C** enforcing-SELinux — five surfaces PASS,
+**zero AVC denials**. Project `d128848`, planning `e765e67`. One recorded observation (not a
+defect, open as a follow-up): `gdm_wait_session` can report a timeout when logind visibility
+lags right after session creation. The Tails leg is done. Chain continues: Vector → Knuckles.
+
 **Now (2026-09-18, post-trio): review chain 3/3 complete — Big adds 3 findings; merge gate set.**
 Trio close in `## Test Results`: **T1 (should-fix)** `run-tests.sh` swallows install/verify exit
 codes (a fully failed install exits 0); **T2 (low)** Phase 2 is structurally dead (resolvable
@@ -2395,13 +2409,22 @@ Knuckles PR.
 
 *Owner: `Vector`.*
 
+*Vector, 2026-09-19. Project commit `9848143` on `feature/TASK-0017-cinnamon-desktop-completeness`.
+House style kept (no em dashes, prose over bullets, bounded uncertainty).*
+
 | File | Sections touched | What changed |
 |---|---|---|
-| `README.md` | | |
-| `CHANGELOG.md` | | |
+| `README.md` | Status, What the complete set adds, Build notes, Test results, Project structure, License | Replaced the 14-package-era content (10-component table, "48 RPMs" count, "muffin built X11-only (no Wayland)" claim) with the final state. 64 RPMs published, 22 runtime names in `vm-test/install-set.txt` as the install set, single-`dnf` fresh-VM install, GDM Wayland login. Added the delta table (8 new packages, 2 rebuilt), the gnome-terminal 3.54.5 vs reference 3.60.0 recorded deviation, the 11/11 parity result with the three intentional branding divergences, and the 2026-09-18/19 verification results (fresh-VM, `run-tests.sh` end-to-end, enforcing-SELinux smoke, clean-checkout rebuild). Build notes now say muffin is built with Wayland (`spec/muffin.spec:115`, `-Dwayland=true`). Project structure gained `repo-setup/`, `tasks/`, and the `vm-test/install-set.txt` reference |
+| `INSTALL.md` | Current status, Quick start, Manual repository setup, Direct RPM install, Prerequisites, Installed packages, GDM session configuration, Troubleshooting | Replaced the 14-package content (two-command install with `xorg-x11-server-Xwayland`, the 14-row version table, the manual base-dependency list, the mozjs115 first-install ordering note). Install is now the single `dnf install` of the 22 runtime names from `vm-test/install-set.txt`, with the verified auto-pull of `rocky-backgrounds`, `rocky-logos`, `gsettings-desktop-schemas`, `python3-psutil`. GDM section updated for EL10 GDM 47 Wayland-only login into `cinnamon-wayland` (verified environment installs `gdm` + `gnome-shell`). Installed-packages table now lists all 22 runtime names with published NVRs. Wallpaper-black troubleshooting cites `gdk-pixbuf-parsers` + the `cinnamon-desktop-6.7.2-2.el10` compositing fix; SELinux section cites the zero-AVC-denial smoke result. The direct-RPM fallback is documented as the `run-tests.sh` harness path (64 RPMs, first attempt, 2026-09-19) |
 
-**Checked and needed no change:** listing these saves the next person re-checking.
-**Could not verify:** what, and what would settle it.
+**Checked and needed no change:** `CHANGELOG.md` (no such file exists in the project repo, so the
+template row does not apply), `repo-setup/setup-repo.sh` (the documented behaviour still matches
+the script: createrepo_c install, metadata generation, `.repo` file, CRB enable, validation),
+`vm-test/install-set.txt` (22 runtime names, the source of truth, unchanged by this task),
+project `LICENSE` (GPL-2.0 header, unchanged).
+**Could not verify:** whether `dnf install gdm` alone (without `gnome-shell`) is sufficient for
+the greeter on EL10. The docs install both, which is the verified test environment. Running
+`dnf install gdm` on a fresh EL10 VM and checking whether the greeter starts would settle it.
 
 ---
 
