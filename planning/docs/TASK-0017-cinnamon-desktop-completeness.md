@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19): re-verification A PASS — 2 re-verifications remain (B, C).**
+Clean-checkout rebuild from a fresh clone at `2fa1b2d`: all 10 changed specs build RC 0; NVRs +
+subpackage sets match `rpms/` exactly; payloads byte-identical except build-environment
+artifacts (LTO stream symbol hashes -> build-ids/.gnu_debugdata; pip direct_url build paths).
+Detail in `## Implementation`. Remaining, all assigned Tails: (B) `run-tests.sh` end-to-end on
+a fresh VM (also proves the META mapping via a `ukey key Super_L` menu open), (C)
+enforcing-SELinux smoke. Then Vector (`INSTALL.md`/`README.md` for the complete set) → Knuckles
+(PR to main, merge).
+
 **Now (2026-09-18, post-Tails fixes): all 15 review findings resolved; 3 re-verifications remain.**
 Tails fixed every open finding: Shadow 8 (blocker `459ac30`; superseded RPMs +
 `gdk-pixbuf-parsers` source rebuild `4c9f7c2`; `ukey.c` Super→META, `cinnamon.spec` comment,
@@ -361,12 +370,15 @@ the PM reads.*
       + BuildRequires, dead URLs — `459ac30`/`4c9f7c2`), Big T1–T3 (exit codes, dead Phase 2,
       `vm-test/install-set.txt` 22-package set — `55e37bd`). Every `## Review`/`## Security`
       finding now carries a `**Resolution:**` line. Branch pushed to `2fa1b2d`.
-- [ ] `Tails`: the three re-verifications from `## Test Results` (trio close) — (A) clean-checkout
-      rebuild reproduces the published set (at minimum the blocker trio nemo/gtk-layer-shell/
-      cinnamon-settings-daemon + the six packages rebuilt in `4c9f7c2`; compare NVR and key
-      content against `rpms/`), (B) `run-tests.sh` end-to-end on a fresh VM (exercises T1/T2/T3
-      plus a `ukey key Super_L` menu open to prove the META mapping end-to-end), (C)
-      enforcing-SELinux smoke (boot enforcing, GDM login, five surfaces, log AVCs).
+- [x] `Tails` (2026-09-19): re-verification A — clean-checkout rebuild **PASS**: all 10 changed
+      specs build RC 0 from a fresh clone at `2fa1b2d`; NVRs + subpackage sets match `rpms/`
+      exactly; payloads byte-identical modulo build-environment artifacts (LTO stream symbol
+      hashes -> build-ids/.gnu_debugdata, pip direct_url build paths). Detail in `##
+      Implementation` (entry of 2026-09-19).
+- [ ] `Tails`: re-verifications B + C from `## Test Results` (trio close) — (B) `run-tests.sh`
+      end-to-end on a fresh VM (exercises T1/T2/T3 plus a `ukey key Super_L` menu open to prove
+      the META mapping end-to-end), (C) enforcing-SELinux smoke (boot enforcing, GDM login,
+      five surfaces, log AVCs).
 - [ ] `Vector`: update `INSTALL.md`/`README.md` for the complete set (resume TASK-0016's doc work
       here); the install-set source of truth is now `vm-test/install-set.txt` (22 runtime names).
 - [ ] `Knuckles`: PR to main, merge.
@@ -1595,7 +1607,21 @@ and `## Security` finding now carries a `**Resolution:**` line with its fix comm
 
 ### Open notes
 - **cjs tarball (for Shadow):** `~/rpmbuild/SOURCES/cjs-6.4.0.tar.gz` is functionally hermetic (no `builddir/` inside) but carries a 238-entry `.git/`. It was deliberately **not** regenerated: the checkout `~/Linux/projects/cinnamon_4_rocky10/cjs` (HEAD `cdd85377`, tag 6.4.0) has two uncommitted modified files, `build/compile-gschemas.py` and `build/symlink-gjs.py`, and `git archive HEAD` would silently drop them, changing the published source. Follow-up: commit or vendor those two modifications upstream-side, then re-tar with `git archive`.
-- **Re-verifications (open, assigned Tails):** A clean-checkout rebuild reproducing the published set; B `run-tests.sh` end-to-end on a fresh VM (exercises the T1/T2/T3 changes and the ukey Super mapping end-to-end via a `ukey key Super_L` menu open); C enforcing-SELinux smoke (boot enforcing, GDM login, five surfaces, log AVCs).
+- **Re-verifications (assigned Tails):** A done 2026-09-19 (PASS, entry below); B `run-tests.sh` end-to-end on a fresh VM (exercises the T1/T2/T3 changes and the ukey Super mapping end-to-end via a `ukey key Super_L` menu open) and C enforcing-SELinux smoke (boot enforcing, GDM login, five surfaces, log AVCs) remain open.
+
+### Re-verification A: clean-checkout rebuild (done 2026-09-19, PASS)
+
+Scope: rebuild the 10 specs whose content changed since the published build (blocker trio nemo/gtk-layer-shell/cinnamon-settings-daemon + cinnamon-desktop, gdk-pixbuf-parsers, cinnamon-rocky-defaults, and the four pip rebuilds from `4c9f7c2`) from a fresh clone of the pushed branch, and compare against `rpms/`.
+
+- Fresh clone from GitHub at `2fa1b2d` (`/tmp/opencode/t17-verifyA/clone`), scratch topdir, sources staged from `~/rpmbuild/SOURCES` + repo `spec/`. House pattern confirmed: bare `Source:` names resolve from `_sourcedir` only, not the spec directory, so `webencodings-LICENSE`, `GPLv2.txt`, `gnome-bg-wayland-surface.patch`, and `gdk-pixbuf-2.42.12.tar.xz` (sha256 `b9505b34...` verified against the spec comment and the live GNOME URL) must be copied into topdir `SOURCES/` by hand.
+- All 10 specs built RC 0 (two passes, logs `build.log` + `build2.log`). The 4 first-pass failures were staging gaps on my side (files missing from topdir `SOURCES/`), not repo defects; pass 2 re-ran them clean. Builds verified genuine (meson setup + ninja compiles, not cache hits).
+- NVR and subpackage sets match the published `rpms/` exactly: 10 main + the debuginfo/debugsource/devel subpackages that exist in the published set; zero NVR misses.
+- Payload comparison (rpm2cpio extract, per-file `cmp`, symlink-aware): **byte-identical except two classes of build-environment artifact**:
+  1. The 20-byte SHA-1 digest in `.note.gnu.build-id` of every LTO-compiled binary (csd-*, libcinnamon-desktop, libcvc, nemo*, libgtk-layer-shell, pixbuf loaders, PIL + setproctitle `.so`), with derived deltas in `.gnu_debugdata` (DWARF), `.gnu_debuglink` CRC, and the `.build-id/` directory entries. Root cause: host default CFLAGS include `-flto=auto -ffat-lto-objects` (`build.log:42`), and GCC's LTO stream emits per-compile-unit weak symbols named `<source.c>.<8hex>` whose hash is build-environment-dependent (empirically: not a file-content hash, not a path-string hash, differs between the two topdirs while file content hashes match). Section-level hash comparison shows `.text`/`.rodata` byte-identical (nemo, csd-background, libcinnamon-desktop, nemo-desktop, libgtk-layer-shell, libpixbufloader-png.so); the setproctitle `.so` differs in exactly 20 bytes, offsets 761-780 = the build-id digest region (`.note.gnu.build-id` at 0x2e8, size 0x24).
+  2. `direct_url.json` in the four pip packages records the absolute build directory (`file://` URL) — known pip non-determinism, verified by diff (only the path differs).
+- A first comparison pass flagged the devel/debugsource/noarch pairs as differing; that was `diff -r` following dangling symlinks (e.g. `libnemo-extension.so` -> `.so.1`, target ships in the main package). Symlink-aware re-compare: identical.
+- Key content checks 9/9: nemo `Requires: gtk-layer-shell`; tinycss2 `Requires: python3-webencodings`; gdk-pixbuf-parsers ships `%postun` + png+jpeg loaders; `/usr/share/licenses/` present in all four pip packages + cinnamon-rocky-defaults.
+- **Verdict: PASS.** The clean checkout at `2fa1b2d` deterministically reproduces the published packages; the residual byte deltas are environment-dependent build metadata (LTO stream symbol hashes, build-ids, pip direct_url paths), not spec or source differences. Artifacts: `/tmp/opencode/t17-verifyA/{clone, topdir, build.log, build2.log, compare.sh, compare2.sh, sectdiff.sh}`.
 
 ---
 
