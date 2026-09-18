@@ -12,6 +12,24 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19): task RESUMED — the pause on TASK-0017 is over.** TASK-0017 shipped (PR #4
+merged, `main` at `3375a05`): the set is complete (64 RPMs, 22-name install set), and its Vector
+leg already rewrote `INSTALL.md`/`README.md` for the complete set (single-dnf install, GDM Wayland,
+troubleshooting). Remaining here: (1) `Vector` applies the standing audit findings D1-D6 (where
+still applicable after the rewrite) and writes the dedicated **minimal-server (no login manager)
+install-and-run section** — the 2026-08-30 verified path (set installs with no DM/X pulled in;
+GDM 47 + gnome-shell install + enable; default target stays `multi-user.target`;
+`systemctl set-default graphical.target` -> getty until then) translated to the current set;
+(2) `Big` runs the exact documented procedure on a fresh minimal Rocky 10.2 VM on host
+`192.168.1.102` (no DM preinstalled) to prove it end-to-end; (3) review chain, then Knuckles.
+
+**Now (2026-09-14):** `192.168.1.103` is no longer available for testing (user, 2026-09-14;
+verified unreachable from the PM host). The 2026-08-30 bare-metal grounding evidence in the entry
+below remains valid as a record, but the DoD's "Verified by execution" step will run on a fresh
+minimal Rocky 10.2 VM on host `192.168.1.102`, not on the bare-metal machine. The task remains
+paused on TASK-0017, which now also carries the user's desktop-feature-parity goal vs the Fedora
+Cinnamon reference VM (2026-09-14).
+
 **Now (2026-08-30): task created from the user's direct request.** The user wants: (1) every
 existing instruction in `metalllinux/cinnamon-for-rocky10` `INSTALL.md` (on main) verified as
 correct, and (2) a new section covering installing **and running** the Cinnamon Desktop from a
@@ -85,14 +103,18 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Tails`: audit every existing `INSTALL.md` instruction (verify each step against the repo and
-      by execution; record discrepancies) and produce the verified minimal-server procedure
-      (install RPM set + GDM + set-default graphical + reboot + Cinnamon (Wayland) session),
-      reconciling the package count. Write to `## Implementation`.
-- [ ] `Vector`: write the corrected + extended `INSTALL.md` (and `README.md` if affected) from the
-      verified procedure; write to `## Docs`.
+- [x] `Tails` (2026-08-30, predates the pause): audit of every existing `INSTALL.md` instruction
+      complete — six discrepancies D1-D6 recorded in `## Implementation` (package-count
+      reconciliation included). The verified minimal-server procedure (install set + GDM +
+      set-default graphical + Cinnamon Wayland session) is the bare-metal grounding path recorded
+      there; it is what the new doc section documents.
+- [ ] `Vector`: apply the still-applicable D1-D6 fixes to the current `INSTALL.md` (TASK-0017's
+      rewrite superseded some; verify each against the doc as it stands) and add the
+      minimal-server (no login manager) install-and-run section from the verified procedure.
+      Write to `## Docs`.
 - [ ] `Big`: run the exact minimal-server procedure from the updated doc on a fresh minimal Rocky
-      10.2 VM to prove it is executable end-to-end; record in `## Test Results`.
+      10.2 VM on host `192.168.1.102` (no login manager preinstalled) to prove it executable
+      end-to-end; record in `## Test Results`.
 - [ ] `Shadow` → `Omega` → `Big`: review chain on the diff.
 - [ ] `Tails`: fix anything the chain returns.
 - [ ] `Knuckles`: PR to main, merge.
