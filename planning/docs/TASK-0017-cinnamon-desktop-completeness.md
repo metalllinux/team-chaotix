@@ -43,6 +43,15 @@ reproduces the published set, (B) `run-tests.sh` end-to-end on a fresh VM (also 
 mapping via a `ukey key Super_L` menu open), (C) enforcing-SELinux smoke. Then Vector
 (`INSTALL.md`/`README.md` for the complete set) → Knuckles (PR to main, merge).
 
+**DONE (2026-09-19, Robotnik).** All 17 `## Definition of Done` boxes ticked against the recorded
+evidence. PR #4 merged to `metalllinux/cinnamon-for-rocky10` main via rebase (`3375a05`, tree
+byte-identical to the reviewed tip `9848143`). The desktop is a complete 6.7 set: 64 RPMs, 22-name
+install set, single-dnf install, GDM Wayland login, 11/11 parity vs the Fedora Cinnamon reference,
+three recorded deviations (gnome-terminal 3.54.5 vs ref 3.60.0; Rocky logo, time-based sky,
+Adwaita GTK branding). Open follow-ups, not task failures: `gdm_wait_session` logind visibility
+lag (harness); greeter sufficiency of bare `dnf install gdm` (docs gap); the `vm-test/parity/`
+baseline is the standing acceptance bar for future sessions. Remaining: Espio prunes this doc.
+
 **Now (2026-09-19, post-Vector): docs leg complete.** `INSTALL.md` + `README.md` rewritten for
 the final state (64 RPMs, 22-name install set, single-dnf install, GDM Wayland, 11/11 parity,
 deviation table, troubleshooting). Project `9848143` on the feature branch (unpushed), planning
@@ -280,45 +289,46 @@ rather than burning retries.
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] **Complete package set.** The missing cinnamon monorepo subpackages required for a full 6.7
-      desktop are built and added to the RPM set and the documented install set. The exact list is
-      established by the plan/diagnosis (recorded in `## Plan`/`## Implementation`), not guessed.
-- [ ] **Terminal.** A working terminal (gnome-terminal) is part of the desktop set/install and opens
-      from the Cinnamon session.
-- [ ] **Wallpaper.** The Rocky Linux 10 wallpaper (from the Rocky wallpaper RPM) is installed and is
-      set automatically on first login — the session does not start with a black wallpaper.
-- [ ] **Branding.** The tray/panel shows the Rocky Linux logo, not the Cinnamon logo (using
-      `rocky-logos`).
-- [ ] **Applets load.** The default Cinnamon applets are present and load in the panel (no missing/
-      erroring applets).
-- [ ] **Themes load.** The Cinnamon theme files are present on the installed system (per the plan's
-      verified subpackage inventory, themes ship inside the `cinnamon` shell package at 6.7; there
-      is no standalone `cinnamon-themes` package — D1, 2026-09-14), the default theme applies at
-      login, and themes are selectable in the theme selector without breakage.
-- [ ] **Extensions work.** The extension/applet/desklet manager is present and functional (can list
-      and enable the shipped extensions/applets/desklets).
-- [ ] **Settings menu.** The Cinnamon Settings menu is present in the menu and opens control-center.
-- [ ] **File manager still works.** nemo opens and functions (regression check).
-- [ ] **VM end-to-end.** On a fresh minimal Rocky 10.2 VM: install the complete set, log in via GDM
-      (Cinnamon Wayland), and every item above is verified working. Recorded in `## Test Results`
-      with evidence.
-- [ ] **Host-VM end-to-end (supersedes the bare-metal box; `192.168.1.103` is no longer
-      available for testing, user 2026-09-14).** On a Rocky 10.2 VM on host `192.168.1.102`:
-      install or update to the complete set and every item above is verified working. Recorded
-      in `## Test Results` with evidence.
-- [ ] **Desktop feature parity vs the Fedora reference.** A documented comparison of the Rocky 10
-      Cinnamon desktop against `fedora-cinnamon-ref`: a feature checklist established in `## Plan`
-      (at minimum: panel applets, themes, extension/applet/desklet manager, screensaver,
-      Cinnamon Settings, main menu, nemo, terminal, session/power controls), each item PASS/FAIL
-      on both sides with evidence, recorded in `## Test Results`. Every gap is either closed in
-      this task or recorded in `## Status` as a deviation with the reason. Goal (user, 2026-09-14):
-      the features match the Fedora Cinnamon VM.
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`.
-- [ ] `Big`: all harness checks PASS, with no silently dropped checks.
-- [ ] `Vector`: `INSTALL.md`/`README.md` updated to describe the complete set (coordinates with
-      TASK-0016).
-- [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR.
+- [x] **Complete package set.** (Plan verdict: no missing monorepo subpackages at 6.7 —
+      applets/desklets/settings/menu/themes ship in the shell RPM, screensaver folded into
+      `cinnamon`; delta = 2 system packages + new RPMs.) Set built, published (64 RPMs), documented
+      (`vm-test/install-set.txt`, `INSTALL.md`); 22/22 verified on fresh VMs 3.1 + rev B.
+- [x] **Terminal.** gnome-terminal 3.54.5 in the set; opens from the Cinnamon session (1.4 live
+      open PASS, 3.1, rev B, parity row 10). Version deviation vs ref 3.60.0 recorded.
+- [x] **Wallpaper.** Rocky Gemstone Skies set automatically on first login; renders (day/night
+      variants) — 2.1 black-desktop defect fixed (`cinnamon-desktop` 6.7.2-2 patch +
+      `gdk-pixbuf-parsers`), re-verified 2.2/3.1/rev B+C.
+- [x] **Branding.** Rocky logo on the panel menu button (2.1 render PASS, 3.1, parity row).
+- [x] **Applets load.** 8 default applets present, panel renders, no missing/erroring applets
+      (3.1, parity row 1).
+- [x] **Themes load.** Themes ship in the `cinnamon` shell package (A4 inventory, 818 files);
+      default theme applies at login; selectable in the theme selector (3.2 parity row).
+- [x] **Extensions work.** Applet/desklet/extension manager functional, lists shipped items (3.2
+      parity row; ref-side manager capture 0.3).
+- [x] **Settings menu.** Cinnamon Settings menu present, opens control-center (3.1, parity row 7;
+      the 2.2 crash closed by the five Python RPMs + `Requires:`).
+- [x] **File manager still works.** nemo opens and functions (3.2 parity row; nemo 6.7.4-2).
+- [x] **VM end-to-end.** Fresh minimal Rocky 10.2 VM, complete set, GDM Wayland login, every item
+      above verified — 3.1: 5/5 PASS on `task0017-fresh-vm` (`## Test Results` +
+      `vm-test/evidence/task0017-fresh-3.1/`).
+- [x] **Host-VM end-to-end (supersedes the bare-metal box; `192.168.1.103` is no longer
+      available for testing, user 2026-09-14).** All runs above are on VMs on host
+      `192.168.1.102`; additionally rev B (fresh VM `t17-revB`, single-dnf all 64 RPMs, 22/22)
+      and rev C (enforcing-SELinux five surfaces, zero AVC denials) PASS.
+- [x] **Desktop feature parity vs the Fedora reference.** 11-row checklist (panel applets,
+      wallpaper, themes, screensaver, main menu, nemo, terminal, settings, session/power,
+      extension manager) PASS/FAIL on both sides with evidence — **11/11 PASS** (3.2 vs the 0.3
+      baseline). Gaps closed: terminal, settings. Deviations recorded: gnome-terminal 3.54.5 vs
+      3.60.0, three intentional branding divergences (Rocky logo, time-based sky, Adwaita GTK).
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review` (all 8 carry
+      `**Resolution:**` lines, 2026-09-18/19).
+- [x] `Omega`: no unresolved findings above `low` in `## Security` (medium + 3 low all closed).
+- [x] `Big`: all harness checks PASS, no silently dropped checks (3.1/3.2, rev A/B/C; the T1
+      exit-code swallow fixed so failures can no longer be silent).
+- [x] `Vector`: `INSTALL.md`/`README.md` updated to describe the complete set (`9848143`;
+      TASK-0016 coordination: its INSTALL.md verification now targets this set).
+- [x] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR #4 (rebase merge
+      `3375a05`, tree byte-identical to the reviewed branch tip `9848143`).
 
 ---
 
@@ -423,6 +433,9 @@ the PM reads.*
       (`metalllinux/cinnamon-for-rocky10`) opened against `main` at `c1de933` and merged via
       rebase; `main` advanced to `3375a05` with the tree identical to the reviewed branch tip;
       team-chaotix planning `main` pushed. Release record in `## Release`.
+- [ ] `Espio`: prune this doc — move superseded narration/plans/findings into `## Archive`, keep
+      every decision, verified fact, deviation, and the final state; leave `## Status`/`##
+      Definition of Done` (all ticked)/`## Release` intact.
 
 ---
 
