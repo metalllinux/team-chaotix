@@ -43,6 +43,14 @@ reproduces the published set, (B) `run-tests.sh` end-to-end on a fresh VM (also 
 mapping via a `ukey key Super_L` menu open), (C) enforcing-SELinux smoke. Then Vector
 (`INSTALL.md`/`README.md` for the complete set) → Knuckles (PR to main, merge).
 
+**Now (2026-09-19, post-Vector): docs leg complete.** `INSTALL.md` + `README.md` rewritten for
+the final state (64 RPMs, 22-name install set, single-dnf install, GDM Wayland, 11/11 parity,
+deviation table, troubleshooting). Project `9848143` on the feature branch (unpushed), planning
+`03d20d8` on main (unpushed) — both pushes go to Knuckles with the PR. One bounded doc gap
+recorded in `## Docs` (greeter sufficiency of bare `dnf install gdm` unverified; docs use the
+verified gdm + gnome-shell env). Chain state: only Knuckles remains (PR + merge), then Espio
+prunes this doc.
+
 **Now (2026-09-19): review fixes complete (Tails) — all 15 findings closed; re-verifications A/B/C PASS.**
 `spec/` is canonical for every published RPM (provenance blocks: upstream commit by full tree diff,
 fetchable by-SHA ref, tarball sha256); all five fixable RPMs ship their license files (`%license`
@@ -405,9 +413,16 @@ the PM reads.*
       META mapping proven end-to-end), (C) enforcing-SELinux smoke (boot enforcing, GDM login,
       five surfaces, zero AVC denials). Detail in `## Test Results` (entry of 2026-09-19);
       evidence in project `d128848`.
-- [ ] `Vector`: update `INSTALL.md`/`README.md` for the complete set (resume TASK-0016's doc work
-      here); the install-set source of truth is now `vm-test/install-set.txt` (22 runtime names).
-- [ ] `Knuckles`: PR to main, merge.
+- [x] `Vector` (2026-09-19): `INSTALL.md` + `README.md` updated for the final state (64 RPMs,
+      22-name install set per `vm-test/install-set.txt`, single-dnf install, GDM Wayland, 11/11
+      parity + 3 branding divergences, deviation table, troubleshooting). Project `9848143`
+      (feature branch, **not pushed** — left for Knuckles); planning `03d20d8` (main, not pushed).
+      One bounded gap recorded in `## Docs`: `dnf install gdm` alone as greeter sufficiency not
+      independently verified (docs use the verified gdm + gnome-shell test env).
+- [x] `Knuckles` (2026-09-19): branch pushed to `9848143`; PR #4
+      (`metalllinux/cinnamon-for-rocky10`) opened against `main` at `c1de933` and merged via
+      rebase; `main` advanced to `3375a05` with the tree identical to the reviewed branch tip;
+      team-chaotix planning `main` pushed. Release record in `## Release`.
 
 ---
 
@@ -2432,12 +2447,34 @@ the greeter on EL10. The docs install both, which is the verified test environme
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** yes (2026-09-19). All 17 `## Definition of Done` boxes verified
+against in-doc evidence: package set / terminal / wallpaper / branding / applets / themes /
+extensions / settings menu / nemo from 3.1 (5/5) and 3.2 (11/11) in `## Test Results`; Host-VM
+end-to-end and parity from the 2026-09-18 entry; Shadow 8/8 resolved in `## Review`; Omega 4/4
+resolved in `## Security`; Big T1–T3 resolved, trio-close verdict met by re-verifications A/B/C
+PASS; Vector docs complete in `## Docs`; Knuckles merge box closed by this record (PR #4
+merged). Note: the boxes themselves remain unticked in `## Definition of Done` — that section is
+Robotnik's and not mine to edit; verification is recorded here instead. Nothing missing; the
+release proceeded.
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** `feature/TASK-0017-cinnamon-desktop-completeness` at `9848143`, pushed to
+  `metalllinux/cinnamon-for-rocky10` (`d128848..9848143`).
+- **Commits:** GPG-signed no — `commit.gpgsign` is not set in the project repo (nor in
+  team-chaotix); the 13 branch commits carry conventional messages and were merged as-is.
+- **PR:** #4 opened (https://github.com/metalllinux/cinnamon-for-rocky10/pull/4), description
+  covering the complete set, the verification summary (3.1 5/5, parity 11/11, re-verifications
+  A/B/C PASS), and the recorded deviations (gnome-terminal 3.54.5 vs ref 3.60.0; the three
+  branding divergences). Merged via **rebase** — the repo convention, matched against how the
+  TASK-0008 fixes landed on `main` (linear commits, same messages, rebased SHAs, no merge
+  commits). Within `metalllinux`, no human review required.
+- **Deploy:** n/a — this repo has no CI deployment workflow (the plan chose the custom libvirt
+  harness over CI/Sparky; stated in the trio close), so there is no workflow to dispatch.
+- **Verification:** `main` advanced `c1de933` -> `3375a05` (13 commits, linear). Merged-tip tree
+  `82219128af9c2611a8cc0f750abb253d2cb86eb7` is identical to the reviewed branch tip
+  `9848143^{tree}`; `git diff 9848143 origin/main` empty. Remote feature branch retained
+  (matches the retained TASK-0004/TASK-0006 branches).
+- **Planning push:** team-chaotix `main` pushed from `03d20d8` (Vector docs leg) plus this
+  release record commit.
 
 ---
 
