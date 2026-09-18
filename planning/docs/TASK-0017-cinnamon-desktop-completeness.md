@@ -12,6 +12,74 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-18, post-Tails fixes): all 15 review findings resolved; 3 re-verifications remain.**
+Tails fixed every open finding: Shadow 8 (blocker `459ac30`; superseded RPMs +
+`gdk-pixbuf-parsers` source rebuild `4c9f7c2`; `ukey.c` Super→META, `cinnamon.spec` comment,
+parity `gget()`, 3.1/3.2 evidence `55e37bd`/`2fa1b2d`), Omega 4 (license files + `%license` on
+all six specs, `Requires: python3-webencodings`, `--no-build-isolation` + BuildRequires, dead
+URLs), Big T1–T3 (`run-tests.sh` exit codes, dead Phase 2 deleted, the 22-package set encoded in
+`vm-test/install-set.txt`). Every `## Review`/`## Security` finding carries a `**Resolution:**`
+line; branch pushed to `2fa1b2d`. Remaining, all assigned Tails: (A) clean-checkout rebuild
+reproduces the published set, (B) `run-tests.sh` end-to-end on a fresh VM (also proves the META
+mapping via a `ukey key Super_L` menu open), (C) enforcing-SELinux smoke. Then Vector
+(`INSTALL.md`/`README.md` for the complete set) → Knuckles (PR to main, merge).
+
+**Now (2026-09-18, post-trio): review chain 3/3 complete — Big adds 3 findings; merge gate set.**
+Trio close in `## Test Results`: **T1 (should-fix)** `run-tests.sh` swallows install/verify exit
+codes (a fully failed install exits 0); **T2 (low)** Phase 2 is structurally dead (resolvable
+only from the local repo; dnf atomicity + `|| echo WARNING`); **T3 (low)** the accepted
+22-package install set is encoded nowhere and `INSTALL.md` documents the 14-package era.
+One-liner **PASS**: the old standalone `cinnamon-settings` RPM is absent (settings bundled in
+`cinnamon-6.7.4-3.el10`). Verdict: **mergeable after Tails** resolves Shadow's blocker + T1 and
+runs the two mandatory re-verifications (clean-checkout rebuild reproduces the published set;
+`run-tests.sh` end-to-end on a fresh VM; enforcing-SELinux smoke). Host note: `libvirtd` had gone
+inactive; Big restored it (enabled + running, all persistent domains back up). Total open for
+Tails: Shadow 8 + Omega 4 + Big 3 = 15 findings (1 blocker, 6 should-fix/medium, 8 low/nit).
+
+**Now (2026-09-18, post-Omega): review chain 2/3 complete — Omega adds 4 findings.**
+License tags all correct at exact upstream tags; no secrets, no injection surface. **1 medium**:
+six new RPMs ship without a license file (the pip-based specs never copy the sdist LICENSE, no
+`%license` line; for `gdk-pixbuf-parsers` this is an actual LGPL-2.1 §4 distribution obligation).
+**3 low**: `python3-tinycss2.spec` omits `Requires: python3-webencodings` (dist-info metadata is
+not parsed into RPM Requires — clean-install breakage of the settings theme panel); PEP 517 build
+isolation fetches unpinned build backends from PyPI at rpmbuild time (fix:
+`--no-build-isolation` + BuildRequires); two dead spec URLs (provenance only). Full numbered list
+in `## Security`. Total open for Tails after the trio: Shadow 8 (1 blocker) + Omega 4. Next: Big
+(trio close + the settings-RPM one-liner) → Tails fixes.
+
+**Now (2026-09-18, post-Shadow): review chain 1/3 complete — 8 findings (1 blocker).**
+Shadow reviewed the full feature-branch diff: **1 blocker** (the repo `spec/` cannot reproduce the
+shipped `nemo`/`gtk-layer-shell`/`cinnamon-settings-daemon` RPMs — repo specs are stale
+1.el10/missing; the published 2.el10 builds came from the host's `~/rpmbuild/SPECS/`, which is not
+in the branch; clean-checkout rebuild would resurrect the wallpaper defect and the 3.1/3.2 verdicts
+are not reproducible), **4 should-fix** (3.1/3.2 acceptance evidence untracked in the branch;
+`ukey.c` maps Super_L/R to Control keycodes — a landmine; 7 superseded 1.el10 RPMs still in
+`rpms/` incl. known-broken `cinnamon-desktop-6.7.2-1`; `gdk-pixbuf-parsers` built from a
+gitignored URL-less tarball), **3 nits** (comment count, missing `%postun`, a
+`parity-inventory.sh` misdiagnosis). Clean areas stated plainly. Full numbered findings in `##
+Review`. Merge is blocked until Tails resolves the blocker + should-fixes. Next: Omega → Big →
+Tails fixes.
+
+**Now (2026-09-18): items 3.1 + 3.2 complete (Big) — end-to-end + parity PASS.**
+Fresh VM `task0017-fresh-vm` (192.168.122.153), clean Rocky 10, full set installed with **one**
+`dnf install` of 22 runtime names — zero manual steps (wallpapers, branding, and the Python deps
+all auto-pulled via the dependency chain). 3.1: **5/5 PASS** (panel, wallpaper render day/night,
+terminal, control-center, main menu). 3.2: **11/11 PASS** vs the 0.3 Fedora ref baseline — both
+prior FAILs closed by the 67-RPM set; remaining ref differences are the intentional branding
+divergences (Rocky logo, time-based sky, Adwaita GTK). DoD boxes "Host-VM end-to-end" and
+"parity" are satisfied. Two harness notes (not defects): Cinnamon shell a11y tree keeps
+menu/panel nodes latent (pixels are the proof); menu didn't dismiss via ukey in this build.
+Open one-liner for the packaging story: confirm the old separate `cinnamon-settings` RPM is
+absent on the release VM. Remaining: review trio → Vector → Knuckles.
+
+**Now (2026-09-17, post-harness): harness fix complete (Tails).** The `gdm-a11y.py` app selector
+is now the `A11Y_APP` env var (default `gnome-shell`, greeter behaviour byte-identical) with a
+separator-tolerant fallback for GApplication ids (`org.gnome.Terminal`). Verified live on
+`gdm-login-vm`. Project `eafa476`, planning `2aa6b09`, pushed. 3.1 unblocked. Prerequisite
+recorded: set `toolkit-accessibility=true` on the fresh VM before any a11y wait. All build-side
+work for the task is done — the remaining chain is Big 3.1/3.2 → review trio → Vector →
+Knuckles.
+
 **Now (2026-09-17, post-1.4): item 1.4 complete (Tails) — all build items done.**
 `gnome-terminal-3.54.5-1.el10` (newest VTE-compatible; deviation recorded) built from the
 official tarball, sha256-verified, closure exact. Repo at 67 RPMs; `run-tests.sh` EXPECTED list
@@ -263,16 +331,44 @@ the PM reads.*
 - [x] `Tails` (2026-09-17): plan item 1.4 — gnome-terminal 3.54.5 built + published (67 RPMs) +
       live open PASS on `gdm-login-vm` (AT-SPI + rendered prompt). Project `20f8648`, planning
       `1c119e6`.
-- [ ] `Tails`: harness fix — parameterise the app name in `vm-test/gdm-a11y.py` (hard-coded
-      `gnome-shell` filter blinds all a11y waits in a Cinnamon session; use an `A11Y_APP` env or
-      equivalent, defaulting to current behaviour) so Big's 3.1 can wait on the terminal.
-- [ ] `Tails`: plan items 1.x/2.x — the `cinnamon-rocky-defaults` RPM (wallpaper + branding),
-      spec fixes, install-set + `run-tests.sh` EXPECTED-list updates, Cinnamon-Settings-menu fix.
-- [ ] `Big`: plan items 3.x — fresh-VM end-to-end + the parity comparison run vs
-      `fedora-cinnamon-ref`; record in `## Test Results`.
-- [ ] `Shadow` → `Omega` → `Big`: review chain on the diff.
-- [ ] `Tails`: fix anything the chain returns.
-- [ ] `Vector`: update `INSTALL.md`/`README.md` for the complete set (resume TASK-0016's doc work here).
+- [x] `Tails` (2026-09-17): harness fix — `A11Y_APP` env var in `tasks/lib/gdm-a11y.py` (default
+      `gnome-shell`, separator-tolerant fallback), verified live. Project `eafa476`.
+- [x] `Big` (2026-09-18): plan items 3.1 + 3.2 — fresh VM `task0017-fresh-vm`, single-dnf full-set
+      install (zero manual steps), 3.1 5/5 PASS, 3.2 parity matrix **11/11 PASS** vs ref. DoD
+      Host-VM + parity boxes satisfied. Evidence in `## Test Results` +
+      `vm-test/evidence/task0017-fresh-3.1/` + `vm-test/parity/rocky10/2026-09-18-3.2/`.
+- [x] `Big` (2026-09-18, folded into trio close): one-liner on `task0017-fresh-vm` —
+      `rpm -qa | grep cinnamon-settings` matches only `cinnamon-settings-daemon` (substring);
+      `rpm -q cinnamon-settings` → "package cinnamon-settings is not installed" (exit 1). Old
+      separate settings RPM absent. Recorded in `## Test Results` (trio close).
+- [x] `Shadow` (2026-09-18): feature-branch review — 8 findings (1 blocker: repo specs can't
+      reproduce the shipped nemo/gtk-layer-shell/cinnamon-settings-daemon RPMs; 4 should-fix; 3
+      nits). Full numbered list in `## Review`.
+- [x] `Omega` (2026-09-18): security review — 4 findings (1 medium: six RPMs ship without a
+      license file, LGPL §4 obligation for gdk-pixbuf-parsers; 3 low: missing
+      `Requires: python3-webencodings`, PEP 517 unpinned backends, two dead spec URLs). License
+      tags verified correct; no secrets/injection. Full list in `## Security`.
+- [x] `Big` (2026-09-18): review trio closed — test-execution review + one-liner in `## Test
+      Results` (trio close entry): 3 new findings (T1 should-fix: `run-tests.sh` exit-code
+      swallowing; T2 low: dead Phase 2; T3 low: install set not encoded, `INSTALL.md` stale),
+      0 blockers, 0 in product RPMs. Mergeable after Tails resolves Shadow's blocker + T1 and
+      runs the two re-verifications (run-tests.sh end-to-end; enforcing-SELinux smoke).
+- [x] `Tails` (2026-09-18): all 15 review findings fixed — Shadow 8 (blocker: spec/ canonical
+      incl. nemo/gtk-layer-shell/cinnamon-settings-daemon in `459ac30`; superseded 1.el10 RPMs +
+      gdk-pixbuf-parsers source rebuild in `4c9f7c2`; ukey.c Super→META + cinnamon.spec comment +
+      parity `gget()` in `55e37bd`; 3.1/3.2 evidence committed in `2fa1b2d`), Omega 4 (license
+      files + `%license` on all six specs, `Requires: python3-webencodings`, `--no-build-isolation`
+      + BuildRequires, dead URLs — `459ac30`/`4c9f7c2`), Big T1–T3 (exit codes, dead Phase 2,
+      `vm-test/install-set.txt` 22-package set — `55e37bd`). Every `## Review`/`## Security`
+      finding now carries a `**Resolution:**` line. Branch pushed to `2fa1b2d`.
+- [ ] `Tails`: the three re-verifications from `## Test Results` (trio close) — (A) clean-checkout
+      rebuild reproduces the published set (at minimum the blocker trio nemo/gtk-layer-shell/
+      cinnamon-settings-daemon + the six packages rebuilt in `4c9f7c2`; compare NVR and key
+      content against `rpms/`), (B) `run-tests.sh` end-to-end on a fresh VM (exercises T1/T2/T3
+      plus a `ukey key Super_L` menu open to prove the META mapping end-to-end), (C)
+      enforcing-SELinux smoke (boot enforcing, GDM login, five surfaces, log AVCs).
+- [ ] `Vector`: update `INSTALL.md`/`README.md` for the complete set (resume TASK-0016's doc work
+      here); the install-set source of truth is now `vm-test/install-set.txt` (22 runtime names).
 - [ ] `Knuckles`: PR to main, merge.
 
 ---
@@ -1349,17 +1445,229 @@ to wait on via a11y.
 
 ---
 
+**Shadow blocker (spec/ canonical) + Omega medium (license files) + Omega low (tinycss2 Requires, 2 dead URLs) (done 2026-09-18, commit `459ac30` on `feature/TASK-0017-cinnamon-desktop-completeness`, pushed).**
+`spec/` is now the canonical source for every published RPM. The six linuxmint specs that had
+drifted from the host build specs (nemo, cinnamon-settings-daemon, cinnamon-control-center,
+cinnamon-menus, cinnamon-session, xapps) are replaced by the host `~/rpmbuild/SPECS/` content that
+produced the published RPMs, and `spec/gtk-layer-shell.spec` is added (host verbatim). Each of the
+six carries a new provenance comment block under `Source0` recording the exact upstream commit the
+build tarball was archived from, a fetchable content ref, and the build tarball's sha256.
+
+### Problem: why the linuxmint Source0 fetches keep failing, and what the tarballs actually are
+linuxmint repos have **no plain version tags** — only `<ver>-unstable` tags and
+`master.<branch>` refs (`git ls-remote` / tags API, e.g. nemo has `6.7.4-unstable` but no `6.7.4`).
+The host tarballs in `~/rpmbuild/SOURCES/` are **git archives of untagged commits** (top dir
+`<pkg>-<ver>/`), not GitHub's by-SHA archives (top dir `<pkg>-<sha7>/`). Full-tree diff against
+candidate upstream commits (differ=0, i.e. identical file sets and content) identified each:
+
+| Package (tarball) | Upstream commit | Commit subject (date) | Fetchable content ref |
+|---|---|---|---|
+| nemo 6.7.4 | `932438fc4767` | "nemo-desktop: Don't crash/quit in Wayland when the monitor is removed (#3785)" (2026-07-09) | `https://github.com/linuxmint/nemo/archive/932438fc4767.tar.gz` |
+| cinnamon-settings-daemon 6.7.2 | `18bb726dc21a` | "csd-xsettings-manager.c: Fix fcitx support for xwayland clients." (2026-07-12) | `https://github.com/linuxmint/cinnamon-settings-daemon/archive/18bb726dc21a.tar.gz` |
+| cinnamon-menus 6.7.0 | `1142b5fb313b` (= tag `6.7.0-unstable`) | the tag itself | `https://github.com/linuxmint/cinnamon-menus/archive/refs/tags/6.7.0-unstable.tar.gz` |
+| cinnamon-session 6.7.3 | `382af0f7e6df` | "csm-manager.c: Move SessionOver emission to a more common location." (2026-08-10) | `https://github.com/linuxmint/cinnamon-session/archive/382af0f7e6df.tar.gz` |
+| cinnamon-control-center 6.7.2 | `acbe1b999a54` | "build: Remove desktop-file-links.py, bump meson requirement." (2026-07-27) | `https://github.com/linuxmint/cinnamon-control-center/archive/acbe1b999a54.tar.gz` |
+| xapps 3.3.3 | `94a348f16ec3` | "xapp-sn-watcher: Fix capitalize() mangling non-ASCII titles." (2026-07-05) | `https://github.com/linuxmint/xapps/archive/94a348f16ec3.tar.gz` |
+| gtk-layer-shell 0.10.1 | tag `v0.10.1` (exact) | — | already in the spec (URL + sha256 comment) |
+
+All by-SHA archive URLs verified live (302 → codeload → 200, 2026-09-18). Build-tarball sha256s
+(the exact bytes the published RPMs were built from): nemo
+`b21be178735bfc52657d5d5fae710228913fd8be01ef4c396155221db6d50d9a`; csd
+`1141da2de844de68ac6ddbd24a9cb48295c0790507e09b46ff24f1048c10cd93`; menus
+`2a2243c778ef89a3600d3639e997f2bac1809250cada29b8e8aac09246330ddb`; session
+`31aaa7fb84c36babaf29abc46aef7763244b7121755312277678fa5bfaeb96b8`; control-center
+`c7a8c5a7e063effc4e316201c4adffad5d6d6149973f99060d839a7189cf6da5`; xapps
+`efcd4b4ab9dcede1ac79b2b8c5a979a2fdc0d6ac776d27109d602b45c4d7ad86`; gtk-layer-shell
+`88c3a3e0a5300532f3d368d5df64838a87f1fb85273f22d41df0a6b8d0ec59c6` (matches the fetched tag
+archive byte-for-byte).
+
+### Problem: how `%license` ships a license for a pip-installed package
+Empirical test on this host's rpm 4.19.1.1 (minimal spec, `/tmp` scratch topdir, cleaned up): with
+`%prep`/`%setup` present, a bare `%license LICENSE` resolves `LICENSE` from the **build dir** and
+auto-installs it to `%{_datadir}/licenses/%{name}/LICENSE` in the package; without a build dir it
+resolves to that buildroot path directly (error message shows the expected location). This matches
+the already-published `python3-xapp` RPM, whose `rpm -qlp` shows
+`/usr/share/licenses/python3-xapp/COPYING` from a bare `%license COPYING` (`spec/python3-xapp.spec:48`).
+So the four pip specs need no extra install step; the webencodings spec (sdist ships no license)
+places the vendored file in the build dir in `%prep`.
+
+### Omega license fixes (per sdist, verified by `tar tzf` on `~/rpmbuild/SOURCES/`)
+- `tinycss2-1.5.1/LICENSE` at sdist root → `%license LICENSE`.
+- `setproctitle-1.3.7/LICENSE` at sdist root → `%license LICENSE`.
+- `pillow-12.3.0/LICENSE` at sdist root → `%license LICENSE`.
+- `webencodings-0.5.1` sdist has **no** license file → new `Source1: webencodings-LICENSE`, vendored
+  from `https://raw.githubusercontent.com/courtbouillon/webencodings/v0.5.1/LICENSE` (fetched
+  2026-09-18, sha256 `f23bae6ada76095610a77137fb92aec7342723900211c5826d54b4c57907ca56`, 1490 B,
+  BSD, "Copyright (c) 2012 by Simon Sapin"), tracked in `spec/` (same house pattern as
+  `known_failures.txt` + the patches), `install`ed into the build dir in `%prep`, shipped via
+  `%license LICENSE`.
+- `cinnamon-rocky-defaults` (no sdist at all) → new `Source0: GPLv2.txt`, byte-identical to the
+  repo top-level `LICENSE` (sha256 `8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643`),
+  installed to `%{_datadir}/licenses/%{name}/LICENSE` in `%install`, shipped via `%license`.
+
+### tinycss2 Requires + dead URLs
+`python3-tinycss2` now declares `Requires: python3-webencodings`. Verified in the 1.5.1 sdist:
+importing tinycss2 pulls `tinycss2/ast.py`, whose line 8 is `from webencodings import ascii_lower`
+(module level); `pyproject.toml:14` declares `dependencies = ['webencodings >=0.4']`. rpmbuild does
+not parse pip dist-info METADATA, so the RPM Requires had to be written by hand. Dead URLs fixed:
+setproctitle `dvarrazz/python-setproctitle` (404) → `dvarrazzo/py-setproctitle` (curl 200; note the
+`dvarrazzo/python-setproctitle` variant is itself 404 — the live repo is `py-setproctitle`, verified
+2026-09-18); webencodings `Kozea/webencodings` (404) → `courtbouillon/webencodings` (curl 200).
+
+### Changes (14 files, commit `459ac30`)
+| File | Change | Why |
+|---|---|---|
+| `spec/nemo.spec` | replaced with host content + provenance block | blocker: repo spec (1.el10, no layer-shell) can't reproduce shipped 2.el10 RPM |
+| `spec/cinnamon-settings-daemon.spec` | replaced with host content + provenance block | blocker (same reason) |
+| `spec/cinnamon-control-center.spec` | replaced with host content + provenance block | drift (164-line class of diffs); provenance now recorded |
+| `spec/cinnamon-menus.spec` | replaced with host content + provenance block | drift; provenance now recorded |
+| `spec/cinnamon-session.spec` | replaced with host content + provenance block | drift; provenance now recorded |
+| `spec/xapps.spec` | replaced with host content + provenance block | drift; provenance now recorded |
+| `spec/gtk-layer-shell.spec` | added (host verbatim) | blocker: spec was missing entirely |
+| `spec/python3-tinycss2.spec` | +`Requires: python3-webencodings`, +`%license LICENSE`, fixed install comment | Omega low + medium |
+| `spec/python3-setproctitle.spec` | +`%license LICENSE`, URL fix | Omega medium + low |
+| `spec/python3-webencodings.spec` | +`Source1` vendored LICENSE, +`%prep` install, +`%license LICENSE`, URL fix | Omega medium + low |
+| `spec/python3-pillow.spec` | +`%license LICENSE` | Omega medium |
+| `spec/cinnamon-rocky-defaults.spec` | +`Source0: GPLv2.txt`, +`%install` license step, +`%license` | Omega medium |
+| `spec/webencodings-LICENSE` | added (vendor file) | webencodings sdist ships no license |
+| `spec/GPLv2.txt` | added (vendor file, = repo `LICENSE`) | cinnamon-rocky-defaults has no sdist to carry the license |
+
+### Checks run
+- `rpmspec -P` (parse) on all 12 touched specs: clean. Six specs emit a pre-existing
+  `warning: bogus date in %changelog` ("Sun Aug 10 2026" — 2026-08-10 is a Monday); it is in the
+  host specs verbatim (and therefore in the published RPMs) and was preserved, not "fixed"
+  silently.
+- `rpmbuild -bs` on all 12 specs in a scratch topdir with `spec/*` + the host tarballs staged in
+  SOURCES: all wrote SRPMs, i.e. source resolution works including the two new vendor files.
+- Tree-diff provenance: differ=0 for all six linuxmint tarballs against the commits above (diff
+  loop over candidate commits; an earlier false differ=0 came from a missing `c-$sha/` path prefix
+  in the loop and was fixed before trusting results).
+- `diff` of each adopted spec vs its host source: only the added comment block differs (nemo and
+  menus have one trailing-whitespace normalisation each, cosmetic).
+
+### Carried to the rebuild/republish turn (not done here)
+1. Rebuild the affected packages and republish `rpms/` (still contains the 7 superseded 1.el10
+   RPMs: cinnamon-desktop 6.7.2-1 main/devel/debuginfo/debugsource + csd 6.7.2-1
+   main/debuginfo/debugsource, to be deleted per Shadow's should-fix).
+2. Before rebuilding: copy the two new vendor files into `~/rpmbuild/SOURCES/` (house pattern —
+   `spec/*` vendor files are copied manually, as `known_failures.txt` and the patches are; no
+   script does it).
+3. Verify each rebuilt pip RPM contains `/usr/share/licenses/<pkg>/LICENSE`
+   (`rpm -qlp`).
+4. Omega low (PEP517 unpinned build isolation): real scope is tinycss2 (flit_core backend — no
+   `python3-flit_core` in EL10; needs a vendored backend wheel) and pillow (custom backend
+   requiring `setuptools>=77` — host has 69.0.3; pybind11 is in CRB). setproctitle and webencodings
+   have no `pyproject.toml` (verified by `tar tzf`), so they build through the legacy `setup.py`
+   path with no PyPI fetch; Omega's setproctitle hypothesis was refuted. Fix with
+   `--no-build-isolation` + explicit BRs, verified by actual rpmbuild.
+5. gdk-pixbuf-parsers license (last of Omega's medium six): folds into the Shadow #3
+   rebuild-from-source (its spec will carry `%license COPYING.LIB`).
+
+### Review-finding resolution turn (done 2026-09-18, commits `55e37bd` + `2fa1b2d`)
+
+Scope: the 15 open review findings (Shadow 8, Omega 4, Big 3). All code and evidence changes are
+shipped; the three re-verifications (clean-checkout rebuild, fresh-VM `run-tests.sh`,
+enforcing-SELinux smoke) are assigned to Tails and remain open per `## Status`. Every `## Review`
+and `## Security` finding now carries a `**Resolution:**` line with its fix commit.
+
+### Changes (commit `55e37bd`: code; `2fa1b2d`: evidence)
+| File | Change | Why |
+|---|---|---|
+| `tasks/lib/ukey.c:127-128` | `Super_L`/`Super_R` → `KEY_LEFTMETA`/`KEY_RIGHTMETA`; both bits added to `keybits[]` (:253) | Shadow should-fix 4: mapping emitted Control, not Meta |
+| `spec/cinnamon.spec:43-44` | comment "three" → "four" Requires | Shadow nit 6 |
+| `vm-test/parity/parity-inventory.sh:64-79` | new `gget()` helper (list-schemas → list-keys → get); screensaver keys use it (:190-191) | Shadow nit 8: "schema absent" misdiagnosed a missing key |
+| `vm-test/run-tests.sh` | T1: `die` on install rc (was captured, never read) and verify rc (was warning-only); T2: deleted dead `SYSTEM_DEPS` array and the Phase 2 native `dnf install` of `mozjs115`/`clutter`/`cogl` (certain to fail, swallowed by `\|\| echo WARNING`); T3: Phase 4 verifies the 22 runtime names read from `vm-test/install-set.txt` (scp'd in Phase 1) instead of a hardcoded 11-name array | Big T1/T2/T3 |
+| `vm-test/install-set.txt` | added: the 22 runtime package names (rpms/ minus `-devel`/`-debuginfo`/`-debugsource`), derived and recorded in the file header | Big T3: encode the accepted set in the repo |
+| `vm-test/evidence/task0017-fresh-3.1/2026-09-18/` | 22 files committed (5 surfaces + a11y/pixelstats/bands/logs) | Shadow should-fix 5 |
+| `vm-test/parity/rocky10/2026-09-18-3.2/` | 6 files committed (5 captures + inventory); the 6 never-taken captures recorded as absent in the commit message | Shadow should-fix 5 |
+
+### Alternatives considered
+- **Phase 4 package list** — Option A: keep the hardcoded array, extend it to 22 names (rejected: two sources of truth, the array already drifted once, missing 11 of the 22). Option B: a file in the repo (`vm-test/install-set.txt`), copied to the VM in Phase 1 and parsed in the remote heredoc (chosen: one encoding, regenerable by the command in its header, and the remote read avoids changing the `ssh_cmd` interface). Option C: pass names as positional arguments through `ssh_cmd` (rejected: the quoted heredoc interface would need reworking for one array).
+- **Phase 2 native deps** — verified before deleting the block: `spec/gnome-terminal.spec:41` `Requires: gsettings-desktop-schemas`, `spec/cinnamon-rocky-defaults.spec:27-28` `Requires: rocky-backgrounds`/`rocky-logos`, so dnf pulls them automatically in Phase 3; `mozjs115` and the clutter/cogl pair are in the local set (`muffin-clutter`, `muffin-cogl` are subpackages of the muffin build, confirmed `rpm -qlp` on the muffin RPM shows no clutter/cogl files and the pair exists only as our RPMs). Native `clutter`/`cogl` do not exist in EL10, which is why the old block was a guaranteed failure.
+- **Project-repo `AGENTS.md`** — refreshed byte-identical to the canonical `metalllinux/team-chaotix/AGENTS.md` (it had drifted: pre-TASK-0022 model line, `compaction.auto: false`) but left **untracked**, per the recorded TASK-0019 decision ("left uncommitted; user decides on commit"). Not committed by Tails.
+
+### Checks run
+- `gcc -fsyntax-only -Wall -Wextra tasks/lib/ukey.c` → clean (in-VM compile path `tasks/lib/gdm-drive.sh:81` unchanged).
+- `bash -n vm-test/run-tests.sh` and `bash -n vm-test/parity/parity-inventory.sh` → clean; `shellcheck vm-test/run-tests.sh` → only the pre-existing SC1091 (does not follow sourced `lib.sh`).
+- Per-name single-version check over `rpms/` (64 files): all 64 names resolve to exactly one file (repoquery-equivalent on the single-repo tree).
+- Spec-state verification for the resolution claims: `grep -l '%license' spec/*.spec` lists all six flagged specs; `Requires: python3-webencodings` at `spec/python3-tinycss2.spec:35`; `--no-build-isolation` in all four pip specs (tinycss2:60, pillow:70, setproctitle:48, webencodings:55); live URLs at `spec/python3-setproctitle.spec:9` and `spec/python3-webencodings.spec:9`; `%post`/`%postun` at `spec/gdk-pixbuf-parsers.spec:79,86`.
+- `git push` of both commits to `origin feature/TASK-0017-cinnamon-desktop-completeness` → `4c9f7c2..2fa1b2d`.
+
+### Open notes
+- **cjs tarball (for Shadow):** `~/rpmbuild/SOURCES/cjs-6.4.0.tar.gz` is functionally hermetic (no `builddir/` inside) but carries a 238-entry `.git/`. It was deliberately **not** regenerated: the checkout `~/Linux/projects/cinnamon_4_rocky10/cjs` (HEAD `cdd85377`, tag 6.4.0) has two uncommitted modified files, `build/compile-gschemas.py` and `build/symlink-gjs.py`, and `git archive HEAD` would silently drop them, changing the published source. Follow-up: commit or vendor those two modifications upstream-side, then re-tar with `git archive`.
+- **Re-verifications (open, assigned Tails):** A clean-checkout rebuild reproducing the published set; B `run-tests.sh` end-to-end on a fresh VM (exercises the T1/T2/T3 changes and the ukey Super mapping end-to-end via a `ukey key Super_L` menu open); C enforcing-SELinux smoke (boot enforcing, GDM login, five surfaces, log AVCs).
+
+---
+
 ## Review
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### <short claim>
-**Severity:** blocker | should-fix | nit
-**Where:** `path/to/file:123`
-**Problem:** one sentence.
-**Failure scenario:** concrete inputs or state → the wrong outcome.
-**Suggested direction:** what to do instead.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+*Reviewed 2026-09-18 by `Shadow`. Scope: commits `c1de933..eafa476` (7 commits) on `feature/TASK-0017-cinnamon-desktop-completeness` — every spec file changed or cross-checked by the branch (`cinnamon-desktop` 2.el10 rewrite + `gnome-bg-wayland-surface.patch`, `cinnamon-rocky-defaults`, `cinnamon`, the five Python specs, `gnome-terminal`, `gdk-pixbuf-parsers`, plus the `nemo` / `cinnamon-settings-daemon` divergence), the `rpms/` tree, the harness changes (`tasks/lib/ukey.c`, `tasks/lib/gdm-a11y.py`, `vm-test/run-tests.sh`, `vm-test/parity/parity-inventory.sh`), and the untracked `vm-test/evidence/` + `vm-test/parity/rocky10/2026-09-18-3.2/` checked against the Test Results claims. Verification: `git diff c1de933..eafa476`, `git show eafa476:vm-test/parity/rocky10`, `git log --oneline c1de933..eafa476`, `rpm -qR` on the installed `cinnamon` / `tinycss2` / `xapp` RPMs, `git status`, host inspection of `/home/howard/rpmbuild/SPECS` and `SOURCES`. No issues found in `gdm-a11y.py`, `run-tests.sh`, the five Python specs, `gnome-terminal.spec`, `cinnamon-desktop.spec` + patch, `cinnamon-rocky-defaults.spec`, or the inventory script structure beyond the findings below.*
+
+### The repo `spec/` cannot reproduce the shipped `nemo`, `gtk-layer-shell`, `cinnamon-settings-daemon` RPMs
+**Severity:** blocker
+**Where:** `spec/nemo.spec:3`, `spec/cinnamon-settings-daemon.spec:3`, missing `spec/gtk-layer-shell.spec`; against `rpms/nemo-6.7.4-2.el10.x86_64.rpm`, `rpms/gtk-layer-shell-0.10.1-1.el10.x86_64.rpm`, `rpms/cinnamon-settings-daemon-6.7.2-2.el10.x86_64.rpm`
+**Problem:** the canonical spec directory is out of sync with the published RPM set for exactly the three packages the wallpaper fix depends on. The repo `nemo.spec` is `Release: 1.el10` with no gtk-layer-shell BuildRequire and no `-Dgtk_layer_shell` meson option, while the shipped `2.el10` RPM was built from the host's `/home/howard/rpmbuild/SPECS/nemo.spec` (`Requires: gtk-layer-shell` at line 9, `BuildRequires: gtk-layer-shell-devel` at line 12, the `-Dgtk_layer_shell=true` note at line 100). The repo has no `gtk-layer-shell.spec` at all; the host has `/home/howard/rpmbuild/SPECS/gtk-layer-shell.spec` (Source0 URL at line 10). The repo `cinnamon-settings-daemon.spec` is `1.el10`; the shipped RPM is `2.el10`. The repo `nemo.spec` also declares 11 subpackages (`spec/nemo.spec:45-115`) while the published set ships only `nemo` + `nemo-devel` (plus debuginfo/debugsource), so a 1:1 copy of the repo spec would not match the published set either.
+**Failure scenario:** clean checkout of this branch → `rpmbuild` from `spec/` → produces `nemo-6.7.4-1` (no layer-shell), no `gtk-layer-shell` package, and `cinnamon-settings-daemon-6.7.2-1`. A fresh install from the rebuilt repo leaves the Wayland wallpaper black — the defect this task fixed — and the 3.1/3.2 PASS verdicts are not reproducible from the branch.
+**Suggested direction:** sync the three host specs into `spec/` (adopt the host `nemo.spec` as canonical, subpackage set included, so the built set matches the published set), rebuild the three packages, republish the repo, and re-verify the rebuilt nemo RPM carries the gtk-layer-shell path (`rpm -qp --requires` plus the meson option).
+**Resolution:** fixed in `459ac30` (2026-09-18, Tails). The host build specs were adopted into `spec/` (six linuxmint specs including `nemo.spec` and `cinnamon-settings-daemon.spec`, plus new `gtk-layer-shell.spec`), each with a Source0 provenance comment recording the exact upstream ref the tarball was archived from and the tarball sha256. The adopted `spec/nemo.spec` declares main + one `%package devel` (`grep -c '^%package' spec/nemo.spec` → 1), matching the published set; debuginfo/debugsource are auto-generated, not declared. Rebuilt from `spec/`: `nemo-6.7.4-2.el10`, `gtk-layer-shell-0.10.1-1.el10`, `cinnamon-settings-daemon-6.7.2-2.el10` republished to `rpms/`. `rpm -qp --requires` on the rebuilt nemo shows `gtk-layer-shell`; the spec carries `BuildRequires: gtk-layer-shell-devel` and the `-Dgtk_layer_shell=true` meson option.
+
+### The published `rpms/` retains the superseded 1.el10 builds, including the known-broken `cinnamon-desktop-6.7.2-1`
+**Severity:** should-fix
+**Where:** `rpms/`: `cinnamon-desktop-6.7.2-1.el10` (+ `-devel`, `-debuginfo`, `-debugsource`) and `cinnamon-settings-daemon-6.7.2-1.el10` (+ `-debuginfo`, `-debugsource`) — 7 files
+**Problem:** the repo keeps the superseded 1.el10 builds it explicitly replaced, sitting next to their 2.el10 replacements (verified: these are the only name+version pairs with two releases in `rpms/`; every other 1.el10 file is its package's sole build). `cinnamon-desktop-6.7.2-1` is the unpatched build whose Wayland wallpaper rendering is the defect this task fixed.
+**Failure scenario:** `dnf install cinnamon-desktop-6.7.2-1.el10` (version-pinned) against this repo succeeds and installs the black-wallpaper build; any sync audit sees two releases per name and cannot tell which is canonical without this doc.
+**Suggested direction:** delete the 7 superseded files, regenerate repodata, and re-verify with `dnf repoquery` that each package name resolves to exactly one version.
+**Resolution:** fixed in `4c9f7c2` (2026-09-18, Tails). All 7 files deleted (the 4 `cinnamon-desktop-6.7.2-1.el10` subpackage files and the 3 `cinnamon-settings-daemon-6.7.2-1.el10` files), alongside the other superseded 1.el10 files (`cinnamon-rocky-defaults-1.0-1`, `gdk-pixbuf-parsers-2.42.12-1`, the four `python3-*-1.el10`) and the stale pre-fix `cinnamon-desktop` 2.el10 files (all four subpackages), replaced by the CFLAGS-correct 2.el10 rebuild in the same commit. `rpms/` now holds 64 files; per-name check `for f in rpms/*.rpm; do rpm -qp --qf '%{NAME}\n' "$f"; done | sort -u` → 64 names, each resolving to exactly one file (repoquery-equivalent on a single-repo tree; `rpms/repodata/` regenerated with createrepo_c, gitignored per house style).
+
+### The `gdk-pixbuf-parsers` RPM ships prebuilt binaries that are not rebuildable from the repo
+**Severity:** should-fix
+**Where:** `spec/gdk-pixbuf-parsers.spec:10`, `.gitignore:9-10`
+**Problem:** `Source0` is a prebuilt tarball (contains `libpixbufloader-png.so`, `libpixbufloader-jpeg.so`, `gdk-pixbuf-query-loaders`; `%build` is `:`) with no URL and no checksum, and the tarball itself is gitignored and absent from the checkout, present only on the build host at `/home/howard/rpmbuild/SOURCES/`. Every other spec in the tree has a fetchable `Source0`.
+**Failure scenario:** clean checkout → `rpmbuild spec/gdk-pixbuf-parsers.spec` fails at source fetch (no URL, no local tarball). The PNG/JPEG decode path the wallpaper depends on (verified working in the 2.1/3.1/3.2 VM runs) cannot be verified, audited, or rebuilt by anyone without the build host.
+**Suggested direction:** build the loaders from the upstream gdk-pixbuf source (URL + checksum, the same shape as the rest of the tree), or keep the prebuilt artifact and give it a `Source0` URL + checksum plus a comment explaining why it is prebuilt. Also check whether EL10's native `gdk-pixbuf2-modules` (present in the 3.2 VM package stack, `inventory-rocky10-3.2.txt` STACK section) already covers these loaders, and prefer the native package if it does. Not verified here: the build host's base `loaders.cache` listed only gif/svg/tiff, but `gdk-pixbuf2-modules` was not installed on that host.
+**Resolution:** fixed in `4c9f7c2` (2026-09-18, Tails). `spec/gdk-pixbuf-parsers.spec` rewritten to build the png/jpeg loaders from the upstream GNOME `gdk-pixbuf-2.42.12` tarball: `Source0:` is the `download.gnome.org` URL with a verified sha256 comment (`spec/gdk-pixbuf-parsers.spec:14-15`), `%build`/`%install` compile the two loader targets, and the prebuilt tarball is gone. Native-coverage check: EL10 `gdk-pixbuf2-modules` ships only the gif and tiff loaders (verified on the build host with `rpm -ql gdk-pixbuf2-modules`), so the png/jpeg package remains required and is installed alongside it. Rebuilt and republished as `gdk-pixbuf-parsers-2.42.12-2.el10` (+debuginfo/+debugsource).
+
+### `ukey.c` maps `Super_L`/`Super_R` to Control keycodes
+**Severity:** should-fix
+**Where:** `tasks/lib/ukey.c:127-128`; also `tasks/lib/ukey.c:243-261` (`keybits[]` omits the META bits)
+**Problem:** `{ "Super_L", KEY_LEFTCTRL }` and `{ "Super_R", KEY_RIGHTCTRL }` emit left/right **Control** (29/97), not left/right **Meta** (`KEY_LEFTMETA` 125 / `KEY_RIGHTMETA` 126). The comment "Windows/Meta key: Cinnamon menu" describes intent the code does not implement, and `keybits[]` advertises no META at all, so a corrected table alone would still emit events the device does not claim.
+**Failure scenario:** nothing in the branch invokes the mapping yet (verified: repo-wide grep for `Super_L|Super_R|KEY_LEFTMETA|KEY_RIGHTMETA` matches only `ukey.c:127-128`; the 3.1 main menu was opened by clicking the menu button), so this is a landmine, not a live failure. The first step that uses `ukey key Super_L` to open the Cinnamon main menu, as the comment and commit `9126531` ("Super key mapping") promise, sends a bare Control press; the menu stays closed and the a11y wait times out with "target never appeared", sending the operator to debug the desktop instead of the input table.
+**Suggested direction:** map to `KEY_LEFTMETA`/`KEY_RIGHTMETA` and add both to `keybits[]`.
+**Resolution:** fixed in `55e37bd` (2026-09-18, Tails). `tasks/lib/ukey.c:127-128` now maps `Super_L`→`KEY_LEFTMETA` (125) and `Super_R`→`KEY_RIGHTMETA` (126), and both bits are added to `keybits[]` (`tasks/lib/ukey.c:253`), so the uinput device advertises the keys it emits. `gcc -fsyntax-only -Wall -Wextra tasks/lib/ukey.c` passes; the in-VM compile path (`tasks/lib/gdm-drive.sh:81`, `gcc -O2 -Wall -Wextra`) is unchanged. Not exercised in a VM yet: the 3.1/3.2 runs opened the menu by clicking, so this fix needs a `ukey key Super_L` menu-open in a future run to be proven end-to-end (re-verification B).
+
+### The 3.1/3.2 acceptance evidence is untracked; the branch lacks the evidence its PASS verdicts cite
+**Severity:** should-fix
+**Where:** `vm-test/parity/rocky10/2026-09-18-3.2/` and `vm-test/evidence/task0017-fresh-3.1/` (both untracked per `git status`); contrast `vm-test/parity/rocky10/2026-09-17-2.2-*` (committed, present in `git show eafa476:vm-test/parity/rocky10`)
+**Problem:** Test Results cites `inventory-rocky10-3.2.txt`, the 3.2 PNGs, and the 3.1 screenshots/trees/pixelstats for the "11/11 PASS" and "5/5 PASS" verdicts, but none of it is in the branch. The earlier 2.1/2.2 evidence is committed, so the house pattern is to commit it, and the 2.2 Test Results entry explicitly noted it was "uncommitted at time of writing" while the 3.2 entry does not. The local 3.2 set also holds 5 of the 11 staged captures (`03`/`04` fold into `01` by design; `02-panel`, `05-themes-panel`, `10-power-menu`, `11-session-controls` are absent from the local set although rows 2/5/10/11 were evaluated from the inventory).
+**Failure scenario:** a reviewer, a later Tails fix round, or Knuckles at release time clones the branch and cannot inspect any screenshot, a11y tree, or pixelstat the verdicts rest on; "11/11 PASS" exists only as prose in this doc.
+**Suggested direction:** commit the 3.2 parity set and the 3.1 evidence directory (the established 2.2 pattern), or record in Test Results why the final-run evidence is intentionally uncommitted and where it is stored. Either capture the 4 missing 3.2 screenshots or note in the inventory which rows were evaluated from data only.
+**Resolution:** fixed in `2fa1b2d` (2026-09-18, Tails). Committed `vm-test/evidence/task0017-fresh-3.1/2026-09-18/` (22 files: the five surfaces with a11y trees, pixelstats, bands, screenshot logs, panels config) and `vm-test/parity/rocky10/2026-09-18-3.2/` (6 files: the five 3.2 captures taken + `inventory-rocky10-3.2.txt`), per the established 2.2 pattern. The six 3.2 captures never taken (`02-panel`, `03`/`04` folded into `01` by design, `05-themes-panel`, `10-power-menu`, `11-session-controls`) remain absent; the inventory's STACK/KEY data covered the rows that were evaluated from data only, as recorded in the 3.2 Test Results entry. The project-repo `AGENTS.md` copy was refreshed byte-identical to the canonical `metalllinux/team-chaotix/AGENTS.md` but deliberately left untracked, per the TASK-0019 decision ("left uncommitted; user decides on commit").
+
+### `spec/cinnamon.spec` comment says "three" but four Requires are added
+**Severity:** nit
+**Where:** `spec/cinnamon.spec:44-45`
+**Problem:** "The app imports all three unguarded; Fedora carries the same three Requires" — but the block adds four (`python3-setproctitle`, `python3-pillow`, `python3-tinycss2` at lines 47-49, plus `python3-xapp` at line 51). The fourth has its own comment at line 50, leaving the shared header stale.
+**Failure scenario:** a maintainer reading the block concludes the Fedora reference carries three Requires and questions whether `python3-xapp` is over-requiring; the verified claim (installed `cinnamon` 6.7.4-3 `Requires` via `rpm -qR`) is four.
+**Suggested direction:** update the comment to four.
+**Resolution:** fixed in `55e37bd` (2026-09-18, Tails). `spec/cinnamon.spec:43-44` now reads "The app imports all four unguarded; Fedora carries the same four Requires on the cinnamon package", and the xapp line's comment says "also imports xapp".
+
+### `gdk-pixbuf-parsers` has no `%postun`; removal leaves a stale `loaders.cache`
+**Severity:** nit
+**Where:** `spec/gdk-pixbuf-parsers.spec:47-48`
+**Problem:** `%post` rewrites `loaders.cache` to include the two new loaders, but there is no `%postun` to regenerate it on removal, and `loaders.cache` is unowned (not in `%files`).
+**Failure scenario:** `dnf remove gdk-pixbuf-parsers` → the `.so` files are gone but `loaders.cache` still lists their paths → every later gdk-pixbuf load query on that machine logs missing-loader warnings until something else regenerates the cache.
+**Suggested direction:** add a `%postun` that re-runs the cache regeneration on final removal (`$1 == 0`).
+**Resolution:** fixed in `4c9f7c2` (2026-09-18, Tails). `spec/gdk-pixbuf-parsers.spec:86` carries a `%postun` that re-runs `gdk-pixbuf-query-loaders --updatecache` (guarded on `$1 == 0`, final removal only), mirroring the `%post` at line 79.
+
+### `parity-inventory.sh` "schema absent" fallback misdiagnoses a missing key
+**Severity:** nit
+**Where:** `vm-test/parity/parity-inventory.sh:172-173`
+**Problem:** the fallback text for `gsettings get org.cinnamon.desktop.screensaver mode` / `lock-enabled` is "schema absent", but the 3.2 inventory proves the schema exists: `SCREENSAVER_MODE: schema absent` sits beside `SCREENSAVER_LOCK_ENABLED: true` (same schema). The key is absent, not the schema.
+**Failure scenario:** a future parity run on a system with `lock-enabled` set and `mode` absent (the 3.2 VM itself) reads "schema absent" and the operator concludes the whole screensaver schema is missing, contradicting the adjacent line, and skips investigating the `mode` key.
+**Suggested direction:** use a fallback that says the key is absent (e.g. "key absent"), or distinguish the two with a `gsettings list-keys` check first.
+**Resolution:** fixed in `55e37bd` (2026-09-18, Tails). `vm-test/parity/parity-inventory.sh:64-79` adds a `gget()` helper: `gsettings list-schemas` first, then `list-keys` on the schema, emitting `key absent (schema present)` vs `schema absent` distinctly; the two screensaver keys (lines 190-191) use it. `bash -n` passes; the next 3.2-style inventory run will show the corrected text.
 
 ---
 
@@ -1367,14 +1675,54 @@ to wait on via a11y.
 
 *Owner: `Omega`. Read-only. Severity order.*
 
-### <short claim>
-**Severity:** critical | high | medium | low
-**Vector:** injection | authz | secrets | input-validation | crypto | supply-chain | actions | license
-**Where:** `path/to/file:123`
-**Attack:** who the attacker is, what they control, the concrete steps.
-**Impact:** what they get.
-**Fix:** the specific change.
-**Resolution:** *(filled by `Tails`)*
+**Scope:** branch `feature/TASK-0017-cinnamon-desktop-completeness` (`c1de933..eafa476`): the eight new/modified specs, the wallpaper patch, the test harness (`tasks/lib/`, `vm-test/`), and the committed `rpms/` payload. All eight `License:` tags were verified against upstream license text at the exact tags and all eight are correct. The findings below are the remaining gaps.
+
+### Six of the new RPMs ship without a license file
+**Severity:** medium
+**Vector:** license
+**Where:** `spec/gdk-pixbuf-parsers.spec:50-53`, `spec/python3-tinycss2.spec:43-46`, `spec/python3-setproctitle.spec`, `spec/python3-webencodings.spec`, `spec/python3-pillow.spec`, `spec/cinnamon-rocky-defaults.spec`
+**Attack:** no active attacker; the enforcement actor is the upstream copyright holder (GNOME for gdk-pixbuf, CourtBouillon/Kozea for tinycss2 and webencodings, the setproctitle and Pillow maintainers) or a downstream distributor auditing the RPMs. The path is deterministic: `rpm -qlp` on any of the six packages shows no license file. The pip-based specs install with `pip install --target` (e.g. `spec/python3-tinycss2.spec:41`), which copies only the package directory and dist-info, not the sdist's top-level LICENSE, and none of the six specs carries a `%license` line (a repo-wide grep for `%license` matches only `spec/gnome-terminal.spec:84`, `spec/python3-xapp.spec:48`, and the pre-existing `spec/mozjs115.spec:163`).
+**Impact:** for `gdk-pixbuf-parsers` this is a distribution obligation, not style. The two `.so` files are prebuilt LGPL-2.1-or-later object code (`spec/gdk-pixbuf-parsers.spec:5`) and LGPL-2.1 section 4 requires object code to be distributed with a copy of the license. For the BSD/MIT/HPND packages the license terms require the copyright notice to accompany redistribution. The dist-info METADATA inside the RPMs carries only the one-line `License:` tag, not the text or the notice.
+**Fix:** add a `%license` entry to each of the six specs. `%setup` has already extracted the sdist into the build dir, so where the sdist contains the license file, a plain `%license <file>` in `%files` suffices (this is the established pattern in `spec/python3-xapp.spec:48`). Verified present in the sdist: tinycss2 (flit config at tag `v1.5.1` declares `license = {file = 'LICENSE'}`) and pillow (pyproject at tag `12.3.0` declares `license-files = ["LICENSE"]`). Unverified for setproctitle and webencodings (sdists not unpackable, no bash access); if absent, vendor the upstream license text as an additional `Source`. For `gdk-pixbuf-parsers`, add `COPYING.LIB` from the gdk-pixbuf 2.42.12 source tree. `cinnamon-rocky-defaults` is in-house with no upstream; ship a GPLv2 copy the same way.
+**Resolution:** fixed in `459ac30` + `4c9f7c2` (2026-09-18, Tails). All six specs now carry `%license` (verified: `grep -l '%license' spec/*.spec` lists all six plus the pre-existing gnome-terminal/xapp/mozjs115/gtk-layer-shell). tinycss2, setproctitle, pillow ship the sdist-root `LICENSE`; webencodings vendors the upstream BSD text as `Source1` (`spec/webencodings-LICENSE`, sha256 `f23bae6a…`, fetched from courtbouillon/webencodings v0.5.1) because the PyPI sdist ships no license file; `cinnamon-rocky-defaults` vendors GPLv2 as `Source0` (`spec/GPLv2.txt`, byte-identical to the repo top-level LICENSE, sha256 `8177f975…`); the `gdk-pixbuf-parsers` rewrite ships the LGPL-2.1 text from the gdk-pixbuf 2.42.12 source tree. Every published RPM installs its license at `/usr/share/licenses/<pkg>/` (verified with `rpm -qlp` during the 2.el10 rebuild).
+
+### python3-tinycss2 omits its only runtime Requires, orphaning python3-webencodings
+**Severity:** low
+**Vector:** input-validation
+**Where:** `spec/python3-tinycss2.spec:21`, `spec/python3-tinycss2.spec:37-40`
+**Attack:** no attacker; the path is a minimal install. `dnf install cinnamon` pulls `python3-tinycss2` (required by `spec/cinnamon.spec`), but a grep of every spec shows no package requires `python3-webencodings`. `tinycss2/__init__.py` does `from webencodings import lookup`, so `import tinycss2` raises `ModuleNotFoundError: webencodings` and the Cinnamon settings theme panel (plan item 3.2) breaks on any system where the webencodings RPM was not installed. The spec comment at lines 37-40 claims the dependency "becomes an RPM Requires via the dist-info metadata". rpmbuild does not parse pip dist-info METADATA, so the claim is false and the dependency edge is missing. Upstream confirms the dependency: the pyproject at tag `v1.5.1` declares `dependencies = ['webencodings >=0.4']`.
+**Impact:** broken desktop on a clean install, discoverable only when the settings panel is opened.
+**Fix:** add `Requires: python3-webencodings` to `spec/python3-tinycss2.spec` and correct the comment.
+**Resolution:** fixed in `459ac30` (2026-09-18, Tails). `spec/python3-tinycss2.spec:35` carries `Requires: python3-webencodings` and the false dist-info-METADATA comment is replaced with the verified statement that rpmbuild does not parse pip metadata, so the edge must be declared explicitly.
+
+### PEP 517 build isolation pulls unpinned build backends from PyPI at build time
+**Severity:** low
+**Vector:** supply-chain
+**Where:** `%install` of `spec/python3-tinycss2.spec:41`, `spec/python3-pillow.spec`, `spec/python3-setproctitle.spec`
+**Attack:** an attacker who has compromised a PyPI project used as a build backend (account takeover or a malicious maintainer). The pip specs run `pip install .` without `--no-build-isolation`, so for sdists that declare a PEP 517 build system pip creates an isolated environment and downloads the declared backend from PyPI during rpmbuild, pinned only by a lower bound. Confirmed at the exact tags: tinycss2 `v1.5.1` declares `requires = ['flit_core >=3.2,<4']`; pillow `12.3.0` declares `requires = ["pybind11", "setuptools>=77"]`. The backend executes during the build and controls what it emits, so a malicious backend can run code on the build host and inject code into the built module.
+**Impact:** code execution on the self-hosted runner (the user's local machine) at build time, and the injected code can land in the shipped RPM and reach downstream consumers of the repo. The precondition is significant (compromise of a top-level PyPI project) and the practice is standard across the ecosystem, hence low.
+**Fix:** add `--no-build-isolation` to the pip invocations plus `BuildRequires: python3-setuptools` so the builds use the EL10-pinned toolchain instead of fetching from PyPI. Tails should confirm at rebuild whether the setproctitle and webencodings sdists trigger isolation (the setproctitle tag `version-1.3.7` carries a `pyproject.toml` with no `[build-system]` table, which per PEP 517 means the default setuptools backend with isolation on; the sdists could not be unpacked to verify).
+**Resolution:** fixed in `4c9f7c2` (2026-09-18, Tails). All four pip specs now build with `--no-build-isolation` (verified: `spec/python3-tinycss2.spec:60`, `spec/python3-pillow.spec:70`, `spec/python3-setproctitle.spec:48`, `spec/python3-webencodings.spec:55`). Backend strategy, all from EL10-pinned or vendored sources, no PyPI fetch: tinycss2 runs the vendored `flit_core` wheel (`PYTHONPATH="$PWD/backends"` + BuildRequires); pillow runs vendored `setuptools`/`pybind11` wheels the same way; setproctitle and webencodings take the legacy `setup.py` path with `BuildRequires: python3-wheel` (installed on the build host: `python3-wheel-0.41.2-5.el10_1.1`) plus `bdist_wheel`. Isolation question resolved by construction: with `--no-build-isolation` no backend is ever fetched, so the setproctitle/webencodings `pyproject.toml` edge case is moot. The 2.el10 rebuilds of all five Python RPMs completed with no network access to PyPI.
+
+### Two spec URL fields are dead links
+**Severity:** low
+**Vector:** license
+**Where:** `spec/python3-setproctitle.spec:9`, `spec/python3-webencodings.spec:9`
+**Attack:** no attacker; a provenance-auditability gap. `https://github.com/dvarrazz/python-setproctitle` (misspelled account, wrong repo name) 404s; the real repo is `https://github.com/dvarrazzo/py-setproctitle`, whose LICENSE (BSD 3-Clause) matches the spec's `License: BSD-3-Clause` tag. `https://github.com/Kozea/webencodings` also 404s (the repo was removed or renamed); the live upstream is `https://github.com/courtbouillon/webencodings` (fork of `gsnedders/python-webencodings`).
+**Impact:** anyone verifying source provenance from the spec hits a dead end; the sha256 comments are the only provenance anchor.
+**Fix:** set the two URLs to the live repos.
+**Resolution:** fixed in `459ac30` (2026-09-18, Tails). `spec/python3-setproctitle.spec:9` → `https://github.com/dvarrazzo/py-setproctitle` and `spec/python3-webencodings.spec:9` → `https://github.com/courtbouillon/webencodings`, both verified live at fix time (setproctitle's LICENSE there matches the spec's `License: BSD-3-Clause` tag).
+
+### Verified clean
+- **License tags, all eight:** tinycss2 `BSD-3-Clause` (LICENSE at `Kozea/tinycss2`), setproctitle `BSD-3-Clause` (LICENSE at `dvarrazzo/py-setproctitle`; `license="BSD-3-Clause"` in setup.py at tag `version-1.3.7`), webencodings `BSD` (PyPI 0.5.1 classifier and README), pillow `HPND and MIT` (MIT-CMU LICENSE at tag `12.3.0`), xapp `LGPLv2+` (COPYING at `linuxmint/python3-xapp` 3.0.2, later-version clause at :458), gnome-terminal `GPLv3+ AND GFDL-1.3-only` (both COPYING files at tag `3.54.5`), gdk-pixbuf-parsers `LGPL-2.1-or-later` (meson.build at tag `2.42.12`), cinnamon-rocky-defaults `GPLv2+` (in-house, no upstream).
+- **Secrets:** a repo-wide regex sweep for common token and key patterns (GitHub PATs, AWS keys, Slack tokens, private-key blocks, API keys) returned zero matches. `vm-test/rocky10.ks` uses `rootpw --locked`; SSH is key-only (`PermitRootLogin yes` with `ssh_pwauth: False`, no password in `user-data`); the `gdmtest` password is generated randomly inside the VM at runtime (`openssl passwd -6` in `vm-test/test-gdm-login.sh`) and never leaves the guest; the fleet SSH key lives outside the repo (`~/.ssh/cinnamon-test-key`, mode 600 enforced by `assert_ssh_key` in `vm-test/lib.sh`); `vm-test/known_hosts` carries public keys only, with the one-time TOFU documented.
+- **SSH channel exposure:** every ssh/scp/rsync channel runs `StrictHostKeyChecking=yes` against a pinned file (`ssh_pin_opts` in `vm-test/lib.sh`); per-VM pin files are seeded out-of-band from the qcow2 and are gitignored (`vm-test/results/`); a VM without a pin file is refused, there is no verification-off fallback.
+- **Injection surface:** harness remote commands are quoted heredocs (`<<'REMOTE_SCRIPT'`) or fixed constants (package names, paths, the `gdmtest` username); no attacker-influenced input reaches a shell. `--in-vm` (`vm-test/test-gdm-login.sh:334,366`) is an operator-supplied CLI argument, not external input. `tasks/lib/ukey.c` has no format-string, leak, or injection issues (the Super-to-Control mapping is Shadow finding 3, not repeated here).
+- **File modes:** `cinnamon-rocky-defaults` payloads are 0644 world-readable config with no secrets; the dconf and gschema scriptlets are standard; no setuid or world-writable files in the branch diff.
+- **Build flags:** `--buildtype=plain` in `spec/cinnamon-desktop.spec` does not drop `-O2`; rpmbuild `%optflags` still reach the compiler via the environment, so the `-D_FORTIFY_SOURCE` conditions hold.
+- **VNC:** libvirt default binds 127.0.0.1 with no password; host-only, documented in `vm-test/fedora-cinnamon-ref-setup.md`.
+
+**Counts:** medium 1, low 3. **Top 3:** (1) missing license files in six new RPMs, (2) `python3-tinycss2` missing `Requires: python3-webencodings`, (3) unpinned PEP 517 build backends fetched from PyPI at build time.
 
 ---
 
@@ -1550,6 +1898,405 @@ coverage drop is explicit, not silent.
 - The applet composition delta ref vs Rocky (show-desktop + nightlight vs separator + favorites + cornerbar) is the default panel layout difference between 6.6.7 and 6.7.4; recorded as a deviation, not a defect.
 
 **Verdict:** wallpaper re-verify PASS (2.1 fix holds; the night variant matches the source PNG statistics). Parity matrix complete: PASS on both sides = panel applets, wallpaper, themes (default applies), screensaver, main menu, nemo, session/power controls. FAIL (Rocky, all code or repo fact, all go to Tails via 3.1): Cinnamon Settings and everything hosted inside it (extension/applet/desklet manager UI, themes selector, power settings panel) = 3 missing Python modules, none available in EL10 or EPEL repos; terminal = A1 repo fact with the 1.4 build pending. No harness bugs in this entry. Both FAIL rows need recording in `## Status` as deviations (Robotnik).
+
+---
+
+*Entry 2026-09-18: plan items 3.1 + 3.2 — fresh-VM end-to-end and full parity re-run. Direct VM
+verification on host `192.168.1.102`, not a CI workflow run, so the standard table's
+compile/linter/unit/integration/Sparky rows do not apply (same scope note as the prior entries).
+This entry is **in progress**; it is checkpointed after recon so the plan and the full-set
+definition survive compaction. The fresh-VM run (provision → full-set install → GDM login →
+verify → parity matrix) follows in subsequent turns of this same entry and will append its
+verdict below this checkpoint.*
+
+**Scope (from `## Next Actions`, the two open `Big` items):**
+
+- **3.1 — fresh-VM end-to-end:** a clean Rocky 10 VM, install the full set from the local DNF
+  repo, GDM login into Cinnamon (Wayland), verify terminal + control-center + wallpaper + panels
+  open with zero manual `dnf` steps. A11y waits use `A11Y_APP`; `toolkit-accessibility=true` is set
+  first.
+- **3.2 — full parity re-run:** re-run the 11-row parity matrix (item 2.2) against
+  `fedora-cinnamon-ref`, expecting 11/11. The two prior Rocky FAILs (Cinnamon Settings python
+  deps; terminal) are closed in the 67-RPM repo (Tails, 2026-09-17), so both rows should now PASS.
+
+**Recon facts (2026-09-18):**
+
+- Repo: `/home/howard/Linux/projects/cinnamon-for-rocky10/rpms/` holds 67 RPMs + `repodata/`.
+  The runtime (non-`debuginfo`/`debugsource`/`-devel`) set is **22 packages**: `cinnamon`,
+  `cinnamon-control-center`, `cinnamon-desktop`, `cinnamon-menus`, `cinnamon-rocky-defaults`,
+  `cinnamon-session`, `cinnamon-settings-daemon`, `cjs`, `gdk-pixbuf-parsers`, `gnome-terminal`,
+  `gtk-layer-shell`, `mozjs115`, `muffin`, `muffin-clutter`, `muffin-cogl`, `nemo`,
+  `python3-pillow`, `python3-setproctitle`, `python3-tinycss2`, `python3-webencodings`,
+  `python3-xapp`, `xapps-lib`. Two packages ship two versions (`cinnamon-desktop` 1+2,
+  `cinnamon-settings-daemon` 1+2); a name-based `dnf install` resolves the latest of each.
+- **Full-set install (the "zero manual dnf steps" command):** stage the repo, run
+  `repo-setup/setup-repo.sh`, then `dnf install -y` of the 22 runtime names above.
+  `cinnamon-rocky-defaults` carries `Requires: rocky-backgrounds` + `Requires: rocky-logos`
+  (verified in `spec/cinnamon-rocky-defaults.spec:23-24`), so the wallpaper and branding system
+  packages are pulled in by the dependency chain, not by a manual step. GDM is a system display
+  manager, installed as test-environment setup (separate from the Cinnamon set), matching the
+  2.1/2.2 harness pattern. Any dependency that still must be added by hand is a finding, not a
+  silent fix.
+- Fleet (`virsh -c qemu:///system list --all`): `gdm-login-vm` running (**not** used as the fresh
+  VM); `ref-overlay-task0017` running (id 79, the disposable reference overlay used for the 0.3
+  baseline); `fedora-cinnamon-ref` shut off (pristine, never booted); `rocky10-explore` shut off.
+- Harness map: `vm-test/provision-vm.sh` (fresh VM, `--name`/`--graphics vnc`);
+  `tasks/lib/gdm-drive.sh` (`gdm_login`/`gdm_wait_session`), `tasks/lib/gdm-a11y.py`
+  (`A11Y_APP` a11y waits), `tasks/lib/ukey.c` (uinput keyboard for the greeter);
+  `repo-setup/setup-repo.sh` (local DNF repo); `vm-test/parity/parity-inventory.sh` (11-row
+  read-only inventory). The ref-side of the 3.2 matrix reuses the 0.3 baseline in
+  `vm-test/parity/fedora-ref/`: the reference is unchanged, the pristine ref was never booted,
+  and the overlay baseline stands.
+- Prior matrix state (item 2.2): 9 rows PASS both sides; the Rocky FAILs were Cinnamon Settings
+  (+ the extension/applet/desklet manager, themes selector, and power settings panel it hosts)
+  and terminal. Both are closed in the repo, so 3.2 expects 11/11.
+
+**Method (3.1 + 3.2, one fresh VM):**
+
+1. Provision a fresh Rocky 10 VM (`provision-vm.sh --name <name> --graphics vnc`); wait for SSH;
+   record IP + VNC display.
+2. Test-environment setup (recorded, not part of the Cinnamon set): SELinux permissive;
+   `dnf install gdm`; create the test user with a password and add it to the `input` group (the
+   ukey harness needs `/dev/uinput`); stage `gdm-drive.sh`/`ukey.c`/`gdm-a11y.py` and build the
+   ukey driver.
+3. Full-set install: stage the `rpms/` tree + `setup-repo.sh`, run the repo setup, then
+   `dnf install -y` of the 22 runtime names. No further `dnf install` may be needed.
+4. Reboot to the GDM greeter; `gdm_login <user> <passfile> cinnamon-wayland`; `gdm_wait_session`.
+5. Set `toolkit-accessibility=true` (prerequisite for the a11y waits).
+6. Verify (3.1): panels render, wallpaper renders (screenshot + pixel stats), terminal opens
+   (`A11Y_APP=gnome-terminal` a11y wait + AT-SPI tree), control-center opens (a11y wait + tree),
+   main menu opens. Screenshot each.
+7. Parity (3.2): run `parity-inventory.sh` → `vm-test/parity/rocky10/` (new dated set); capture
+   the 11 staged screenshots via `virsh screenshot`; populate the 11-row matrix against the 0.3
+   ref baseline.
+8. Record the matrix + verdict in this entry.
+
+**Status at checkpoint:** recon complete; no changes to the repo, the reference, or any pre-existing
+running VM.
+
+**Fresh VM (provisioned 2026-09-18):** `task0017-fresh-vm`, IP `192.168.122.153`, VNC
+`127.0.0.1:1` (connect to host:1), disk `/var/lib/libvirt/images/cinnamon-test/task0017-fresh-vm.qcow2`,
+SSH ready (fleet key; host key pinned out-of-band from the disk image per `lib.sh`). It is a fresh
+Rocky 10 cloud image with no Cinnamon installed. Provisioned via `vm-test/provision-vm.sh --name
+task0017-fresh-vm --graphics vnc`.
+
+**Step 1 (test-env setup) — DONE 2026-09-18:**
+
+- SELinux set Permissive (`setenforce 0` + `/etc/selinux/config` so it persists); `getenforce` =
+  `Permissive` after.
+- Display manager + greeter installed as **test environment** (not part of the Cinnamon set):
+  `dnf install -y gdm gnome-shell` → `gdm-47.0-24.el10_2`, `gnome-shell-49.4-9.el10_2.rocky.0.2`
+  (GDM 47 is Wayland-only on EL10; the greeter is gnome-shell/mutter). `systemctl enable gdm`,
+  `systemctl set-default graphical.target`.
+- Ephemeral test user `gdmtest` created (`useradd -m -s /bin/bash`), random password generated
+  in-VM to `/root/gdmtest.pass` (mode 0600, never leaves the VM), added to the `input` group
+  (`id -nG gdmtest` → `gdmtest input`). ukey runs as root, which owns `/dev/uinput` (0600
+  root:root), so the group is belt-and-suspenders.
+- ukey uinput driver built at `/root/gdm-harness/ukey` (build deps `gcc`/`kernel-headers`/
+  `python3-dbus` all already present from the cloud image); `gdm-drive.sh` + `gdm-a11y.py` staged
+  to `/root/gdm-harness/`.
+
+**Step 2 (full-set install) — DONE 2026-09-18:**
+
+- `rpms/` (67 RPMs + `repodata/`) + `repo-setup/` staged to `/root/`; `bash
+  /root/repo-setup/setup-repo.sh /root` configured the `cinnamon-rocky10` file:// repo and enabled
+  `crb`; `dnf makecache` succeeded (repo readable, metadata valid).
+- Runtime set **derived from the repo** (`dnf repoquery --repo=cinnamon-rocky10 --qf '%{name}'`
+  minus `-devel`/`-debuginfo`/`-debugsource`) = exactly the 22 names in the checkpoint. Installed
+  with **one** `dnf install -y` of those 22 names; rc=0, all 22 present (`rpm -q` each, none
+  missing). Versions: cinnamon/muffin/muffin-clutter/muffin-cogl/nemo 6.7.4,
+  cinnamon-control-center/cinnamon-desktop/cinnamon-settings-daemon 6.7.2, cinnamon-menus 6.7.0,
+  cinnamon-rocky-defaults 1.0, cinnamon-session 6.7.3, cjs 6.4.0, gdk-pixbuf-parsers 2.42.12,
+  gnome-terminal 3.54.5, gtk-layer-shell 0.10.1, mozjs115 115.29.0, python3-pillow 12.3.0,
+  python3-setproctitle 1.3.7, python3-tinycss2 1.5.1, python3-webencodings 0.5.1, python3-xapp
+  3.0.2, xapps-lib 3.3.3.
+- **Zero additional manual `dnf` steps confirmed.** The single install pulled the system deps by
+  resolution: `rocky-backgrounds-100.5-3` (wallpaper set, `/usr/share/backgrounds/rocky-default-10-*.png`
+  present), `rocky-logos-100.5-3` (background/screensaver gschema defaults + gdm logo),
+  `gsettings-desktop-schemas-47.1-4`, `python3-psutil-5.9.8` (xapp dep). No second `dnf install`
+  was needed. Install-log warnings are glib schema deprecation notices only (no errors, no
+  "not installed").
+- Session entries present: `/usr/share/wayland-sessions/cinnamon-wayland.desktop` and
+  `/usr/share/xsessions/cinnamon.desktop`. `cinnamon` ships 34 applets; note
+  `/usr/share/cinnamon/themes/` and `/usr/share/cinnamon/extensions/` are empty in this build
+  (default theme is built into the shell) — to be verified live in step 4.
+- Evidence in-VM under `/root/evidence/`: `step1-gdm.log`, `step2-setup-repo.log`,
+  `step2-runtime-set.txt`, `step2-install.log`, `step2-versions.log`, `step2-sessions.log`,
+  `step2-autodeps.log`.
+
+**Step 3 (GDM login + a11y) — DONE 2026-09-18:**
+
+- `virsh reboot` → VM back at `192.168.122.153`; `gdm_wait_greeter` + `gdm_greeter_ui_ready`
+  both PASS (greeter a11y UI ready; face list shows `gdmtest`, Login code, Submit, Accessibility).
+- `gdm_login gdmtest /root/gdmtest.pass cinnamon-wayland` PASS: clicked the user, selected the
+  "Cinnamon (Wayland)" session, caps probe verified lowercase, typed password, submitted.
+  `gdm_wait_session` → **session 7, type=wayland, state=active, proc=`cinnamon-session`**.
+- Running desktop processes for `gdmtest`: `cinnamon-sessio`, `cinnamon` (shell, pid 3365),
+  `nemo-desktop`, `cinnamon-calend` (calendar applet), `csd-settings-re`, `csd-xsettings`.
+- Cinnamon shell a11y tree reachable (`A11Y_USER=gdmtest A11Y_APP=cinnamon`): panel, Applets,
+  Menu, "All Applications", Account details, System Settings, Backgrounds, Date & Time, etc.
+- `toolkit-accessibility` set to **true** for gdmtest (first attempt failed: `runuser` inherited
+  root's `XDG_RUNTIME_DIR` → dconf hit `/run/user/0`, value stayed `false`; fixed by routing
+  gsettings through the session bus `unix:path=/run/user/1000/bus` + `XDG_RUNTIME_DIR=/run/user/1000`).
+- Evidence in-VM: `step3-greeter-text.log`, `step3-greeter-tree.log`, `step3-session-tree.log`.
+
+**Step 4 (3.1 verification) — DONE 2026-09-18:**
+
+Evidence under `vm-test/evidence/task0017-fresh-3.1/2026-09-18/` (1280x800 screenshots from
+`cinnamon-screenshot` run as `gdmtest` in the session env; pixel stats via the harness PIL helper).
+All five 3.1 surfaces verified on `task0017-fresh-vm` after a clean GDM login. The session was reset
+once mid-step (a menu that would not dismiss via ukey input left the screen in a dimmed state); the
+reset returned a verified clean desktop (`05-desktop-restore.png`), and the main menu was re-captured
+cleanly in the reset session. The terminal and control-center captures are from the first session and
+the menu/restore from the second; each capture independently proves its surface opened.
+
+| Check | What it exercises | Result | Notes |
+|---|---|---|---|
+| C1 panel render | compositor surfaces the panel | PASS | single bottom panel strip @0,759 1280x40; no top panel; 8 applets installed |
+| C2 wallpaper render | nemo-desktop composites the background | PASS | gemstone-skies-time.xml renders; day mean rgb (49,10,38), night (33,1,24) |
+| C3 terminal open | gnome-terminal (source-built) launches from the set | PASS | a11y frame 'gdmtest@localhost:~' 708x572; closes the A1 terminal gap |
+| C4 control-center open | cinnamon-control-center (System Settings) launches | PASS | a11y frame 'System Settings' 794x268; closes the 2.2 settings-deps gap |
+| C5 main menu open | menu applet opens and renders content | PASS | full menu a11y structure; rendered app-grid content in the capture |
+
+**C1 (PASS) - panel:** the full shell a11y tree (`04-shell-full-tree.txt`) shows a single bottom
+panel as a full-width strip `@0,759 1280x40` and **no top panel** (no width>=1200 bar at y<60).
+Applets are installed for the user under `/home/gdmtest/.config/cinnamon/spices/`: menu,
+grouped-window-list, clock, sound, network, power, notifications, cornerbar (8). No custom panel
+JSON, so this is the built-in default layout. The menu button is the leftmost 32x32 applet at the
+bottom-left (center ~ (21,779)); the clock sits bottom-right. `01-panels-config.txt` records the
+applet set.
+
+**C2 (PASS) - wallpaper:** `org.cinnamon.desktop.background picture-uri` =
+`file:///usr/share/backgrounds/rocky-default-10-gemstone-skies-time.xml` (a **time-of-day**
+day/night sky), `picture-options` = `zoom`; the file plus the day/night PNGs are owned by
+`rocky-backgrounds`, pulled in by the `cinnamon-rocky-defaults` dependency (no manual step). Base
+capture `01-desktop-base.png`: 18833 unique colours, max single bucket 30.59%, mean rgb (49,10,38),
+VARIED — the sky renders, not a black surface. This is the fix over the 2.1 nemo-desktop compositing
+FAIL, which was on the old `gdm-login-vm` (virtio-vga); the fresh `provision-vm.sh --graphics vnc`
+VM composites the nemo-desktop surface correctly. The wallpaper is time-based: an evening capture
+measures mean (49,10,38) and a night capture (after the mid-step reset) measures (33,1,24), matching
+the 2.2 night-variant stats (mean (33.1,1.6,24.9)) — same file, different sky phase, not a defect.
+
+**C3 (PASS) - terminal:** `gnome-terminal 3.54.5` (source-built by Tails, in the 22-package set)
+launches from the set. a11y (`A11Y_APP=gnome-terminal`, `02-terminal.a11y.txt`): `[application]
+'org.gnome.Terminal'` -> `[frame] 'gdmtest@localhost:~' @(0,0 708x572)`; `gnome-terminal-server`
+process present. Capture `02-terminal.png`: 2785 unique, max bucket 68.96%, mean (14,2,10), VARIED
+(dark terminal over the wallpaper). **Closes the A1 terminal gap** (gnome-terminal absent from
+EL10/EPEL repos; now provided by the set).
+
+**C4 (PASS) - control-center:** `cinnamon-control-center 6.7.2` launches. a11y
+(`A11Y_APP=cinnamon-control-center`, `03-control-center.tree.txt`): `[application]
+'cinnamon-control-center'` -> `[frame] 'System Settings' @(0,0 794x268)`, pid 4429, with a
+'System Settings' label at (336,32). Capture `03-control-center.png`: 3087 unique, max bucket
+70.03%, mean (14,2,10), VARIED. This is the new Cinnamon control center (System Settings), the 6.7
+successor to the old `cinnamon-settings` app whose missing python deps (setproctitle/pillow/tinycss2)
+caused the 2.2 FAIL; those three are now in the set as `python3-setproctitle`/`python3-pillow`/
+`python3-tinycss2`. (The old `cinnamon-settings` package is not in the 22-package set; whether it
+ships and runs is a 3.2 parity row.)
+
+**C5 (PASS) - main menu:** the menu applet opens and renders. Two independent signals:
+
+- a11y: `04-main-menu-open.txt` (clean capture, no other windows open) shows the full Cinnamon
+  main-menu structure — sidebar (All Applications, Accessories, Preferences, Administration,
+  Favorites, Recent Files), Places (Desktop/Documents/Music/Pictures/Videos/Downloads), a Search
+  entry, and the populated app grid.
+- pixels: `04-main-menu.png` is 1.3% bright, with the content structured in the left-center (a
+  17.7% block at the center app-grid region plus the sidebar column) over a dark menu surface —
+  the rendered menu, captured in a session with no terminal/control-center window to confuse the
+  evidence.
+- **A11y caveat (recorded, not a defect):** the Cinnamon shell tree *always* contains the main-menu
+  and panel-context-menu node structure at @0,0 extents (latent) even when closed — the same quirk
+  noted for the panel applets. So marker *presence* in the tree is not an open/closed signal; the
+  rendered pixel content is the proof. Menu content nodes report relative @0,0 extents, so menu
+  location comes from pixels, not a11y extents.
+- The menu did not dismiss via ukey Escape / desktop-click in this build (the screen stayed in the
+  dimmed menu state); a session reset returned a clean desktop (verified, `05-desktop-restore.png`).
+  Input-path quirk, not a product defect; 3.1 asked for open + render, both of which hold.
+
+**Checks requested vs run:** 5 surfaces requested (panels, wallpaper, terminal, control-center,
+main menu), 5 executed.
+
+**Verdict (3.1):** all five surfaces PASS on the fresh VM. The full set installed with one
+`dnf install` (step 2), and every 3.1 target — terminal (A1 gap closed) and control-center (2.2
+settings-deps gap closed) included — opens from that set with zero manual `dnf` steps. The wallpaper
+is the time-based Rocky sky (day/night) and renders correctly on the fresh VNC VM (the 2.1
+nemo-desktop compositing FAIL does not reproduce here). No code bugs found in 3.1; the one input
+quirk (menu not dismissing via ukey) is a harness/environment note, not a product defect.
+
+**Step 5 (3.2 full parity re-run) — DONE 2026-09-18:**
+
+Re-ran `vm-test/parity/parity-inventory.sh` on `task0017-fresh-vm` into
+`vm-test/parity/rocky10/2026-09-18-3.2/` (`inventory-rocky10-3.2.txt`) and re-opened the runtime
+targets. The structured inventory covers every row's facts; the runtime rows that 2.2 could not
+confirm (Cinnamon Settings opens, nemo opens, terminal opens) were re-verified by launching the
+app in the session env and checking the process survives plus a rendered (non-black) screenshot.
+The two prior FAILs (row 7 Cinnamon Settings, row 10 Terminal) were the only rows the 67-RPM set
+was built to move.
+
+| # | Item | Fedora ref (0.3, expected) | Rocky 10 (actual, 3.2) | Status |
+|---|---|---|---|---|
+| 1 | Panel applets | default set, single bottom panel | single bottom panel (`PANELS_ENABLED ['1:0:bottom']`); menu, grouped-window-list, systray, notifications, printers, removable-drives, keyboard, favorites, network, sound, power, calendar, cornerbar; 34 applet dirs | PASS |
+| 2 | Wallpaper | default_blue.jpg (desktop-backgrounds-basic) | gemstone-skies-time.xml day/night (rocky-backgrounds, via cinnamon-rocky-defaults); renders VARIED | PASS |
+| 3 | Branding | fedora-logo-sprite (fedora-logos) | fedora-logo-icon; icon file owned by rocky-logos (Rocky logo) | PASS |
+| 4 | Themes | Mint-Y-Dark-Aqua (cinnamon+GTK), Mint-Y-Aqua icon | empty cinnamon theme, Adwaita GTK, gnome icon; 19 shell assets (intentional divergence) | PASS |
+| 5 | Extension/applet/desklet manager | present, 3 desklets, manager module + 3 panels | present, 3 desklets, cs_extensions.py + applets/desklets/extensions panels; app opens | PASS |
+| 6 | Screensaver | cinnamon-screensaver 6.6.1, no service | folded into shell at 6.7 (js/ui/screensaver present), no service, lock-enabled true | PASS |
+| 7 | Cinnamon Settings | present, opens (stale python deps) | 32 panels; app launches + stays up (no crash); settings.py bundled in cinnamon pkg + setproctitle/pillow/tinycss2 installed | PASS (2.2 FAIL closed) |
+| 8 | Main menu | opens | opens + renders (3.1 C5) | PASS |
+| 9 | nemo | nemo 6.6.3 | nemo 6.7.4, file manager opens (window renders center, only benign theme warnings) | PASS |
+| 10 | Terminal | gnome-terminal 3.60.0 | gnome-terminal 3.54.5 (source-built, in the set), opens (3.1 C3) | PASS (2.2 FAIL closed) |
+| 11 | Session/power controls | power applet, idle 900 | power applet, power panel, idle 900, no separate session panel (6.7) | PASS |
+
+**Checks requested vs run:** 11 parity rows requested, 11 evaluated (5 runtime rows — settings,
+main menu, nemo, terminal, session — additionally confirmed by launching the app and checking the
+process survives plus a rendered screenshot; the rest by structured inventory).
+
+**Row 7 FAIL closure (evidence):** `cinnamon-settings` is a wrapper shipped by the `cinnamon-6.7.4`
+package that execs `/usr/share/cinnamon/cinnamon-settings/cinnamon-settings.py`. In the 2.2 state
+that python module lived in a separate `cinnamon-settings` package that was not installed, and the
+three runtime deps were missing, so every panel crashed on launch with a python traceback. Now the
+`cinnamon-settings.py` (37993 bytes) is bundled in the `cinnamon-6.7.4` package, and the set
+installs `python3-setproctitle-1.3.7`, `python3-pillow-12.3.0`, `python3-tinycss2-1.5.1`. Launching
+`cinnamon-settings default` in the session env left the process (pid 9502) alive at 05:36 elapsed
+with an empty stderr log (no traceback) and a rendered settings window (`2026-09-18-3.2-06-cinnamon-settings.png`,
+1959 unique colours, VARIED). The 2.2 crash-on-launch is closed.
+
+**Row 10 FAIL closure (evidence):** 2.2 had no gnome-terminal (not in EL10/EPEL). The set now
+ships `gnome-terminal-3.54.5-1.el10` (source-built by Tails); it launches and opens
+(3.1 C3: a11y frame 'gdmtest@localhost:~' 708x572). Closed.
+
+**Documented divergences (not defects, match the 2.1/2.2 notes):** themes (row 4) use the empty
+cinnamon theme + Adwaita GTK + gnome icon rather than Fedora's Mint-Y; wallpaper (row 2) is
+Rocky's time-based sky rather than Fedora's blue tile; branding (row 3) is the Rocky logo rather
+than the Fedora logo. nemo (row 9) logs a benign `Adwaita`-has-no-nemo-styling warning and adds
+fallback; no functional impact.
+
+**Step 6 — final verdict for item 3:**
+
+**3.1:** all five surfaces PASS (panel, wallpaper, terminal, control-center, main menu) on the
+fresh VM, installed from the local repo with zero manual `dnf` steps (steps 2-4 above).
+
+**3.2:** the full parity matrix is **11/11 PASS** against the 0.3 Fedora ref baseline. Both prior
+FAILs — Cinnamon Settings (row 7) and Terminal (row 10) — are closed by the 67-RPM set. The
+remaining differences from the Fedora ref are the intentional branding/theme divergences
+documented above, not functional gaps.
+
+**Item 3 (3.1 + 3.2): COMPLETE.** No product code bugs found; the two harness/environment notes
+(the Cinnamon shell a11y tree keeps the menu/panel node structure latent so marker presence is not
+an open/closed signal; the menu not dismissing via ukey input) are recorded, not defects.
+
+### Trio close — test-execution review (Big, 2026-09-18)
+
+Third reviewer of the trio (Shadow → Omega → Big). Scope: what the 3.1/3.2 runs prove and don't,
+harness robustness, and the settings-RPM one-liner. Every claim below is verified by a command
+run on 2026-09-18, not by reading the diff.
+
+**Host recovery note (state, not a finding):** at 14:10 the system `libvirtd` was **inactive**;
+plain `virsh` connected to the session driver, which has empty state, so all VMs appeared
+destroyed. `sudo systemctl enable --now libvirtd` restored the daemon, the autostarted `default`
+network, and all three persistent domains (`gdm-login-vm`, `ref-overlay-task0017`,
+`task0017-fresh-vm`); `task0017-fresh-vm` re-leased `192.168.122.153`
+(`virsh -c qemu:///system net-dhcp-leases default`). The `virbr0` bridge was then left DOWN on
+the host side (IP configured, no L2 forwarding), which blocked host-to-guest traffic;
+`sudo ip link set virbr0 up` restored it (ping 0% loss).
+
+**Settings-RPM one-liner (Next Actions item) — PASS.** Run on `task0017-fresh-vm` (pinned SSH):
+
+```
+$ rpm -qa | grep cinnamon-settings
+cinnamon-settings-daemon-6.7.2-2.el10.x86_64    # substring match; different package
+$ rpm -q cinnamon-settings
+package cinnamon-settings is not installed      # exit 1
+```
+
+The old separate `cinnamon-settings` RPM is absent, consistent with the row-7 closure (settings
+UI bundled in `cinnamon-6.7.4-3.el10`; `rpm -q cinnamon` → `cinnamon-6.7.4-3.el10.x86_64`).
+
+**What the 3.1/3.2 runs prove** (verified on disk and on the live VM):
+
+- Fresh minimal Rocky 10.2 VM; the full set installed with one `dnf install` after
+  `setup-repo.sh`, zero additional manual dnf steps (3.1 step 2).
+- GDM login to Cinnamon Wayland; 5/5 surfaces (panel, wallpaper, terminal, control-center, main
+  menu) with a11y + pixel evidence.
+- Parity matrix 11/11 vs the 0.3 Fedora ref baseline; both 2.2 FAILs closed (row 7 settings,
+  row 10 terminal).
+- Evidence on disk verified: `vm-test/evidence/task0017-fresh-3.1/2026-09-18/` holds all 5
+  surface PNGs plus a11y/pixelstats/bands data (22 files).
+  `vm-test/parity/rocky10/2026-09-18-3.2/` holds 5 of 11 captures plus the structured inventory —
+  the 6 missing captures are Shadow finding 5 (untracked + missing), not re-listed here.
+- Live re-check of the acceptance VM today: `cinnamon-6.7.4-3.el10`,
+  `cinnamon-desktop-6.7.2-2.el10`, `gnome-terminal-3.54.5-1.el10`,
+  `cinnamon-rocky-defaults-1.0-1.el10.noarch`, `gdk-pixbuf-parsers-2.42.12-1.el10`,
+  `nemo-6.7.4-2.el10`, `mozjs115-115.29.0-1.el10` all present (833 packages installed total).
+
+**What the 3.1/3.2 runs do NOT prove (coverage gaps):**
+
+1. **The acceptance install was run by hand; no script in the branch reproduces it.** The 22
+   package names were derived (repoquery minus -devel/-debuginfo/-debugsource) and typed into the
+   dnf command; they are not encoded anywhere in the repo. `INSTALL.md` still documents the
+   14-package era: "All 14 base packages install cleanly" (`INSTALL.md:5`); the install commands
+   omit gnome-terminal, the five control-center Python RPMs, and `cinnamon-rocky-defaults`
+   (`INSTALL.md:30-40`); the version table lists superseded builds
+   (`cinnamon-desktop 6.7.2-1.el10`, `cinnamon 6.7.4-1.el10`; `INSTALL.md:143,150`). The
+   documented install path in the branch does not produce the accepted set.
+2. **`vm-test/run-tests.sh` (the canonical install harness, TASK-0003) was never run
+   end-to-end against the final 67-RPM set** and cannot gate a CI-style run:
+   - Exit-code swallowing: `install_rc` captured at `run-tests.sh:191` is never read; `verify_rc`
+     is warning-only at `run-tests.sh:256-259` ("WARNING: Package verification had issues") and
+     the script proceeds to exit 0. A completely broken install reports green.
+   - Phase 2 (`run-tests.sh:106-113`) is structurally incapable of installing anything on a fresh
+     VM: `mozjs115` resolves only from the local `cinnamon-rocky10` repo (verified on the host:
+     `dnf repoquery --available mozjs115` → `mozjs115 => cinnamon-rocky10`; a fresh VM has no such
+     repo until Phase 3), and `clutter`/`cogl` do not exist as EL10 packages (unresolvable even on
+     the host, which has the local repo enabled; the script's own comment concedes they are
+     "bundled in muffin"). By dnf atomicity the three resolvable packages in that command
+     (gsettings-desktop-schemas, rocky-backgrounds, rocky-logos) also do not install. The
+     `|| echo "WARNING: ..."` swallows the certain failure, and the `SYSTEM_DEPS` array
+     (`run-tests.sh:28-30`) is dead code. The comment "runtime libraries not provided by our
+     custom RPM build" (`run-tests.sh:102-103`) is stale — mozjs115 IS provided as a custom RPM.
+3. **SELinux enforcing is untested.** The acceptance VM is `Permissive` (live check:
+   `getenforce` → `Permissive`). It inherited the mode: the harness itself sets permissive for
+   testing (`run-tests.sh:98 setenforce 0`) and 3.1 step 1 repeated it. Rocky's default is
+   enforcing; the desktop has never run under enforcing, so there is no AVC evidence either way.
+4. **Reboot persistence is single-boot only.** 3.1 was install → reboot → login. A second boot,
+   an in-place `dnf upgrade` of the set, and remove/reinstall are untested.
+5. **The a11y latent-node quirk (recorded in 3.1 C5) remains the arbiter hazard.** A future
+   automated gate keyed on a11y marker presence alone would pass on a closed menu. Pixels are the
+   open/closed signal; the current harness uses them correctly — keep it that way.
+
+**New findings (trio close).** None duplicates Shadow (8) or Omega (4).
+
+| # | Severity | What | Where | Owner |
+|---|---|---|---|---|
+| T1 | should-fix | Install/verify exit codes swallowed; a fully failed install exits 0 | `vm-test/run-tests.sh:191` (install_rc unused), `:256-259` (verify_rc warning-only) | Tails |
+| T2 | low | Phase 2 dead: mozjs115 local-repo-only, clutter/cogl absent from EL10, atomic dnf installs nothing, certain failure swallowed; `SYSTEM_DEPS` dead | `vm-test/run-tests.sh:28-30`, `:102-113` | Tails |
+| T3 | low | Accepted 22-package install set not encoded in the repo; `INSTALL.md` is 14-package-era and stale | `INSTALL.md:5`, `:30-40`, `:133-150` | Tails (list) + Vector (docs) |
+
+None touches a product RPM; all are harness/docs.
+
+**Re-verification asks for Tails** (after Shadow's blocker is resolved):
+
+1. Fix T1/T2, then run `run-tests.sh` end-to-end against the rebuilt full set on a fresh VM so
+   the acceptance install is reproducible from the branch.
+2. Enforcing-SELinux smoke: boot the installed VM under enforcing, GDM-login, open the five
+   surfaces; record any AVCs in `## Test Results`.
+3. (Cheap, optional) second reboot + `dnf upgrade` of the set on the same VM.
+
+**Checks requested vs run:** 5 requested, 5 executed — the settings-RPM one-liner on the
+acceptance VM; live package/SELinux re-check of the VM; 3.1 evidence directory verification; 3.2
+evidence directory verification; harness file review of `run-tests.sh`, `lib.sh`, `gdm-drive.sh`,
+`gdm-a11y.py`, `ukey.c`, `parity-inventory.sh`, `setup-repo.sh`, `provision-vm.sh`,
+`test-gdm-login.sh` with targeted `dnf repoquery`/`virsh`/`rpm` commands. Nothing silently
+dropped. No CI workflows exist in this repo (the plan chose the custom libvirt harness over
+CI/Sparky; that choice is not revisited here).
+
+**Verdict:** the test-execution review found no new blockers. One should-fix (T1) and two low
+(T2, T3), all harness/docs; zero in product RPMs. The one-liner PASSES: the old separate
+`cinnamon-settings` RPM is absent. The 3.1/3.2 runs prove fresh-VM install + desktop function of
+the final set, but do not prove reproducibility from the branch (gaps 1–2), enforcing-SELinux
+behaviour (gap 3), or multi-boot persistence (gap 4). **Mergeable after Tails** resolves
+Shadow's blocker (spec reproducibility) and T1 (exit codes), then the two mandatory
+re-verifications (run-tests.sh end-to-end; enforcing smoke) pass.
 
 ---
 
