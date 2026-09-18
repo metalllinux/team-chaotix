@@ -12,6 +12,16 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19): all 3 re-verifications PASS (A, B, C) — Tails work done; Vector next.**
+Re-verification B PASS and C PASS on fresh VM `t17-revB` (project `d128848`): (B) `run-tests.sh`
+end-to-end — single-dnf install of all 64 RPMs (no fallback), 22/22 names from
+`install-set.txt` verified, GDM login into cinnamon-wayland, `ukey key Super_L` opens the main
+menu (META mapping proven end-to-end); (C) enforcing-SELinux smoke — the VM booted Enforcing
+(`setenforce 0` in Phase 2 was runtime-only), GDM login + all five surfaces PASS, zero AVC
+denials in audit.log. With A (clean-checkout rebuild), the review gate is fully closed.
+Remaining: Vector (`INSTALL.md`/`README.md` for the complete set) → Knuckles (PR to main,
+merge).
+
 **Now (2026-09-19): re-verification A PASS — 2 re-verifications remain (B, C).**
 Clean-checkout rebuild from a fresh clone at `2fa1b2d`: all 10 changed specs build RC 0; NVRs +
 subpackage sets match `rpms/` exactly; payloads byte-identical except build-environment
@@ -375,10 +385,12 @@ the PM reads.*
       exactly; payloads byte-identical modulo build-environment artifacts (LTO stream symbol
       hashes -> build-ids/.gnu_debugdata, pip direct_url build paths). Detail in `##
       Implementation` (entry of 2026-09-19).
-- [ ] `Tails`: re-verifications B + C from `## Test Results` (trio close) — (B) `run-tests.sh`
-      end-to-end on a fresh VM (exercises T1/T2/T3 plus a `ukey key Super_L` menu open to prove
-      the META mapping end-to-end), (C) enforcing-SELinux smoke (boot enforcing, GDM login,
-      five surfaces, log AVCs).
+- [x] `Tails` (2026-09-19): re-verifications B + C from `## Test Results` (trio close) —
+      **both PASS** on fresh VM `t17-revB`: (B) `run-tests.sh` end-to-end (single-dnf install
+      of all 64 RPMs, 22/22 names verified, GDM login, `ukey key Super_L` opens the main menu —
+      META mapping proven end-to-end), (C) enforcing-SELinux smoke (boot enforcing, GDM login,
+      five surfaces, zero AVC denials). Detail in `## Test Results` (entry of 2026-09-19);
+      evidence in project `d128848`.
 - [ ] `Vector`: update `INSTALL.md`/`README.md` for the complete set (resume TASK-0016's doc work
       here); the install-set source of truth is now `vm-test/install-set.txt` (22 runtime names).
 - [ ] `Knuckles`: PR to main, merge.
@@ -2323,6 +2335,59 @@ the final set, but do not prove reproducibility from the branch (gaps 1–2), en
 behaviour (gap 3), or multi-boot persistence (gap 4). **Mergeable after Tails** resolves
 Shadow's blocker (spec reproducibility) and T1 (exit codes), then the two mandatory
 re-verifications (run-tests.sh end-to-end; enforcing smoke) pass.
+
+*Entry 2026-09-19: re-verification B + C on fresh VM `t17-revB` (Tails, post-review; direct
+VM verification, no CI in this repo, so the standard compile/linter/unit/Sparky table does not
+apply). VM: fresh Rocky 10.2 cloud image via `provision-vm.sh --name t17-revB --graphics vnc`,
+IP 192.168.122.18, kernel 6.12.0-211.16.1.el10_2.0.1.x86_64; guest clock UTC, host-local
+date 2026-09-19 (JST).
+
+**B — `run-tests.sh` end-to-end on the fresh VM: PASS.**
+
+| Check | What it exercises | Result | Notes |
+|---|---|---|---|
+| Phase 3 single-dnf install | T2 (dead native-deps block removed; all deps from the set + native repos) | PASS | Attempt 1 (all 64 RPMs in one `dnf install`) succeeded; no `--allowerasing`, no ordered-install fallback |
+| Phase 3 install rc gate | T1 (install failure must fail the harness) | PASS (gate exercised in code path) | rc captured and checked (`run-tests.sh:184-190`); harness exited 0 |
+| Phase 4 verify | T3 (22-name set from `install-set.txt`) | PASS | 22/22 `[OK]` with versions (cinnamon 6.7.4-3, muffin 6.7.4-3, nemo 6.7.4-2, cjs 6.4.0, ...), mozjs-115 headers present, `=== ALL PACKAGES VERIFIED ===` |
+| GDM login | greeter → session | PASS | `gdm_login gdmtest /root/gdmtest.pass cinnamon-wayland`; session 9 type=wayland state=active; `cinnamon-session-binary --session cinnamon-wayland`, `cinnamon --replace`, `nemo-desktop` running |
+| `ukey key Super_L` menu open | META mapping (`ukey.c:124`, fix `55e37bd`) end-to-end | PASS | a11y tree after the keypress shows the open main menu (category list: All Applications / Accessories / Preferences / Administration / Favorites / Recent Files, app grid @(293,342 369x337)); the `All Applications` marker occurs 0 times in the 3.1 closed-desktop baseline tree; screenshot `revB-menu.png` (1280x800, `cinnamon-screenshot` as gdmtest) |
+
+Test environment (not part of the Cinnamon set, mirrors 3.1 step 1): `dnf install gdm
+gnome-shell` (gdm-47.0-24.el10_2, gnome-shell-49.4-9.el10_2.rocky.0.2), ephemeral user
+`gdmtest` with a random in-VM password (`/root/gdmtest.pass`, 0600, never leaves the guest),
+`input` group, ukey driver built at `/root/gdm-harness/ukey`.
+
+**C — enforcing-SELinux smoke on the same VM: PASS.** `run-tests.sh` Phase 2 ran `setenforce 0`
+(runtime only); `/etc/selinux/config` stayed `SELINUX=enforcing`, so the post-reboot boot was
+**Enforcing** (`getenforce` = Enforcing) for the whole login + surface pass.
+
+| Check | What it exercises | Result | Notes |
+|---|---|---|---|
+| Boot enforcing | persistent enforcing config | PASS | `getenforce` Enforcing after reboot |
+| GDM login under enforcing | PAM + session start | PASS | session 9 active, wayland |
+| Panel | render | PASS | a11y tree panel nodes; panel-strip pixel stats avg=(71,23,65) |
+| Wallpaper | render | PASS | wallpaper region pixel stats avg=(60,17,54), 8782 unique colours (real image, not flat) |
+| Terminal | open + a11y | PASS | `gnome-terminal` launched, a11y frame `gdmtest@localhost:~` with window controls |
+| Control center | open + a11y | PASS | `cinnamon-control-center` launched, a11y frame `System Settings` |
+| Main menu | open via Super | PASS | same as B (ukey Super_L, a11y + screenshot) |
+| AVC denials | SELinux policy sufficiency | PASS | `grep -c 'avc:  denied' /var/log/audit/audit.log` → 0 (fresh boot, log spans the whole enforcing session); `ausearch -m avc -ts recent` empty |
+
+**Harness timing observation (not a product defect):** `gdm_wait_session`'s 150 s window
+timed out with "last: none", yet the systemd-logind journal shows "New session 9 of user
+gdmtest" at 16:04:30 — inside the window — and the session was verified active (type=wayland,
+`cinnamon-session` running) shortly after. Suspected `loginctl` visibility lag right after
+creation. The session and the desktop are healthy; the wait's final-state message is
+misleading in that case.
+
+**Evidence:** `vm-test/evidence/task0017-revB/2026-09-19/` (menu screenshot + a11y trees,
+pixel stats, login/menu/surfaces logs) committed in project `d128848`; install Phases 1–4
+block (lines 3224–4914) in `vm-test/results/install.log` (gitignored, append-only across
+runs). Trio-close optional ask 3 (second reboot + `dnf upgrade`) not run (optional; B+C are
+the mandatory re-verifications).
+
+**Verdict:** B PASS, C PASS. All three post-review re-verifications (A clean-checkout rebuild,
+B run-tests end-to-end, C enforcing smoke) are complete. Remaining chain: Vector docs →
+Knuckles PR.
 
 ---
 
