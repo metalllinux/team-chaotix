@@ -519,13 +519,59 @@ absent rather than shipped.
 
 *Owner: `Omega`. Read-only. Severity order.*
 
-### <short claim>
-**Severity:** critical | high | medium | low
-**Vector:** injection | authz | secrets | input-validation | crypto | supply-chain | actions | license
-**Where:** `path/to/file:123`
-**Attack:** who the attacker is, what they control, the concrete steps.
-**Impact:** what they get.
-**Fix:** the specific change.
+*Reviewed 2026-09-19 by `Omega`. Scope: the branch diff `3375a05..7975f1a` in
+`~/Linux/projects/cinnamon-for-rocky10/` — `INSTALL.md` (Quick-start metadata
+wording, the new "Minimal server (no display manager)" section, the D5 fix)
+plus the 22 committed evidence files under
+`vm-test/evidence/task0016-minimal/2026-09-19/` (20 logs, 2 PNGs). File list
+from `git diff 3375a05 7975f1a --name-only`. Every log read in full; the two
+PNGs could not be inspected (this model slot has no image input, same
+limitation Big recorded in `## Test Results`), flagged in finding 2.
+`repo-setup/setup-repo.sh` read in full on the branch (169 lines). Repo
+visibility verified: `metalllinux/cinnamon-for-rocky10` is **Public**
+(checked via github.com, 2026-09-19), so everything committed in this diff is
+world-readable. Credential scan: `git grep -iE "howard|192\.168\.|password|
+token|secret|BEGIN.*PRIVATE|api[_-]?key|bearer|ssh-ed25519|ssh-rsa"` over the
+evidence dir and `INSTALL.md` — every match is an empty a11y node label, the
+PAM service name `gdm-password`, or the public-key fingerprint noted in
+finding 1. No password value, token, or private key appears in any of the 22
+files; the only named user is the disposable `gdmtest` (UID 1000, created on
+the VM at 02:00:25 per `step6-7-secure-tail.log:40-43`). The doc's
+sudo/systemctl instructions open no remote access (no SSH config, no firewall
+or port changes, no SELinux changes; GDM is a local display manager) and
+`setup-repo.sh` is clean (root-only, no network beyond standard dnf from
+Rocky repos, no `eval`, every variable quoted). License: the section
+references no forked code; `createrepo_c` (BSD-3), `gdm` (GPL-2+),
+`gnome-shell` (MPL-2.0), and mesa (MIT) are installed from official Rocky
+repos at runtime, not redistributed by this repo; the committed evidence is
+test output. No new license surface in this diff. Three findings, all `low`;
+per the DoD line for Omega, nothing above `low` is unresolved.*
+
+### Evidence log in a public repo exposes the lab host's root SSH key fingerprint and NAT address
+**Severity:** low
+**Vector:** secrets
+**Where:** `vm-test/evidence/task0016-minimal/2026-09-19/step6-7-secure-tail.log:1,8,29` (fingerprint repeated at `:14,20,26,35,40,48,53`; `192.168.122.1` throughout; sudo history at `:29`)
+**Attack:** Anyone who can read the public repo (it is Public, verified 2026-09-19) reads the committed `/var/log/secure` tail. No credential is in it, but it discloses a persistent identifier of the lab host: the ED25519 public-key fingerprint `SHA256:TAs9anRDojDoomVgqYhgWN4LH4MOEsSxtFXWU4IEGhM` of the key that logs in as `root` from the libvirt NAT gateway `192.168.122.1`, plus the exact sudo command history (`dnf install -y gcc kernel-headers`). An attacker who later obtains that private key by other means (or who is already inside the lab's `192.168.122.0/24`) can use the fingerprint to confirm the key belongs to this host, and the NAT address plus sudo history map the lab's setup.
+**Impact:** Reconnaissance material for the user's lab network: confirms root public-key SSH from the host, the key fingerprint for correlation, and which packages were installed with sudo. No direct access; all addresses are RFC1918 and the VM is disposable (`task0016-minimal`, slated for destruction per `## Test Results`).
+**Fix:** Before Knuckles merges to the public repo, redact in `step6-7-secure-tail.log`: replace the fingerprint with `SHA256:<redacted>` and `192.168.122.1` with `192.168.122.<gw>` (or truncate the log to the lines that carry the verdict: zero PAM failures, zero AVCs, the `gdmtest` session open, the `gkr-pam` lines). The redaction preserves the evidence; the PAM/AVC verdict does not depend on the SSH lines.
+**Resolution:** *(filled by `Tails`)*
+
+### Committed PNGs are unverified by any model in this slot; human pixel review required before public merge
+**Severity:** low
+**Vector:** secrets
+**Where:** `vm-test/evidence/task0016-minimal/2026-09-19/05-post-reboot-greeter.png`, `06-desktop.png`
+**Attack:** Not an attack path; a verification gap. The repo is Public, so both images are world-readable once merged. The a11y text captures (`step6-1-userlist-text.log`, `step6-2-session-menu-text.log`) show the greeter presents only the disposable user `gdmtest` plus a clock, and no host-identifying string appears in the a11y trees, but pixel content (top-bar text, hostname, anything in the desktop wallpaper region) is not checkable from the committed logs, and this model slot has no image input (Big recorded the same limitation in `## Test Results`).
+**Impact:** Unknown until a human looks. Worst plausible case is a hostname or a non-disposable username visible in the pixels; the a11y evidence makes that unlikely.
+**Fix:** Human review of both PNGs before the merge goes public. If any host-identifying detail beyond the disposable `gdmtest` user and the clock is visible, retake the shot or redact the region. If clean, note "human-reviewed" in `## Release`.
+**Resolution:** *(filled by `Tails`)*
+
+### Documented install path has no signature verification; the sha256 step is transfer-integrity only (pre-existing, carried into the new section)
+**Severity:** low
+**Vector:** supply-chain
+**Where:** `INSTALL.md:93-98` (the sha256 step in the new section) and `repo-setup/setup-repo.sh:119-128` (writes the `.repo` with `gpgcheck=0`, visible in `01-setup-repo.log` of the evidence)
+**Attack:** Pre-existing design, not introduced by this diff (Quick start and the Manual section on `main` share it), but the new section presents this exact path as the verified minimal-server procedure. Attacker: whoever compromises the `metalllinux` GitHub account or lands a merged PR that alters `rpms/` (in-account PRs are mergeable without human review per AGENTS.md §8). Steps: the attacker swaps or adds RPMs in `rpms/`; a user cloning the compromised tree runs the documented `sudo` steps; the 64 RPMs install from the `file://` repo with `gpgcheck=0`, so no signature is checked; the doc's integrity step (compare sha256 sums on both sides) passes, because both sides come from the same compromised tree — it verifies the copy, not the origin.
+**Impact:** Attacker code executes as root on the follower's machine via `sudo dnf install`. Low because it requires a prior compromise of the repo as a precondition.
+**Fix:** Process fix, spans tasks, not a one-line doc change: sign the RPMs with a repo GPG key, ship the key in the repo, and set `gpgcheck=1` in the `.repo` the script writes (and in the Manual section's `.repo` block). Interim mitigation: pin the documented install set to a tagged release and publish its sha256 manifest in the tag, so a user can verify against a trusted baseline instead of against the tree they just cloned. Until then the doc's wording is accurate (it claims transfer verification, not authenticity) and needs no change.
 **Resolution:** *(filled by `Tails`)*
 
 ---
