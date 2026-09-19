@@ -447,28 +447,33 @@ harness convention). No reuse of `gdm-login-vm`, `task0017-fresh-vm`, `t17-revB`
 manager)", branch `feature/TASK-0016-install-md-minimal-server` at `760b852`. Evidence lands in
 project repo `vm-test/evidence/task0016-minimal/2026-09-19/`.
 
-**Start-state baseline (before any documented step ran):** Rocky 10.2 (Red Quartz), 443 packages,
-`gdm`/`lightdm`/`sddm` not installed, no `xorg-x11-server-*` or `xwayland` packages, default target
-`multi-user.target`, `getty@tty1` active, SELinux `Enforcing`, no user sessions. Matches the
-section's stated start state (evidence `00-start-state-baseline.log`). Note: 443 packages is the
-cloud-image baseline, not the 674 of the 2026-08-30 bare-metal server; the doc's section does not
-state a package count, so this is not a doc deviation.
+**Start-state baseline (before any documented step ran):** Rocky 10.2 (Red Quartz), 444 packages
+(per `dnf history`: 177 + 267 image-build transactions; the initial `wc -l` measurement read 443,
+a missing-trailing-newline off-by-one), `gdm`/`lightdm`/`sddm` not installed, no
+`xorg-x11-server-*` or `xwayland` packages, default target `multi-user.target`, `getty@tty1`
+active, SELinux `Enforcing`, no user sessions. Matches the section's stated start state (evidence
+`00-start-state-baseline.log`). Note: the cloud-image baseline is not the 674 of the 2026-08-30
+bare-metal server; the doc's section states no package count, so this is not a doc deviation.
 
 **Workflow run:** (in progress — step rows filled as the run advances)
 
 | Check | What it exercises | Result | Notes |
 |---|---|---|---|
 | start state | fresh minimal server, no DM/X, multi-user.target | PASS | baseline above |
-| step 1: transfer | project copy + sha256 of the 64 RPMs both sides | PENDING | |
-| step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PENDING | |
-| step 3: 22-name install | no DM/X pulled, 22/22 at table versions, session files, still getty | PENDING | |
-| step 4: gdm+gnome-shell | self-enable, enable no-op, getty until set-default | PENDING | |
+| step 1: transfer | project copy + sha256 of the 64 RPMs both sides | PASS | 64/64 RPMs + 4/4 repodata files, sha256 identical host vs VM (`02`-prefix logs) |
+| step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PASS | rc=0, marker present, "metadata already present. Skipping generation", `.repo` matches doc block byte-for-byte; createrepo_c self-install path worked on the minimal image (`01-setup-repo.log`) |
+| step 3: 22-name install | no DM/X pulled, 22/22 present, session files, still getty | PASS | rc=0, 22/22 installed, 200 packages pulled, zero DM/X in the full rpm-db diff, both session files present with exact doc Exec lines, default target still `multi-user.target`, getty active, gdm inactive (`02-dnf-install-22.log`, `03-step3-verify.log`) |
+| step 4: gdm+gnome-shell | self-enable, enable no-op, getty until set-default | PASS | rc=0, `is-enabled gdm` = `enabled` immediately after install (before the enable line), documented `enable` ran rc=0 as a silent no-op, system stayed at getty until `set-default`, then default = `graphical.target` (gdm 47.0-24, gnome-shell 49.4-9, +Xwayland, 178 packages) (`04-gdm-install.log`) |
 | step 5: reboot | boot reaches GDM Wayland greeter, not getty | PENDING | |
 | step 6: login | Cinnamon (Wayland) session, Type=wayland, item 6 greeter X11 entry | PENDING | |
 
-**Checks requested vs run:** 8 requested (start state + 6 doc steps + item 6 inside step 6), 1 executed (start state). *Remaining rows update as the run progresses; nothing dropped so far.*
+Doc claim also verified in step 3: `dnf list xorg-x11-server-Xorg` returns "No matching Packages"
+against all enabled Rocky 10.2 repos (BaseOS/AppStream/Extras/CRB + local), so the section's
+"xorg-x11-server-Xorg is in no Rocky 10.2 repository" statement holds on this system.
 
-**Verdict:** pending — run in progress.
+**Checks requested vs run:** 8 requested (start state + 6 doc steps, item 6 folded into step 6), 5 executed. *Remaining: steps 5 and 6; nothing dropped.*
+
+**Verdict:** pending — steps 1–4 all PASS as documented; run continues at reboot (step 5).
 
 ---
 
