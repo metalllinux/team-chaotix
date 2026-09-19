@@ -431,13 +431,87 @@ no PAM failures and no AVCs.
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### <short claim>
-**Severity:** blocker | should-fix | nit
-**Where:** `path/to/file:123`
-**Problem:** one sentence.
-**Failure scenario:** concrete inputs or state → the wrong outcome.
-**Suggested direction:** what to do instead.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+*Reviewed 2026-09-19 by `Shadow`. Scope: the branch diff `3375a05..7975f1a` in
+`~/Linux/projects/cinnamon-for-rocky10/` — `INSTALL.md` (Quick-start step 2
+metadata wording, the new "Minimal server (no display manager)" section at
+lines 76-160, the direct-RPM fallback D5 fix) plus the committed evidence under
+`vm-test/evidence/task0016-minimal/2026-09-19/` (22 files). Verified against
+the repo with `git diff 3375a05 7975f1a --stat` (only `INSTALL.md` and that
+evidence directory changed), `git show 3375a05:rpms` (64 RPMs, no `repodata/`
+entry), `git show 3375a05:rpms/repodata` (fatal, untracked),
+`vm-test/install-set.txt` (22 names, matches the doc's install line), `spec/`
+(no runtime Requires on any display manager or `xorg-x11-server-*`; the
+`cinnamon` spec ships both session files), `repo-setup/setup-repo.sh` (read in
+full; every script claim in the doc matches the code), and the evidence logs
+cited per finding. The D5 direct-RPM fallback fix is correct as written:
+installing local RPM files registers them in the rpm database and in dnf
+history, so `dnf remove` works, and what is missing is exactly repo-origin
+update tracking. All 22 names, the versions, and the other factual claims
+checked out clean. Three findings, all should-fix, all in the new section.*
+
+### Step 5 presents `systemctl start gdm` as an option no recorded run exercised
+**Severity:** should-fix
+**Where:** `INSTALL.md:143-149`
+**Problem:** Step 5 offers `sudo systemctl start gdm` ("brings the greeter up
+without a reboot") alongside `sudo reboot`, but no committed evidence records
+that command being run to bring GDM up.
+**Failure scenario:** The 2026-09-19 minimal-VM run reached the greeter via
+reboot (`05-post-reboot.log`), and the 2026-08-30 bare-metal observation
+records the user at the physical console "brought GDM up" without naming the
+command (`## Implementation`, Bare-metal state observation, line 346). A user
+who picks the no-reboot path gets no verified expectation, and if starting
+GDM on a `multi-user.target` system needs something else first, the section's
+"That is the verified minimal-server path" (`INSTALL.md:82`) overstates what
+was verified.
+**Suggested direction:** Either verify the no-reboot path on the minimal VM
+that was left running (stop GDM, run `systemctl start gdm`, confirm the
+greeter, commit the log), or drop the alternative and document reboot only.
+**Resolution:** *(filled by `Tails`)*
+
+### Step 6's "verified end state is the full desktop" exceeds what the committed evidence verifies
+**Severity:** should-fix
+**Where:** `INSTALL.md:151-154`
+**Problem:** The end-state claim names five working surfaces, but the
+committed machine evidence for this run verifies the session, not the desktop.
+**Failure scenario:** The only committed desktop process capture for the
+2026-09-19 run lists exactly two processes, `gdm-wayland-session` and
+`cinnamon-session-binary` (`step6-6-desktop-procs.log:1-2`, duplicated at
+`06-step6-login.log:408-409`), the session-side a11y text capture was
+committed empty (`step6-9-desktop-text-as-user.log`, 0 bytes, verified with
+`git show 7975f1a:...`), and `step6-3-desktop-tree.log` re-dumped the GDM
+greeter stage rather than the desktop. The `## Test Results` line's process
+list (`cinnamon --replace`, Xwayland, `nemo-desktop`, `csd-*` daemons,
+pipewire, line 492) appears in no committed log for this run. A release gate
+that trusts the doc would treat the five surfaces as machine-verified for the
+minimal path, when the committed record supports the active `Type=wayland`
+session plus the human-review pixel evidence `06-desktop.png`.
+**Suggested direction:** The five-surface claim is in fact backed by the
+TASK-0017 verification of this same 22-package set (2026-09-18
+`task0017-fresh-vm` with a11y plus pixelstats, and 2026-09-19 `t17-revB`
+under enforcing SELinux). Either commit the session process list from the
+still-running VM to back the claim directly, or reword step 6 to state what
+this run's evidence verifies and attribute the five-surface pass to the
+TASK-0017 run.
+**Resolution:** *(filled by `Tails`)*
+
+### Step 1's "(the 64 RPMs and the `repodata/` directory)" reintroduces the wording this branch corrected in Quick start
+**Severity:** should-fix
+**Where:** `INSTALL.md:93-98`
+**Problem:** A fresh clone has no `rpms/repodata/` (untracked, verified on
+both `3375a05` and `origin/main`), and the Quick-start text that commit
+`7975f1a` itself corrected says so explicitly (`INSTALL.md:23-27`), yet the
+new section describes the project as containing "the 64 RPMs and the
+`repodata/` directory".
+**Failure scenario:** A user who cloned the repo and is "verifying the
+transfer by comparing the sha256 sums of the RPMs on both sides" looks for
+`rpms/repodata/` as part of the integrity baseline, does not find it, and
+concludes the clone is incomplete or that metadata must exist before the copy
+is "intact" — the opposite of the corrected sentence, which states the
+fresh-clone path is the normal one and the script generates the metadata.
+**Suggested direction:** Match the Quick-start wording. Name `rpms/` with its
+64 RPMs, and state that `repodata/` is generated by the setup script when
+absent rather than shipped.
+**Resolution:** *(filled by `Tails`)*
 
 ---
 
