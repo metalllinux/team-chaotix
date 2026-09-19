@@ -139,10 +139,9 @@ the PM reads.*
       steps of the documented procedure executed exactly as written; item 6 answered (greeter does
       not list the X11 "Cinnamon" entry). Evidence project `89b9b7b`, planning `bc85291`. One doc
       finding returned to Vector (Quick-start metadata claim).
-- [ ] `Vector`: fix the Quick-start metadata wording per Big's finding — `rpms/repodata/` is
-      untracked, so a fresh clone has no metadata and `setup-repo.sh` generates it (the
-      `createrepo_c` self-install path works on a minimal image); state that the procedure is
-      correct on both paths. Write to `## Docs`.
+- [x] `Vector` (2026-09-19): Quick-start metadata wording fixed per Big's finding. Project
+      `7975f1a` (on top of `89b9b7b`, local. Feature-branch push blocked by Vector's permissions,
+      Knuckles pushes). Before/after and the no-change list in `## Docs`.
 - [ ] `Shadow` → `Omega` → `Big`: review chain on the diff.
 - [ ] `Tails`: fix anything the chain returns.
 - [ ] `Knuckles`: PR to main, merge.
@@ -545,6 +544,41 @@ logged-in desktop for user inspection; destroy with
 ## Docs
 
 *Owner: `Vector`.*
+
+**2026-09-19 (post-Big).** Quick-start metadata wording fixed per Big's finding in `## Test Results`
+("Finding for Vector (doc bug, precision)"). Project commit `7975f1a` on
+`feature/TASK-0016-install-md-minimal-server`, on top of `89b9b7b` (Big's evidence). The push of the
+project branch is blocked by my permissions (push-to-`main` only); Knuckles pushes.
+
+| File | Sections touched | What changed |
+|---|---|---|
+| `INSTALL.md` (project) | Quick start, step 2 | Removed the inaccurate parenthetical "a fresh clone ships valid metadata, so generation is skipped". Replaced with the verified facts: `rpms/repodata/` is untracked in git, so a fresh clone has no metadata and takes the generation path; the `createrepo_c` self-install from AppStream works on a minimal image (Big's `01-setup-repo.log` line 5); a copy that carries `repodata/` skips generation; the procedure is correct on both paths |
+
+Exact before/after of the changed sentence (the rest of step 2 is untouched):
+
+- Before: "The script installs `createrepo_c` if missing, generates repository metadata when
+  `rpms/repodata/` is absent (a fresh clone ships valid metadata, so generation is skipped), writes
+  `/etc/yum.repos.d/cinnamon-rocky10.repo`, enables the CRB repository, and validates that the
+  repository is readable before finishing."
+- After: "The script installs `createrepo_c` if missing and generates repository metadata when
+  `rpms/repodata/` is absent. A fresh clone has no metadata because the `repodata/` directory is
+  not tracked in git, so a fresh clone exercises the generation path, and the `createrepo_c`
+  self-install from AppStream works on a minimal image. A copy that carries `repodata/` skips
+  generation instead. The procedure is correct on both paths. The script writes
+  `/etc/yum.repos.d/cinnamon-rocky10.repo`, enables the CRB repository, and validates that the
+  repository is readable before finishing."
+
+Minimal server step 1 (`INSTALL.md` "keeping `repo-setup/` and `rpms/` (the 64 RPMs and the
+`repodata/` directory) intact") reviewed and left as written. It is a keep-intact instruction for
+the transfer, not a claim about what a fresh clone ships, and the clone path is now covered by the
+corrected step 2 wording.
+
+**Checked and needed no change:** `README.md` (grep for `repodata|metadata` over the project's
+`.md` files: no metadata claim there), `vm-test/fedora-cinnamon-ref-setup.md` (its "no `repodata/`"
+line describes the Fedora reference VM, a different machine, and is accurate), `CHANGELOG.md`
+(project has no changelog file).
+
+---
 
 **2026-09-19.** Worked on branch `feature/TASK-0016-install-md-minimal-server`, cut from `main`
 (`3375a05`), commit `760b852` in the project repo.
