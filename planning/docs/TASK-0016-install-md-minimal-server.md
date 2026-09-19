@@ -449,13 +449,38 @@ to `Tails`) or a harness bug (stays with `Big`).
 
 *Owner: `Vector`.*
 
+**2026-09-19.** Worked on branch `feature/TASK-0016-install-md-minimal-server`, cut from `main`
+(`3375a05`), commit `760b852` in the project repo.
+
 | File | Sections touched | What changed |
 |---|---|---|
-| `README.md` | | |
-| `CHANGELOG.md` | | |
+| `INSTALL.md` (project) | Direct RPM install (fallback) | Fixed D5. Replaced "you give up repository features such as `dnf remove` tracking and update notifications" (wrong. local-RPM packages register in the rpm database and dnf history, and `dnf remove` works on them) with the actual gap. No repository origin, which is dnf's source for updates of these packages |
+| `INSTALL.md` (project) | Quick start, step 2 | Precision fix. The script generates metadata only when `rpms/repodata/` is absent (`setup-repo.sh:101-107`), and a fresh clone ships valid metadata so generation is skipped. Previously the unconditional "generates repository metadata" |
+| `INSTALL.md` (project) | New section "Minimal server (no display manager)" | The verified minimal-server path. Fresh Rocky 10.2 server with no DM and no X, to the running Cinnamon desktop. Six steps. Project transfer with sha256 verification, `setup-repo.sh`, the single 22-name `dnf install`, `gdm` + `gnome-shell` install/enable plus `set-default graphical.target`, reboot (or `systemctl start gdm`), Cinnamon (Wayland) login. States plainly that a display manager is required to run a desktop and a minimal server has none, that the set pulls in no display manager or X server, and that the working session is Cinnamon (Wayland) with X11 apps running through Xwayland |
+| `README.md` (project) | none | Consistent as-is, see below |
+| `CHANGELOG.md` | none | Project has no changelog file |
 
-**Checked and needed no change:** listing these saves the next person re-checking.
-**Could not verify:** what, and what would settle it.
+Re-check of the 2026-08-30 audit findings against the post-TASK-0017 `INSTALL.md`:
+
+| Finding | Status |
+|---|---|
+| D1 dead X11 path / assumed GDM preinstalled | Resolved by the TASK-0017 rewrite (Wayland session, DM step 4). The residual statement that Xorg is not installable on Rocky 10.2 is now in the new minimal-server section |
+| D2 no DM step, no "DM required, minimal has none" statement | Resolved by the rewrite (DM step 4). The explicit statement is in the new section |
+| D3 README "10" vs INSTALL "14" | Superseded. Both files now say 22 names / 64 RPMs consistently |
+| D4 35-package list "required regardless of method" | Resolved by the rewrite (Prerequisites says no manual dependency list is required) |
+| D5 "skips `dnf remove` tracking" | **Fixed in this commit**, see table above |
+| D6 "without these" omits the settings daemon | Superseded. The 22-row Installed-packages table covers every name |
+
+Verified for the new section (evidence, not inference):
+
+- "No spec of the 22 declares a display manager or an X server." `grep -E 'gdm|lightdm|sddm|xorg-x11-server|Xwayland'` over all 20 files in `spec/*.spec` returns zero matches.
+- Start state (no DM, no X, `multi-user.target`, getty on tty1, SELinux enforcing), GDM self-enablement (`systemctl is-enabled gdm` → `enabled` immediately after install), `xorg-x11-server-Xorg` in no Rocky 10.2 repo, `Type=wayland` end state. All from the verified bare-metal procedure in `## Implementation` (2026-08-30, 192.168.1.103).
+- The install steps (single 22-name `dnf install`, zero manual steps) are the current set's path, re-verified end-to-end on a fresh minimal VM on 2026-09-19 (TASK-0017, t17-revB).
+- No manual `ldconfig` step in the section. The current harness `vm-test/run-tests.sh` installs all 64 RPMs without `ldconfig` and the 2026-09-19 re-verification passed. The old procedure's `ldconfig` step was for the 14-package set.
+
+**Checked and needed no change:** `README.md` (counts consistent. "14 initial + 8 new + 2 rebuilt" = 22, and it defers installation to INSTALL.md), `vm-test/install-set.txt` (22 names, matches both command blocks in INSTALL.md), `spec/` (no doc surface).
+
+**Could not verify:** whether the GDM greeter *lists* the X11 "Cinnamon" entry or filters it out (open item 6 for Big in `## Implementation`). The section deliberately makes no claim either way. It only states that the X11 session file has no X server to run on.
 
 ---
 
