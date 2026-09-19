@@ -436,21 +436,39 @@ no PAM failures and no AVCs.
 
 *Owner: `Big`. Verdicts, never raw log dumps.*
 
-**Workflow run:**
+**Run (2026-09-19): the documented minimal-server procedure, executed end-to-end on a fresh VM.**
+
+Host `192.168.1.102`, libvirt `qemu:///system` (socket-activated, `virsh` as `howard`, libvirt
+group). VM **`task0016-minimal`** at **192.168.122.142** (VNC `127.0.0.1:4` on host, 2 vCPU / 4G),
+provisioned from `Rocky-10-GenericCloud.qcow2` via `vm-test/provision-vm.sh --destroy --graphics
+vnc --name task0016-minimal` (host key pinned out-of-band from the disk image, firewalld masked per
+harness convention). No reuse of `gdm-login-vm`, `task0017-fresh-vm`, `t17-revB`;
+`fedora-cinnamon-ref` untouched. The doc under test is `INSTALL.md` "Minimal server (no display
+manager)", branch `feature/TASK-0016-install-md-minimal-server` at `760b852`. Evidence lands in
+project repo `vm-test/evidence/task0016-minimal/2026-09-19/`.
+
+**Start-state baseline (before any documented step ran):** Rocky 10.2 (Red Quartz), 443 packages,
+`gdm`/`lightdm`/`sddm` not installed, no `xorg-x11-server-*` or `xwayland` packages, default target
+`multi-user.target`, `getty@tty1` active, SELinux `Enforcing`, no user sessions. Matches the
+section's stated start state (evidence `00-start-state-baseline.log`). Note: 443 packages is the
+cloud-image baseline, not the 674 of the 2026-08-30 bare-metal server; the doc's section does not
+state a package count, so this is not a doc deviation.
+
+**Workflow run:** (in progress — step rows filled as the run advances)
 
 | Check | What it exercises | Result | Notes |
 |---|---|---|---|
-| compile | changed files | PASS/FAIL | |
-| linter | style and correctness | PASS/FAIL | |
-| unit tests | individual functions | PASS/FAIL | |
-| integration tests | end-to-end flows | PASS/FAIL | |
-| Sparky tests | Rocky Linux UI (if applicable) | PASS/FAIL | |
+| start state | fresh minimal server, no DM/X, multi-user.target | PASS | baseline above |
+| step 1: transfer | project copy + sha256 of the 64 RPMs both sides | PENDING | |
+| step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PENDING | |
+| step 3: 22-name install | no DM/X pulled, 22/22 at table versions, session files, still getty | PENDING | |
+| step 4: gdm+gnome-shell | self-enable, enable no-op, getty until set-default | PENDING | |
+| step 5: reboot | boot reaches GDM Wayland greeter, not getty | PENDING | |
+| step 6: login | Cinnamon (Wayland) session, Type=wayland, item 6 greeter X11 entry | PENDING | |
 
-**Checks requested vs run:** N requested, N executed. *If any were dropped or skipped, say so here
-explicitly — a truncated run reporting green reads as full coverage.*
+**Checks requested vs run:** 8 requested (start state + 6 doc steps + item 6 inside step 6), 1 executed (start state). *Remaining rows update as the run progresses; nothing dropped so far.*
 
-**Verdict:** prose. For each FAIL: the failing check, the evidence, and whether it is a code bug (goes
-to `Tails`) or a harness bug (stays with `Big`).
+**Verdict:** pending — run in progress.
 
 ---
 
