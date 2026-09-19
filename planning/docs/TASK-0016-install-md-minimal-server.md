@@ -464,16 +464,62 @@ bare-metal server; the doc's section states no package count, so this is not a d
 | step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PASS | rc=0, marker present, "metadata already present. Skipping generation", `.repo` matches doc block byte-for-byte; createrepo_c self-install path worked on the minimal image (`01-setup-repo.log`) |
 | step 3: 22-name install | no DM/X pulled, 22/22 present, session files, still getty | PASS | rc=0, 22/22 installed, 200 packages pulled, zero DM/X in the full rpm-db diff, both session files present with exact doc Exec lines, default target still `multi-user.target`, getty active, gdm inactive (`02-dnf-install-22.log`, `03-step3-verify.log`) |
 | step 4: gdm+gnome-shell | self-enable, enable no-op, getty until set-default | PASS | rc=0, `is-enabled gdm` = `enabled` immediately after install (before the enable line), documented `enable` ran rc=0 as a silent no-op, system stayed at getty until `set-default`, then default = `graphical.target` (gdm 47.0-24, gnome-shell 49.4-9, +Xwayland, 178 packages) (`04-gdm-install.log`) |
-| step 5: reboot | boot reaches GDM Wayland greeter, not getty | PENDING | |
-| step 6: login | Cinnamon (Wayland) session, Type=wayland, item 6 greeter X11 entry | PENDING | |
+| step 5: reboot | boot reaches GDM Wayland greeter, not getty | PASS | boot 01:47:19, SSH back ~20s same IP, default `graphical.target`, gdm active, `getty@tty1` inactive, greeter session `c1 gdm seat0 1018 greeter tty1`; pixel `05-post-reboot-greeter.png` (human review) (`05-post-reboot.log`) |
+| step 6: login | Cinnamon (Wayland) session, Type=wayland, item 6 greeter X11 entry | PASS | session menu captured expanded (item 6, below), "Cinnamon (Wayland)" selected, password + Return, first attempt; `VERIFIED session 16 type=wayland state=active proc='cinnamon-session'`, `loginctl show-session 16` → `Type=wayland State=active Service=gdm-password`; full desktop running (`cinnamon --replace`, Xwayland, `nemo-desktop`, all `csd-*` daemons, pipewire); SELinux Enforcing throughout (`06-step6-login.log`, `step6-1..9-*.log`, pixel `06-desktop.png` human review) |
 
-Doc claim also verified in step 3: `dnf list xorg-x11-server-Xorg` returns "No matching Packages"
-against all enabled Rocky 10.2 repos (BaseOS/AppStream/Extras/CRB + local), so the section's
-"xorg-x11-server-Xorg is in no Rocky 10.2 repository" statement holds on this system.
+**Item 6 (does the greeter list the X11 "Cinnamon" entry?): it does not — the entry is filtered
+out.** Evidence is the a11y dump of the expanded session menu taken before the entry was clicked
+(`step6-2-session-menu-text.log`): the menu lists `Password`, `Session Type`, `Cinnamon (Wayland)`,
+`GNOME` — and nothing else. The X11 file exists on disk
+(`/usr/share/xsessions/cinnamon.desktop`, `Name=Cinnamon`, no `Try=` line), and no Xorg X server
+exists on the system (nothing installed; in no Rocky 10.2 repo, verified step 3). The greeter is
+GDM 47, Wayland-only (gdm on EL10 ships only `gdm-wayland-session`, per the harness design note
+and `rpm -ql gdm`). Note for completeness: the menu also omits `GNOME on Wayland`
+(`wayland-sessions/gnome-wayland.desktop`, `Name=GNOME on Wayland`) while listing `GNOME`
+(`wayland-sessions/gnome.desktop`), so the filter is not simply "all wayland-sessions entries"
+either. The exact filter predicate inside GDM is not verified (hypothesis: GDM hides sessions it
+cannot run, X11 included) — the observable fact, which is what item 6 asks, is established by the
+menu dump. Practical consequence: on a minimal server the only selectable Cinnamon session is
+Cinnamon (Wayland), which matches what the section tells the reader to select.
 
-**Checks requested vs run:** 8 requested (start state + 6 doc steps, item 6 folded into step 6), 5 executed. *Remaining: steps 5 and 6; nothing dropped.*
+Doc claims re-checked against this run:
 
-**Verdict:** pending — steps 1–4 all PASS as documented; run continues at reboot (step 5).
+- `dnf list xorg-x11-server-Xorg` → "No matching Packages" against all enabled Rocky 10.2 repos
+  (BaseOS/AppStream/Extras/CRB + local). The section's "xorg-x11-server-Xorg is in no Rocky 10.2
+  repository" statement holds on this system.
+- **Finding for Vector (doc bug, precision):** the Quick-start claim added in `760b852` — "a fresh
+  clone ships with valid metadata, so generation is skipped" — is inaccurate. `rpms/repodata/` is
+  untracked in git (`git ls-tree origin/main rpms/repodata/` is empty), so a fresh clone has no
+  metadata and the script generates it, having first installed `createrepo_c` from AppStream
+  (that install path worked on this minimal image, `01-setup-repo.sh` log line 5). This run
+  exercised the skip path because the project transfer carried the local `repodata/`. The procedure
+  is correct on both paths; the claim is what is wrong. The generation path itself is verified by
+  earlier tasks (TASK-0006), not re-run here.
+
+**Checks requested vs run:** 8 requested (start state + 6 doc steps, item 6 folded into step 6), 8 executed. Nothing dropped.
+
+**Harness notes (stay with Big):** the login drive used the in-VM harness
+(`tasks/lib/gdm-drive.sh` + `gdm-a11y.py` + `ukey.c`, copied to `/root/gdm-harness/`), with
+`gcc` + `kernel-headers` installed as harness prerequisites (test infra, not part of the documented
+procedure). The caps pre-pass verified the compositor caps state by probe readback before any
+credential was typed. The session-stage a11y tree came back empty (rc=0, no nodes, even after a
+settle delay and with the session's `at-spi/bus_0` socket present) — a11y worked at the greeter
+stage, so this is a harness limitation on the session side, not a failure of the system under test;
+the verdict rests on the state-based check (`loginctl` + process list), which is the driver's
+designed authoritative verdict. The two PNGs (`05-post-reboot-greeter.png`, `06-desktop.png`,
+1280x800) are pixel evidence for human review; the model in this slot has no image input.
+
+**Verdict:** PASS. The documented minimal-server procedure in `INSTALL.md`
+(`feature/TASK-0016-install-md-minimal-server` at `760b852`) executes end-to-end on a fresh Rocky
+10.2 minimal VM exactly as written: all six steps, no undocumented intervention in the documented
+path (the only additions were harness prerequisites for the login drive). Final state is a running
+Cinnamon (Wayland) desktop, `Type=wayland`, SELinux Enforcing, on a machine that started with no
+display manager and no X server. Item 6: the greeter filters the X11 "Cinnamon" entry; only
+Cinnamon (Wayland) is selectable, which the section already directs the reader to. One doc finding
+for Vector (the fresh-clone metadata claim, above); one doc claim verified true (Xorg in no repo).
+No code bug for Tails. The VM `task0016-minimal` (192.168.122.142) is left running with the
+logged-in desktop for user inspection; destroy with
+`vm-test/provision-vm.sh --destroy --name task0016-minimal` when done.
 
 ---
 
