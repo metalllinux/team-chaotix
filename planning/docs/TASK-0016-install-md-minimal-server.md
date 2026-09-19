@@ -12,6 +12,14 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19, post-Vector): doc leg complete.** `INSTALL.md` gains the "Minimal server (no
+display manager)" section (the verified path, six steps; the "no spec declares a DM or X" claim
+grep-verified over all of `spec/`) and the D5 fix (local RPMs do register in the rpm db; the real
+gap is repository origin). D1-D4/D6 were already resolved by TASK-0017's rewrite; a quick-start
+metadata-precision fix landed too. Project: branch `feature/TASK-0016-install-md-minimal-server`
+cut from `main` `3375a05`, commit `760b852` (local, unpushed — Knuckles). Planning `c5f7046`
+pushed. Next: Big runs the exact documented procedure on a fresh minimal Rocky 10.2 VM.
+
 **Now (2026-09-19): task RESUMED — the pause on TASK-0017 is over.** TASK-0017 shipped (PR #4
 merged, `main` at `3375a05`): the set is complete (64 RPMs, 22-name install set), and its Vector
 leg already rewrote `INSTALL.md`/`README.md` for the complete set (single-dnf install, GDM Wayland,
@@ -108,10 +116,11 @@ the PM reads.*
       reconciliation included). The verified minimal-server procedure (install set + GDM +
       set-default graphical + Cinnamon Wayland session) is the bare-metal grounding path recorded
       there; it is what the new doc section documents.
-- [ ] `Vector`: apply the still-applicable D1-D6 fixes to the current `INSTALL.md` (TASK-0017's
-      rewrite superseded some; verify each against the doc as it stands) and add the
-      minimal-server (no login manager) install-and-run section from the verified procedure.
-      Write to `## Docs`.
+- [x] `Vector` (2026-09-19): minimal-server section added to `INSTALL.md` + D5 fixed + quick-start
+      precision fix; D1-D4/D6 confirmed already resolved by the TASK-0017 rewrite. Project
+      `760b852` on branch `feature/TASK-0016-install-md-minimal-server` (from main `3375a05`,
+      unpushed); planning `c5f7046`. One claim left unverified by design: whether the greeter
+      lists/filters the X11 "Cinnamon" entry (Big's item 6).
 - [ ] `Big`: run the exact minimal-server procedure from the updated doc on a fresh minimal Rocky
       10.2 VM on host `192.168.1.102` (no login manager preinstalled) to prove it executable
       end-to-end; record in `## Test Results`.
