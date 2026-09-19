@@ -593,7 +593,8 @@ project repo `vm-test/evidence/task0016-minimal/2026-09-19/`.
 
 **Start-state baseline (before any documented step ran):** Rocky 10.2 (Red Quartz), 444 packages
 (per `dnf history`: 177 + 267 image-build transactions; the initial `wc -l` measurement read 443,
-a missing-trailing-newline off-by-one), `gdm`/`lightdm`/`sddm` not installed, no
+a missing-trailing-newline off-by-one; the `dnf history` output itself is not committed, the `00`
+log records 443), `gdm`/`lightdm`/`sddm` not installed, no
 `xorg-x11-server-*` or `xwayland` packages, default target `multi-user.target`, `getty@tty1`
 active, SELinux `Enforcing`, no user sessions. Matches the section's stated start state (evidence
 `00-start-state-baseline.log`). Note: the cloud-image baseline is not the 674 of the 2026-08-30
@@ -604,8 +605,9 @@ bare-metal server; the doc's section states no package count, so this is not a d
 | Check | What it exercises | Result | Notes |
 |---|---|---|---|
 | start state | fresh minimal server, no DM/X, multi-user.target | PASS | baseline above |
-| step 1: transfer | project copy + sha256 of the 64 RPMs both sides | PASS | 64/64 RPMs + 4/4 repodata files, sha256 identical host vs VM (`02`-prefix logs) |
-| step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PASS | rc=0, marker present, "metadata already present. Skipping generation", `.repo` matches doc block byte-for-byte; createrepo_c self-install path worked on the minimal image (`01-setup-repo.log`) |
+| step 1: transfer | project copy + sha256 of the 64 RPMs both sides | PASS | 64/64 RPMs + 4/4 repodata files, sha256 identical host vs VM (`01b-step1-transfer-verify.log`) |
+| step 2: setup-repo.sh | repo file + makecache, rc=0, marker | PASS | rc=0, marker present, "metadata already present. Skipping generation", `.repo` identical to the doc block except the
+`baseurl` path (doc block is a placeholder with a trailing slash); createrepo_c self-install path worked on the minimal image (`01-setup-repo.log`) |
 | step 3: 22-name install | no DM/X pulled, 22/22 present, session files, still getty | PASS | rc=0, 22/22 installed, 200 packages pulled, zero DM/X in the full rpm-db diff, both session files present with exact doc Exec lines, default target still `multi-user.target`, getty active, gdm inactive (`02-dnf-install-22.log`, `03-step3-verify.log`) |
 | step 4: gdm+gnome-shell | self-enable, enable no-op, getty until set-default | PASS | rc=0, `is-enabled gdm` = `enabled` immediately after install (before the enable line), documented `enable` ran rc=0 as a silent no-op, system stayed at getty until `set-default`, then default = `graphical.target` (gdm 47.0-24, gnome-shell 49.4-9, +Xwayland, 178 packages) (`04-gdm-install.log`) |
 | step 5: reboot | boot reaches GDM Wayland greeter, not getty | PASS | boot 01:47:19, SSH back ~20s same IP, default `graphical.target`, gdm active, `getty@tty1` inactive, greeter session `c1 gdm seat0 1018 greeter tty1`; pixel `05-post-reboot-greeter.png` (human review) (`05-post-reboot.log`) |
@@ -664,6 +666,72 @@ for Vector (the fresh-clone metadata claim, above); one doc claim verified true 
 No code bug for Tails. The VM `task0016-minimal` (192.168.122.142) is left running with the
 logged-in desktop for user inspection; destroy with
 `vm-test/provision-vm.sh --destroy --name task0016-minimal` when done.
+
+### Review-chain close — testing/workflow verdict (Big, 2026-09-19)
+
+**Scope.** Third reviewer (Shadow → Omega → Big) on the branch diff `3375a05..7975f1a`: does the
+documented procedure plus the committed evidence constitute a reproducible, complete test record?
+Method: re-read all 21 committed evidence files, re-ran the cross-checks against the branch
+(`git show 7975f1a:<file>`), re-inspected the still-running VM (`task0016-minimal`,
+192.168.122.142, session 16 active since 02:02, gdm active). No procedure re-run; the VM's desktop
+session was only read, never touched.
+
+**Reproducibility (verified by command):**
+
+- Provisioning is re-runnable from the branch: `vm-test/provision-vm.sh` (in repo) from the
+  official `Rocky-10-GenericCloud.qcow2` (545 MB, present in host `IMG_DIR`
+  `/var/lib/libvirt/images/cinnamon-test/`); per-VM host-key pin and firewalld masking are
+  documented in the script header (`provision-vm.sh:23,36`).
+- The doc's step-3 22-name install line == `vm-test/install-set.txt` == the install actually
+  executed (`02-dnf-install-22.log` header + full 200-package list). All 22 rows of the doc's
+  installed-packages table match the installed versions in `03-step3-verify.log` (name-version
+  prefix match, 22/22).
+- The count cross-checks are internally consistent: baseline 444 +2 createrepo_c = 446 pre-install;
+  646 post-install; 646 − 446 = 200 = the full install list; step 4: 446 + 178 (gdm+gnome-shell
+  tree) + 2 = 626.
+- The login harness is reproducible from the branch: `tasks/lib/gdm-drive.sh`, `gdm-a11y.py`,
+  `ukey.c`; `vm-test/lib.sh` defines `IMG_DIR`.
+- No reuse: `virsh list --all` shows `gdm-login-vm`, `task0017-fresh-vm`, `t17-revB` still running
+  (untouched), `fedora-cinnamon-ref` shut off, as the run entry claims.
+
+**Completeness (all checks present, nothing dropped):** 8 requested (start state + 6 doc steps,
+item 6 folded into step 6), 8 executed (run entry table, lines above). Every run-table claim has
+committed backing except the three items in R1/R2/R3 below.
+
+**What the record proves / does not prove.** Proves: a minimal server per the doc has zero DM/X;
+the 22-package install pulls the table versions with zero X/DM in the 200-package diff; reboot
+reaches the GDM Wayland greeter (not getty); item 6 greeter X11 entry is filtered out; first-attempt
+password login reaches an active `Type=wayland` Cinnamon session; SELinux Enforcing at start and at
+end. Does not prove (disclosed in the run entry or in findings below): the fresh-clone generation
+path (the skip path ran here; generation verified in TASK-0006), persistence beyond a single boot,
+the step-5 no-reboot `systemctl start gdm` option (Shadow F1; left unexercised — I did not stop the
+running desktop to test it), the desktop process list at capture time (R1), and the absence of AVC
+denials (R2).
+
+**New findings (mine; none overlaps Shadow F1–F3 or Omega's three lows):**
+
+| # | Sev | Finding | Owner |
+|---|---|---|---|
+| R1 | low | The step-6 "full desktop running (`cinnamon --replace`, Xwayland, `nemo-desktop`, all `csd-*` daemons, pipewire)" claim is not backed by committed evidence: `step6-6-desktop-procs.log` is 2 lines (session binary + wayland-session wrapper only); the capture ran before the desktop had fully spun up. Live re-check (06:35, ~4.3 h after login) shows the claim TRUE: 17 desktop processes including `/usr/bin/cinnamon --replace` (full cmdline read from `/proc/3674/cmdline`), `Xwayland :0`, `nemo-desktop`, all 10 `csd-*` daemons, `pipewire` + `pipewire-pulse`. Fix: commit a process-list recapture from the still-running VM (same fix surface as Shadow F2). | Tails |
+| R2 | low | "No AVCs under enforcing" (Tails verification item 5, line 426) is not in the committed record; the committed evidence proves the mode only (`step6-8-getenforce.log`: Enforcing). Live re-check: `grep -c "avc: denied" /var/log/audit/audit.log` → 0 across the full audit log (covers the entire ~4.3 h session). Fix: commit the grep/ausearch output. | Tails |
+| R3 | nit | My own run-entry wording/citations, corrected inline above in this section: transfer evidence is `01b-step1-transfer-verify.log`, not the `02`-prefix log; the `.repo` file is identical to the doc block except the `baseurl` path (doc block is a placeholder with trailing slash), not byte-for-byte; the 444 baseline comes from dnf history whose output is not committed (the `00` log records 443). All three claims hold as written; only the citation/wording was off. | Big (done) |
+| R4 | nit | Shadow's and Omega's scope lines both say "22 committed evidence files (20 logs, 2 PNGs)"; actual is 21 (19 logs + 2 PNGs) per `git ls-tree -r 7975f1a vm-test/evidence/`. The 22 comes from `git diff --stat`'s "22 files changed", which counts `INSTALL.md` too. No effect on either reviewer's findings. (Their sections; noted here.) | — |
+| R5 | nit | `step6-3-desktop-tree.log` (1307 lines) is actually the GDM greeter tree (root `[application] 'gnome-shell'`), not a desktop tree. Subsumed in Shadow F2's fix scope (recapture or rename). | Tails |
+
+**Checks requested vs run:** 8 requested, 8 executed. Nothing dropped; no silent coverage reduction.
+
+**Verdict.** PASS as a test record. The procedure is reproducible from the branch plus the official
+Rocky cloud image; all 8 requested checks ran; the evidence supports every claim except R1 (desktop
+process list, verified true live) and R2 (AVC absence, verified true live) — both are
+evidence-commit gaps, not false claims. No blockers, no product-RPM findings. Shadow's F1–F3
+(step-5 no-reboot option unexercised; step-6 five-surface overclaim; step-1 "regenerate if missing"
+wording) remain the merge-blocking should-fixes; R1, R2, R5 join the fix list as their
+evidence-side companions (R1 is exactly the evidence Shadow suggested for F2). Omega's three lows
+stand; the fingerprint is confirmed present on every publickey line of
+`step6-7-secure-tail.log`, and that same file carries the harness-prereq sudo line
+(`01:51:27 ... COMMAND=/bin/dnf install -y gcc kernel-headers`) and the `gdmtest` useradd
+(`02:00:25`). Merge after Tails resolves Shadow F1–F3 + R1 + R2 (R3 done; R4 is a record note;
+R5 optional).
 
 ---
 
