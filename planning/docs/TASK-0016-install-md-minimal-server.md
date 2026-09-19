@@ -425,6 +425,83 @@ session entries present, GDM install self-enables, set-default + reboot boots to
 the harness login selecting "Cinnamon (Wayland)" reaches an active Wayland Cinnamon session with
 no PAM failures and no AVCs.
 
+### Review-chain fixes (Tails, 2026-09-19)
+
+**Fixes complete.** Shadow F1-F3, Omega-1, Big R1, R2, R5 resolved on
+`feature/TASK-0016-install-md-minimal-server`, three commits on top of `7975f1a`: `ef8219d`
+(redaction + rename), `90fb893` (INSTALL.md F3), `917c6b5` (evidence recaptures). R3 was already
+closed by Big inline; R4 is a record note in the reviewers' sections, no action. All evidence
+recaptured live on `task0016-minimal` (192.168.122.142), root ssh via the `vm-test/lib.sh` pin.
+
+- **F1 (step 5 no-reboot `start gdm` unexercised)** - verified live, wording kept.
+  `systemctl stop gdm` terminated the active gdmtest desktop session 16 (expected, noted in the
+  log); `systemctl start gdm` rc=0; greeter session `c2` on tty1 within ~6 s; boot time unchanged
+  before and after (`uptime -s` = `2026-09-19 01:47:19`); greeter a11y text shows the login screen
+  (gdmtest face, "Not listed?", clock). Evidence: `step6-13-start-gdm-no-reboot.log`,
+  `05b-start-gdm-greeter.png` (1280x800, `virsh screenshot` over the root libvirt connection).
+  Alternative rejected: dropping the alternative was not taken because the path is now verified
+  and useful. State difference noted: the test machine sat at `graphical.target` with gdm active
+  before the stop (the documented scenario starts from the getty); the verified mechanism (gdm
+  start on a running system brings up the greeter) is the same.
+- **F2 + R1 (step 6 "full desktop" claim vs 2-line proc list)** - recaptured from the running
+  desktop ~5.4 h after session start: full `ps -u gdmtest -ww -o pid,cmd` listing (46 processes),
+  17 of them the doc's named desktop-core set (`/usr/bin/cinnamon --replace`, `Xwayland :0`,
+  `nemo-desktop`, all 10 `csd-*` daemons, `pipewire`, `pipewire-pulse`, plus the
+  `cinnamon-session-binary` + `gdm-wayland-session` wrappers); `loginctl show-session 16` ->
+  `Service=gdm-password Type=wayland State=active`. Evidence: `step6-10-desktop-procs-recapture.log`.
+  Step 6 wording kept; it is now backed. Alternative rejected: weakening step 6, because the claim
+  is true at steady state and the original capture was a timing artifact (seconds after login),
+  not a false claim.
+- **F2/R5 (mislabeled tree)** - `step6-3-desktop-tree.log` holds the GDM greeter AT-SPI tree
+  (root `[application] 'gnome-shell'`, 1307 lines); renamed to `step6-3-greeter-tree.log` via
+  `git mv`, content unchanged (100%). The real Cinnamon desktop tree recaptured from the logged-in
+  session bus: `A11Y_USER=gdmtest A11Y_APP=cinnamon python3 /root/gdm-harness/gdm-a11y.py tree`
+  and `text` -> `step6-11-desktop-a11y-recapture.log` (root `[application] 'cinnamon'`; panel and
+  applet labels: clock, `us` layout, Printers, Removable drives, Keyboard). The empty original
+  `step6-9-desktop-text-as-user.log` is kept as-is: it was taken before the shell registered with
+  at-spi (already disclosed as a harness-side timing issue in the Test Results harness note); the
+  recapture shows the session bus works once settled.
+- **F3 (step 1 parenthetical)** - INSTALL.md step 1 now reads: keeping `repo-setup/` and `rpms/`
+  (the 64 RPMs) intact; a fresh clone has no `rpms/repodata/` because it is not tracked in git;
+  the setup script in step 2 generates it when absent. Matches the corrected Quick-start wording
+  from `7975f1a`. Commit `90fb893`.
+- **Omega-1 (lab-host identifiers in `step6-7-secure-tail.log`)** - 8 occurrences of the lab-host
+  root ssh public key fingerprint -> `SHA256:<redacted>`; 23 occurrences of `192.168.122.1` ->
+  `192.168.122.<gw>`. All 60 lines kept, including the three Big flagged (first-accepted
+  publickey timestamp 01:47:30, harness-prereq sudo line 01:51:27, gdmtest useradd 02:00:25).
+  Commit `ef8219d`.
+- **R2 ("no AVC denials" uncommitted)** - `getenforce` + `grep -c "avc: denied"
+  /var/log/audit/audit.log` -> `Enforcing`, `0` over the full audit log (~5.4 h of session uptime
+  at capture time). Evidence: `step6-12-avc-audit-recapture.log`.
+- **R5** - closed by the step6-3 rename above (subsumed in F2 scope per Big).
+
+**Changes (project repo):**
+
+| Commit | File | What |
+|---|---|---|
+| `ef8219d` | `vm-test/evidence/task0016-minimal/2026-09-19/step6-7-secure-tail.log` | fingerprint x8 + gateway IP x23 redacted, 60/60 lines kept |
+| `ef8219d` | `.../step6-3-desktop-tree.log` -> `.../step6-3-greeter-tree.log` | `git mv`, content unchanged |
+| `90fb893` | `INSTALL.md` | step 1 repodata wording (F3) |
+| `917c6b5` | `.../step6-10-desktop-procs-recapture.log` (new) | full desktop process list, 17/17 core set |
+| `917c6b5` | `.../step6-11-desktop-a11y-recapture.log` (new) | desktop a11y tree + text |
+| `917c6b5` | `.../step6-12-avc-audit-recapture.log` (new) | `Enforcing` + AVC count 0 |
+| `917c6b5` | `.../step6-13-start-gdm-no-reboot.log` (new) | F1 stop/start/verify sequence |
+| `917c6b5` | `.../05b-start-gdm-greeter.png` (new) | greeter after `systemctl start gdm` |
+
+**Checks run:** `git status --short` clean after the three commits except untracked `AGENTS.md`,
+deliberately not committed (not part of this task). Post-redaction `grep -c` on
+`step6-7-secure-tail.log`: fingerprint 0, bare gateway IP 0, `SHA256:<redacted>` 8,
+`192.168.122.<gw>` 23; the three flagged lines present (lines 8, 29, 43-44 of the file).
+`step6-10` core-set count command output 17; process listing 46 rows. Screenshot is a 1280x800
+PNG, 20,705 B (comparable to `05-post-reboot-greeter.png`, 23,301 B); not viewable in this model
+slot (no image input), so pixel confirmation stays with human review, as for `06-desktop.png`.
+
+**Competing priorities:** the F1 test terminated the logged-in desktop session (the brief
+anticipated it; the VM is slated for destruction) and the VM is left at the greeter with gdm
+active rather than re-logged-in: re-login would re-exercise a path the run record already covers,
+and the greeter is exactly the end state step 5 claims. The empty `step6-9` capture was kept, not
+replaced in place: the evidence directory is a historical record, the recapture is additive.
+
 ---
 
 ## Review
