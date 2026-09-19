@@ -12,6 +12,12 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19, post-Vector fix): Quick-start metadata wording fixed.** INSTALL.md now states
+the fresh-clone truth (repodata/ untracked -> generation path; a copy carrying repodata/ skips;
+correct on both paths), each clause evidence-backed from Big's run. Project `7975f1a` on the
+feature branch (local, unpushed, fast-forward ready for Knuckles); planning `5a74eb0` pushed.
+Next: review chain Shadow → Omega → Big on the branch diff, then Knuckles.
+
 **Now (2026-09-19, post-Big): fresh-VM run PASS.** The documented minimal-server procedure
 executed end-to-end exactly as written on fresh minimal Rocky 10.2 VM `task0016-minimal`
 (192.168.122.142): start state (444 pkgs, no DM/X, multi-user.target, getty), 64/64 RPMs +
