@@ -12,6 +12,20 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19, post-Big): fresh-VM run PASS.** The documented minimal-server procedure
+executed end-to-end exactly as written on fresh minimal Rocky 10.2 VM `task0016-minimal`
+(192.168.122.142): start state (444 pkgs, no DM/X, multi-user.target, getty), 64/64 RPMs +
+repodata transfer, `setup-repo.sh` rc=0, 22/22 install with zero DM/X in the full rpm-db diff,
+GDM self-enable (documented `enable` a no-op), getty until `set-default graphical.target`, reboot
+to GDM Wayland greeter, first-attempt login to a working Cinnamon (Wayland) session
+(`Type=wayland`, Xwayland, nemo-desktop). Item 6 answered: the greeter does **not** list the X11
+"Cinnamon" entry (menu shows only `Cinnamon (Wayland)` + `GNOME`; X11 file on disk, no Xorg in any
+repo). All 8 checks executed, none dropped. Evidence in project `89b9b7b`; planning `bc85291`.
+**One doc finding for Vector:** the Quick-start "a fresh clone ships with valid metadata, so
+generation is skipped" claim is inaccurate — `rpms/repodata/` is untracked in git, so a fresh
+clone has no metadata and `setup-repo.sh` generates it (the `createrepo_c` self-install path
+worked on the minimal image); the procedure is correct on both paths.
+
 **Now (2026-09-19, post-Vector): doc leg complete.** `INSTALL.md` gains the "Minimal server (no
 display manager)" section (the verified path, six steps; the "no spec declares a DM or X" claim
 grep-verified over all of `spec/`) and the D5 fix (local RPMs do register in the rpm db; the real
@@ -121,9 +135,14 @@ the PM reads.*
       `760b852` on branch `feature/TASK-0016-install-md-minimal-server` (from main `3375a05`,
       unpushed); planning `c5f7046`. One claim left unverified by design: whether the greeter
       lists/filters the X11 "Cinnamon" entry (Big's item 6).
-- [ ] `Big`: run the exact minimal-server procedure from the updated doc on a fresh minimal Rocky
-      10.2 VM on host `192.168.1.102` (no login manager preinstalled) to prove it executable
-      end-to-end; record in `## Test Results`.
+- [x] `Big` (2026-09-19): fresh-VM run **PASS** on `task0016-minimal` (192.168.122.142) — all
+      steps of the documented procedure executed exactly as written; item 6 answered (greeter does
+      not list the X11 "Cinnamon" entry). Evidence project `89b9b7b`, planning `bc85291`. One doc
+      finding returned to Vector (Quick-start metadata claim).
+- [ ] `Vector`: fix the Quick-start metadata wording per Big's finding — `rpms/repodata/` is
+      untracked, so a fresh clone has no metadata and `setup-repo.sh` generates it (the
+      `createrepo_c` self-install path works on a minimal image); state that the procedure is
+      correct on both paths. Write to `## Docs`.
 - [ ] `Shadow` → `Omega` → `Big`: review chain on the diff.
 - [ ] `Tails`: fix anything the chain returns.
 - [ ] `Knuckles`: PR to main, merge.
