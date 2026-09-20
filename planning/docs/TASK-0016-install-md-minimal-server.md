@@ -12,6 +12,11 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19, user review): screenshots approved.** The user reviewed the three committed
+screenshots (05-post-reboot-greeter, 05b-start-gdm-greeter, 06-desktop) and is satisfied; they are
+cleared for the public merge (Omega's low #2 closed as human-reviewed). Dispatching Knuckles for
+the PR to main + merge.
+
 **Now (2026-09-19, post-fixes): review chain closed, all findings fixed; AWAITING USER PIXEL
 REVIEW before Knuckles.** Review chain: Shadow (no blockers, 3 should-fix), Omega (3 low, none
 above low), Big (PASS as a test record, 8/8 checks, R1/R2 evidence gaps). Tails closed every
@@ -172,11 +177,12 @@ the PM reads.*
       tree renamed + desktop a11y recaptured, F3 wording aligned, Omega-1 redacted keeping the
       three flagged lines, R2 AVC grep = 0. Project `ef8219d`/`90fb893`/`917c6b5` (local,
       fast-forward ready); planning `af100e9`.
-- [ ] **User** (2026-09-19): pixel review of the three screenshots in
+- [x] **User** (2026-09-19): pixel review of the three screenshots in
       `~/Linux/projects/cinnamon-for-rocky10/vm-test/evidence/task0016-minimal/2026-09-19/`
-      (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) before the
-      merge makes them public; OK goes into `## Release` as human-reviewed (Omega's low #2).
-- [ ] `Knuckles`: PR to main, merge (after the user's OK above).
+      (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) — **user
+      satisfied, approved for public merge** (closes Omega's low #2; Knuckles records it in
+      `## Release`).
+- [ ] `Knuckles`: PR to main, merge.
 
 ---
 
