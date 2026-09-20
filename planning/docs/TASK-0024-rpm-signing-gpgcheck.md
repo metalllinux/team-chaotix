@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21, user decision): key parameters ratified WITH A MODIFICATION — the signing key
+is passphrase-protected.** The user approved Amy's 6-pager storage design (dedicated host-local
+keyring, RSA 4096, the recorded §13 exception) but rejected the no-passphrase choice; the key is
+passphrase-protected. Consequences recorded here so the plan and implementation do not drift: the
+sign step must supply the passphrase without it ever entering the repo, commits, logs, or planning
+docs (AGENTS.md §4) — Amy's plan D1 must be adjusted to name the mechanism (e.g.
+`gpg --batch` with `gpg-preset-passphrase`, or a 600-mode passphrase file host-side, her call with
+a stated reason); the §13 exception now covers key + passphrase, both host-side; key loss/leak is
+still one-way (re-key, re-sign, new tag) and the passphrase does not change that. `## Plan` D1 and
+item 1 carry the adjustment before Tails generates anything.
+
 **Now (2026-09-19): task created from Omega's security review of TASK-0016 (low #3, supply-chain,
 pre-existing, carried into the public docs).** The documented install path ships 64 RPMs from a
 `file://` repo with `gpgcheck=0` (`repo-setup/setup-repo.sh`): no signature is ever checked, and
@@ -31,10 +42,10 @@ TASK-0016-install-md-minimal-server.md` `## Security` (2026-09-19 entry) and `##
 - Rocky Linux target: yes (Rocky Linux 10.2 VM verification on host `192.168.1.102`)
 
 **Unknowns:**
-- Where the GPG signing key lives and how it is managed. AGENTS.md §4: no key material in the
-  repo, commits, logs, or planning docs; AGENTS.md §13: credential storage is GitHub Secrets only,
-  no local credential files. The plan must settle key generation, private-key storage (host-side,
-  outside the repo), and how the build/sign step obtains it without it ever entering git.
+- ~~Where the GPG signing key lives and how it is managed~~ — **resolved 2026-09-21**: host-local
+  dedicated keyring, passphrase-protected (user decision), public key + fingerprint ship in the
+  repo, private key + passphrase never leave the host (AGENTS.md §4 intact, §13 exception recorded
+  in the 6-pager). Sign-step passphrase mechanism: `## Plan` D1 (Amy's adjustment pending).
 - Whether to re-sign the existing 64 RPMs in place or rebuild; the plan must pick and record why.
 - Where the sha256 manifest lives (`rpms/SHA256SUMS`? repo root? release tag?) and what pins it.
 
@@ -78,9 +89,13 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] User ratifies the key parameters before any key material exists: the 6-pager
-      (`planning/docs/TASK-0024-gpg-key-management.md`) — uid/domain, no-passphrase trade-off, the
-      recorded §13 exception. Item 1 of `## Plan` is gated on this.
+- [x] User ratified the key parameters (2026-09-21): host-local dedicated keyring, RSA 4096,
+      recorded §13 exception — **with the modification that the key is passphrase-protected** (the
+      no-passphrase choice was rejected). Recorded in `## Status`.
+- [ ] `Amy`: adjust `## Plan` D1 + item 1 to the passphrase-protected key — name the sign-step
+      passphrase mechanism (how the passphrase is supplied without ever entering the repo,
+      commits, logs, or this doc; where it lives host-side), and the key-generation command now
+      takes a passphrase.
 - [ ] `Robotnik`: dispatch item 1 (key generation) to `Tails`, then the `## Plan` sequence
       (14 items, critical path 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14).
 
