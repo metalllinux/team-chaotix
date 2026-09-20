@@ -922,12 +922,53 @@ Verified for the new section (evidence, not inference):
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**Shipped 2026-09-21.** Merged to `metalllinux/cinnamon-for-rocky10` main via PR #5, rebase merge
+(the convention PR #4/TASK-0017 set, whose merge commit was the rebased branch tip). All release
+gates verified below.
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+**DONE checklist verified:** yes — every DoD item is met and evidenced in the sections above; the
+boxes themselves are Robotnik's to tick (section ownership, not mine).
+
+- Audit complete — `## Implementation` (2026-08-30, D1-D6).
+- Minimal-server section added — `INSTALL.md` "Minimal server (no display manager)" (merged as
+  `10308f2`).
+- Verified by execution — `## Test Results` (Big, 2026-09-19, fresh VM `task0016-minimal`, 8/8
+  PASS, nothing dropped).
+- Doc reflects verified reality — Xorg-absent / Xwayland / no-DM-pull-in statements in the merged
+  section; item 6 resolved (the greeter filters the X11 "Cinnamon" entry).
+- Shadow — no blockers; the three should-fixes (F1-F3) all fixed, `## Implementation` review-chain
+  fixes.
+- Omega — 3 low, none above low. #1 fixed by the redaction commit; #2 closed by user pixel review
+  (below); #3 carried as a cross-task follow-up (below).
+- Big — all harness checks PASS, 8/8.
+- Vector — `INSTALL.md` updated and internally consistent (`## Docs`).
+- Knuckles — this entry.
+
+- **Branch:** `feature/TASK-0016-install-md-minimal-server`, cut from main `3375a05`, tip
+  `917c6b5`, 7 commits: `760b852` (section + D5), `a11c733` + `89b9b7b` (evidence), `7975f1a`
+  (Quick-start metadata wording), `ef8219d` + `90fb893` + `917c6b5` (review-chain fixes and
+  recaptures).
+- **Commits:** GPG-signed (no) — `commit.gpgsign` is not set in the project repo (`git config
+  commit.gpgsign` exits 1), so the commits landed unsigned.
+- **PR:** [metalllinux/cinnamon-for-rocky10#5](https://github.com/metalllinux/cinnamon-for-rocky10/pull/5)
+  opened 2026-09-21 and merged via `gh pr merge 5 --rebase`. Main advanced `3375a05` → `893b22a`.
+  The rebase rewrote the branch SHAs; map (branch tip → main): `760b852`→`10308f2`,
+  `a11c733`→`f576d67`, `89b9b7b`→`a91b3aa`, `7975f1a`→`2abc0f6`, `ef8219d`→`1f7e2e9`,
+  `90fb893`→`356c73e`, `917c6b5`→`893b22a`. Merged tree verified identical to the branch tip
+  before merge: `git rev-parse 917c6b5^{tree}` = `git rev-parse origin/main^{tree}` = `3b76a87`.
+- **Human review:** human-reviewed: user pixel review of the three screenshots
+  (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) passed 2026-09-19;
+  the user cleared them for public merge. This closes Omega's low #2.
+- **Follow-up (Robotnik to create as a new task):** Omega's low #3, supply chain — sign the RPMs
+  with a repo GPG key, ship the key in the repo, set `gpgcheck=1` in the `.repo` the script writes
+  and in the Manual section's `.repo` block, and publish a sha256 manifest pinned to a tagged
+  release as interim mitigation. Recorded cross-task follow-up, not a blocker for this merge.
+- **Deploy:** n/a — a documentation plus test-evidence change to a public repo; no deployment
+  workflow applies.
+
+**Push state (2026-09-21):** project branch pushed `89b9b7b..917c6b5`; `metalllinux/cinnamon-for-rocky10`
+main at `893b22a` on origin (local `main` ref updated to match); this planning doc committed and
+pushed on team-chaotix `main`.
 
 ---
 
