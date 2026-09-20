@@ -21,83 +21,6 @@ written (8/8 PASS). Screenshots human-reviewed by the user before the public mer
 task to create: Omega-3 — sign the RPMs, ship the key, `gpgcheck=1`, publish a sha256 manifest for
 the release (cross-task supply-chain item). Remaining: Espio prunes this doc.
 
-**Now (2026-09-19, user review): screenshots approved.** The user reviewed the three committed
-screenshots (05-post-reboot-greeter, 05b-start-gdm-greeter, 06-desktop) and is satisfied; they are
-cleared for the public merge (Omega's low #2 closed as human-reviewed). Dispatching Knuckles for
-the PR to main + merge.
-
-**Now (2026-09-19, post-fixes): review chain closed, all findings fixed; AWAITING USER PIXEL
-REVIEW before Knuckles.** Review chain: Shadow (no blockers, 3 should-fix), Omega (3 low, none
-above low), Big (PASS as a test record, 8/8 checks, R1/R2 evidence gaps). Tails closed every
-finding: F1 no-reboot `start gdm` path verified live on `task0016-minimal` (greeter back in ~6 s,
-no reboot) with evidence; F2/R1 desktop process list recaptured (46 procs, 17/17 named core set,
-session `Type=wayland` active); R5 greeter-tree log renamed + real desktop a11y tree recaptured;
-F3 step-1 parenthetical aligned with the corrected wording; Omega-1 `step6-7-secure-tail.log`
-redacted (8 fingerprints, 23 NAT addresses) keeping Big's three flagged lines; R2 AVC grep = 0
-committed. Project branch tip `917c6b5` (local, unpushed, fast-forward ready); planning
-`af100e9` pushed. Remaining: (1) user pixel review of the three screenshots
-(`vm-test/evidence/task0016-minimal/2026-09-19/05-post-reboot-greeter.png`,
-`05b-start-gdm-greeter.png`, `06-desktop.png`) per Omega's recommendation, recorded as
-human-reviewed in `## Release`; (2) Knuckles PR to main + merge; (3) Omega-3 supply-chain
-follow-up (RPM signing, gpgcheck=1, sha256 manifest) recorded as a cross-task follow-up, not a
-blocker.
-
-**Now (2026-09-19, post-Vector fix): Quick-start metadata wording fixed.** INSTALL.md now states
-the fresh-clone truth (repodata/ untracked -> generation path; a copy carrying repodata/ skips;
-correct on both paths), each clause evidence-backed from Big's run. Project `7975f1a` on the
-feature branch (local, unpushed, fast-forward ready for Knuckles); planning `5a74eb0` pushed.
-Next: review chain Shadow → Omega → Big on the branch diff, then Knuckles.
-
-**Now (2026-09-19, post-Big): fresh-VM run PASS.** The documented minimal-server procedure
-executed end-to-end exactly as written on fresh minimal Rocky 10.2 VM `task0016-minimal`
-(192.168.122.142): start state (444 pkgs, no DM/X, multi-user.target, getty), 64/64 RPMs +
-repodata transfer, `setup-repo.sh` rc=0, 22/22 install with zero DM/X in the full rpm-db diff,
-GDM self-enable (documented `enable` a no-op), getty until `set-default graphical.target`, reboot
-to GDM Wayland greeter, first-attempt login to a working Cinnamon (Wayland) session
-(`Type=wayland`, Xwayland, nemo-desktop). Item 6 answered: the greeter does **not** list the X11
-"Cinnamon" entry (menu shows only `Cinnamon (Wayland)` + `GNOME`; X11 file on disk, no Xorg in any
-repo). All 8 checks executed, none dropped. Evidence in project `89b9b7b`; planning `bc85291`.
-**One doc finding for Vector:** the Quick-start "a fresh clone ships with valid metadata, so
-generation is skipped" claim is inaccurate — `rpms/repodata/` is untracked in git, so a fresh
-clone has no metadata and `setup-repo.sh` generates it (the `createrepo_c` self-install path
-worked on the minimal image); the procedure is correct on both paths.
-
-**Now (2026-09-19, post-Vector): doc leg complete.** `INSTALL.md` gains the "Minimal server (no
-display manager)" section (the verified path, six steps; the "no spec declares a DM or X" claim
-grep-verified over all of `spec/`) and the D5 fix (local RPMs do register in the rpm db; the real
-gap is repository origin). D1-D4/D6 were already resolved by TASK-0017's rewrite; a quick-start
-metadata-precision fix landed too. Project: branch `feature/TASK-0016-install-md-minimal-server`
-cut from `main` `3375a05`, commit `760b852` (local, unpushed — Knuckles). Planning `c5f7046`
-pushed. Next: Big runs the exact documented procedure on a fresh minimal Rocky 10.2 VM.
-
-**Now (2026-09-19): task RESUMED — the pause on TASK-0017 is over.** TASK-0017 shipped (PR #4
-merged, `main` at `3375a05`): the set is complete (64 RPMs, 22-name install set), and its Vector
-leg already rewrote `INSTALL.md`/`README.md` for the complete set (single-dnf install, GDM Wayland,
-troubleshooting). Remaining here: (1) `Vector` applies the standing audit findings D1-D6 (where
-still applicable after the rewrite) and writes the dedicated **minimal-server (no login manager)
-install-and-run section** — the 2026-08-30 verified path (set installs with no DM/X pulled in;
-GDM 47 + gnome-shell install + enable; default target stays `multi-user.target`;
-`systemctl set-default graphical.target` -> getty until then) translated to the current set;
-(2) `Big` runs the exact documented procedure on a fresh minimal Rocky 10.2 VM on host
-`192.168.1.102` (no DM preinstalled) to prove it end-to-end; (3) review chain, then Knuckles.
-
-**Now (2026-09-14):** `192.168.1.103` is no longer available for testing (user, 2026-09-14;
-verified unreachable from the PM host). The 2026-08-30 bare-metal grounding evidence in the entry
-below remains valid as a record, but the DoD's "Verified by execution" step will run on a fresh
-minimal Rocky 10.2 VM on host `192.168.1.102`, not on the bare-metal machine. The task remains
-paused on TASK-0017, which now also carries the user's desktop-feature-parity goal vs the Fedora
-Cinnamon reference VM (2026-09-14).
-
-**Now (2026-08-30): task created from the user's direct request.** The user wants: (1) every
-existing instruction in `metalllinux/cinnamon-for-rocky10` `INSTALL.md` (on main) verified as
-correct, and (2) a new section covering installing **and running** the Cinnamon Desktop from a
-minimal-server Rocky Linux 10 system with **no login manager present**. Grounding evidence already
-exists: Big's bare-metal env-prep on `howard@192.168.1.103` (a real minimal-server) installed the
-48-RPM Cinnamon set cleanly with no DM/X pulled in, then GDM 47 was installed + enabled, and the
-system is at the getty with default target `multi-user.target` (verified 2026-08-30: the user sees
-only the CLI until `systemctl set-default graphical.target`). The minimal-server procedure to be
-documented is exactly that verified path.
-
 **Environment / scope:**
 - Files in scope: `INSTALL.md` (primary), `README.md` (if affected), and the install procedure in
   `metalllinux/cinnamon-for-rocky10`. Clone at `~/Linux/projects/cinnamon-for-rocky10/` (now on
@@ -106,25 +29,9 @@ documented is exactly that verified path.
 - Graphical UI: yes — greeter + desktop session; VM-based end-to-end verification required
 - Rocky Linux target: yes (Rocky Linux 10.2)
 
-**Unknowns:**
-- Whether every existing `INSTALL.md` step is still correct after the mozjs115/cjs/muffin changes
-  (TASK-0004) and the DNF repo setup (TASK-0006). The audit establishes this by execution, not
-  assumption.
-- The package-count discrepancy carried from TASK-0006/0008 ("10 vs 14 packages", and the 48-RPM
-  set Big recorded). The audit must reconcile the count the doc states against the real set.
-- Which display manager to document as the default for the minimal-server path. GDM is the
-  verified choice (it's what's on the bare-metal host); LightDM/SDDM belong to TASK-0015.
-
 **Coordination:** the minimal-server install section written here overlaps TASK-0015's server-install
 DoD box. TASK-0016 owns the minimal-server + GDM content now; TASK-0015 extends `INSTALL.md` with
 the LightDM/SDDM variants later and must stay consistent with what this task lands.
-
-**PAUSED (2026-08-30):** the user's desktop-completeness feedback (TASK-0017) revealed the 13-RPM
-"runtime set" this doc would describe is **not a complete desktop** (no applets/themes/extension
-manager/plugins/screensaver/terminal). `Tails`' audit (6 discrepancies) is done and valid; the
-**doc-writing and end-to-end verification pause** until TASK-0017 lands the complete set, then this
-task resumes: Vector writes the doc describing the complete set, Big re-runs the minimal-server
-procedure against it. The audit's D1-D6 findings stand.
 
 ---
 
@@ -165,43 +72,10 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [x] `Tails` (2026-08-30, predates the pause): audit of every existing `INSTALL.md` instruction
-      complete — six discrepancies D1-D6 recorded in `## Implementation` (package-count
-      reconciliation included). The verified minimal-server procedure (install set + GDM +
-      set-default graphical + Cinnamon Wayland session) is the bare-metal grounding path recorded
-      there; it is what the new doc section documents.
-- [x] `Vector` (2026-09-19): minimal-server section added to `INSTALL.md` + D5 fixed + quick-start
-      precision fix; D1-D4/D6 confirmed already resolved by the TASK-0017 rewrite. Project
-      `760b852` on branch `feature/TASK-0016-install-md-minimal-server` (from main `3375a05`,
-      unpushed); planning `c5f7046`. One claim left unverified by design: whether the greeter
-      lists/filters the X11 "Cinnamon" entry (Big's item 6).
-- [x] `Big` (2026-09-19): fresh-VM run **PASS** on `task0016-minimal` (192.168.122.142) — all
-      steps of the documented procedure executed exactly as written; item 6 answered (greeter does
-      not list the X11 "Cinnamon" entry). Evidence project `89b9b7b`, planning `bc85291`. One doc
-      finding returned to Vector (Quick-start metadata claim).
-- [x] `Vector` (2026-09-19): Quick-start metadata wording fixed per Big's finding. Project
-      `7975f1a` (on top of `89b9b7b`, local. Feature-branch push blocked by Vector's permissions,
-      Knuckles pushes). Before/after and the no-change list in `## Docs`.
-- [x] `Shadow` → `Omega` → `Big`: review chain on the diff — Shadow: no blockers, 3 should-fix
-      (F1-F3, `## Review`); Omega: 3 low, none above low (`## Security`); Big: PASS as a test
-      record, 8/8 checks, R1/R2 evidence gaps + R5 nit (`## Test Results` close entry).
-- [x] `Tails` (2026-09-19): all findings fixed — F1 verified live (no-reboot `start gdm`,
-      greeter back ~6 s), F2/R1 desktop procs recaptured (46 procs, 17/17 core set), R5 greeter
-      tree renamed + desktop a11y recaptured, F3 wording aligned, Omega-1 redacted keeping the
-      three flagged lines, R2 AVC grep = 0. Project `ef8219d`/`90fb893`/`917c6b5` (local,
-      fast-forward ready); planning `af100e9`.
-- [x] **User** (2026-09-19): pixel review of the three screenshots in
-      `~/Linux/projects/cinnamon-for-rocky10/vm-test/evidence/task0016-minimal/2026-09-19/`
-      (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) — **user
-      satisfied, approved for public merge** (closes Omega's low #2; Knuckles records it in
-      `## Release`).
-- [x] `Knuckles` (2026-09-19): branch pushed; PR #5 (`metalllinux/cinnamon-for-rocky10`) opened
-      against `main` at `3375a05` and merged via rebase to `893b22a` (tree identical to branch
-      tip `917c6b5`); `## Release` recorded (human-reviewed line, Omega-3 follow-up noted);
-      planning `35142bf` pushed.
-- [ ] `Espio`: prune this doc — move superseded narration, resolved-finding detail, and the
-      superseded plan into `## Archive`; keep every decision, verified fact, deviation, and the
-      final state; leave `## Status`, the ticked `## Definition of Done`, and `## Release` intact.
+- [x] `Espio` (2026-09-21): this doc pruned — superseded Status progression, completed actions,
+      the superseded 2026-08-30 14-set procedure, and the Shadow F1-F3 finding bodies moved to
+      `## Archive`; the Tails audit Summary (pure restatement of D1-D6 + reconciliation) deleted.
+      No actions remain.
 
 ---
 
@@ -322,71 +196,6 @@ Correction: reword to "no repository origin, so dnf will not track updates for t
   consistent with Big's before/after snapshots on the machine (`~/t0008-*.txt`).
 - **10** (README) = stale, see D3.
 
-### Verified minimal-server install-and-run procedure (for Vector to land in INSTALL.md)
-
-**Start state:** Rocky Linux 10.2 (Red Quartz), minimal install. No login manager (gdm/lightdm/
-sddm not installed), no X server (no `xorg-x11-server-*`), no desktop packages, default target
-`multi-user.target`, getty on tty1, SELinux enforcing, 674 packages (verified baseline on
-192.168.1.103). A display manager is required to run the desktop; a minimal server has none.
-
-1. **Get the project onto the machine.** Clone or copy `metalllinux/cinnamon-for-rocky10`
-   (including `repo-setup/` and `rpms/` with the 48 RPMs + `repodata/`) to any directory, e.g.
-   `~/cinnamon-for-rocky10`. Verify the transfer: sha256 of all 48 RPMs local vs remote (Big's
-   bare-metal run diffed the manifests; the diff was empty).
-2. **`sudo ./repo-setup/setup-repo.sh`** (from the project root) or
-   `sudo bash <root>/repo-setup/setup-repo.sh <root>`. Installs `createrepo_c` if missing
-   (appstream), skips metadata generation (the shipped `repodata/` is valid), writes
-   `/etc/yum.repos.d/cinnamon-rocky10.repo` (`baseurl=file://<root>/rpms`, `enabled=1`,
-   `gpgcheck=0`, `metadata_expire=0`, `module_hotfixes=0`, `keepcache=0`), enables CRB (`crb`),
-   validates readability with `dnf makecache`. Success marker: `=== Repository setup complete ===`,
-   rc=0.
-3. **`sudo dnf install -y cinnamon`** → `Complete!`. Installs `cinnamon` + the 8 hard dependencies
-   (cjs, muffin, muffin-clutter, muffin-cogl, cinnamon-desktop, xapps-lib, cinnamon-menus,
-   mozjs115) from the local repo. On the 674-package baseline this added 157 packages total; it
-   pulls in **no login manager and no X server** (graphics pull-in is the mesa Wayland stack —
-   mesa-dri-drivers, mesa-libEGL, mesa-libgbm, mesa-libGL, mesa-filesystem — plus X11 link-time
-   libraries only).
-4. **`sudo dnf install -y cinnamon-session cinnamon-settings-daemon cinnamon-control-center nemo
-   mozjs115-devel`** → `Complete!`. `nemo` is load-bearing, not optional: the session's
-   `RequiredComponents` includes `nemo-autostart`, which resolves to `nemo-autostart.desktop`
-   shipped only by the nemo RPM (TASK-0008 F3).
-5. **`sudo ldconfig`** → rc=0 (the `cinnamon` RPM ships `.so` files without a ldconfig scriptlet).
-6. **`sudo dnf install -y gdm`** → `Complete!`. Pulls ~105 packages: `gdm-47.0-22.el10_2`,
-   `gnome-shell-49.4` (greeter stack), `xorg-x11-server-Xwayland` (X11 compatibility inside the
-   Wayland session). **GDM enables itself in the package post-install** (`systemctl is-enabled
-   gdm` → `enabled` immediately after install; no manual `systemctl enable` needed). GDM 47 is
-   Wayland-only: it ships `/usr/libexec/gdm-wayland-session` and no `gdm-x-session`
-   (`rpm -ql gdm | grep -c gdm-x-session` → 0).
-7. **`sudo systemctl set-default graphical.target`.** A minimal install defaults to
-   `multi-user.target`; without this the machine boots to the getty and GDM, though enabled, is
-   never started.
-8. **`sudo reboot`** (or, without a reboot, `sudo systemctl start gdm`).
-9. **At the GDM greeter, select the session "Cinnamon (Wayland)"** and log in. Expected end state:
-   `cinnamon-session` (muffin compositor), `nemo`, `cinnamon-screensaver` running; the `loginctl`
-   session reports `Type=wayland`.
-
-**Xorg-absent / Xwayland reality (must be stated in the doc):** `xorg-x11-server-Xorg` is not in
-any Rocky 10.2 repo (re-verified today on the bare-metal machine). The X11 "Cinnamon" entry in the
-greeter session menu has no X server to run on; X11 applications run through Xwayland inside the
-Wayland session. The working session on Rocky 10.2 is **Cinnamon (Wayland)**, and the Cinnamon RPM
-set does not force-pull a display manager or an X server.
-
-### What Big must verify by execution (fresh minimal Rocky 10.2 VM, end-to-end)
-
-1. `setup-repo.sh`: rc=0, `.repo` file content, `dnf makecache` OK (repo-setup harness,
-   post-TASK-0008 fixes).
-2. Step 3 + step 4: `Complete!`; 14/14 packages at the INSTALL.md table versions; no gdm/lightdm/
-   sddm pulled in; no `xorg-x11-server-*` in the new set; both session entries present
-   (`/usr/share/xsessions/cinnamon.desktop`, `/usr/share/wayland-sessions/cinnamon-wayland.desktop`).
-3. Step 6: `Complete!`; `systemctl is-enabled gdm` → `enabled`.
-4. Step 7 + 8: after reboot the VM boots to the **GDM greeter**, not the getty (proof of
-   `graphical.target`).
-5. Step 9 via `test-gdm-login.sh` (post-TASK-0008 fixes): login selecting "Cinnamon (Wayland)"
-   reaches an active session (`Type=wayland`, `cinnamon-session` process), zero new PAM failures,
-   no AVC denials under enforcing.
-6. Record the greeter behavior of the X11 "Cinnamon" entry (listed-but-failing vs filtered out) to
-   finalize the D1 wording in the doc.
-
 ### Bare-metal state observation (2026-08-30, deviation recorded per AGENTS.md §5)
 
 TASK-0016 `## Status` (2026-08-30) describes 192.168.1.103 as "at the getty with default target
@@ -459,22 +268,6 @@ work to Big and the bare-metal machine is under the user's physical control. Doc
 deferred to Vector per the task chain. GDM was not started or rebooted on bare metal even though
 that would have completed the interactive evidence: the no-state-change rule wins, and the user's
 own 21:46 login supplied that evidence instead.
-
-**Summary.** Discrepancies found: 6. D1 INSTALL.md:159-164 directs the user to the X11 "Cinnamon"
-entry, which has no Xorg to run on Rocky 10.2; the working session is "Cinnamon (Wayland)". D2 the
-quick start has no display-manager step; a minimal server ends with no login path. D3 README's
-"10 base packages" is stale; the real set is 14 (INSTALL.md is correct). D4 the 35-package base
-list is not "required regardless of installation method"; dnf resolves it all. D5 "skips dnf
-remove tracking" is wrong; what is actually missing is update tracking from a repo origin. D6 the
-"without these" sentence omits the settings daemon. Reconciled package count: 14 = Cinnamon
-runtime set (1 + 8 hard deps + 5 additional, verified 14/14 at table versions on bare metal and
-scratch VM); 48 = total RPMs in `rpms/` (14 runtime + 14 debuginfo + 11 debugsource + 9 devel);
-157 = new packages on the minimal server, of which exactly 14 come from the local repo; +105 from
-GDM = 936 total. Big must verify by execution on a fresh minimal Rocky 10.2 VM: repo setup
-rc=0, the two install commands pull 14/14 at table versions with zero DM and zero X server, both
-session entries present, GDM install self-enables, set-default + reboot boots to the greeter, and
-the harness login selecting "Cinnamon (Wayland)" reaches an active Wayland Cinnamon session with
-no PAM failures and no AVCs.
 
 ### Review-chain fixes (Tails, 2026-09-19)
 
@@ -580,66 +373,24 @@ checked out clean. Three findings, all should-fix, all in the new section.*
 ### Step 5 presents `systemctl start gdm` as an option no recorded run exercised
 **Severity:** should-fix
 **Where:** `INSTALL.md:143-149`
-**Problem:** Step 5 offers `sudo systemctl start gdm` ("brings the greeter up
-without a reboot") alongside `sudo reboot`, but no committed evidence records
-that command being run to bring GDM up.
-**Failure scenario:** The 2026-09-19 minimal-VM run reached the greeter via
-reboot (`05-post-reboot.log`), and the 2026-08-30 bare-metal observation
-records the user at the physical console "brought GDM up" without naming the
-command (`## Implementation`, Bare-metal state observation, line 346). A user
-who picks the no-reboot path gets no verified expectation, and if starting
-GDM on a `multi-user.target` system needs something else first, the section's
-"That is the verified minimal-server path" (`INSTALL.md:82`) overstates what
-was verified.
-**Suggested direction:** Either verify the no-reboot path on the minimal VM
-that was left running (stop GDM, run `systemctl start gdm`, confirm the
-greeter, commit the log), or drop the alternative and document reboot only.
-**Resolution:** *(filled by `Tails`)*
+**Resolution:** see ## Implementation, review-chain fixes (F1): verified live on
+`task0016-minimal` — no-reboot `systemctl start gdm` brings the greeter up in ~6 s, wording kept
+(commit `917c6b5`). Finding body archived in ## Archive (Shadow finding bodies).
 
 ### Step 6's "verified end state is the full desktop" exceeds what the committed evidence verifies
 **Severity:** should-fix
 **Where:** `INSTALL.md:151-154`
-**Problem:** The end-state claim names five working surfaces, but the
-committed machine evidence for this run verifies the session, not the desktop.
-**Failure scenario:** The only committed desktop process capture for the
-2026-09-19 run lists exactly two processes, `gdm-wayland-session` and
-`cinnamon-session-binary` (`step6-6-desktop-procs.log:1-2`, duplicated at
-`06-step6-login.log:408-409`), the session-side a11y text capture was
-committed empty (`step6-9-desktop-text-as-user.log`, 0 bytes, verified with
-`git show 7975f1a:...`), and `step6-3-desktop-tree.log` re-dumped the GDM
-greeter stage rather than the desktop. The `## Test Results` line's process
-list (`cinnamon --replace`, Xwayland, `nemo-desktop`, `csd-*` daemons,
-pipewire, line 492) appears in no committed log for this run. A release gate
-that trusts the doc would treat the five surfaces as machine-verified for the
-minimal path, when the committed record supports the active `Type=wayland`
-session plus the human-review pixel evidence `06-desktop.png`.
-**Suggested direction:** The five-surface claim is in fact backed by the
-TASK-0017 verification of this same 22-package set (2026-09-18
-`task0017-fresh-vm` with a11y plus pixelstats, and 2026-09-19 `t17-revB`
-under enforcing SELinux). Either commit the session process list from the
-still-running VM to back the claim directly, or reword step 6 to state what
-this run's evidence verifies and attribute the five-surface pass to the
-TASK-0017 run.
-**Resolution:** *(filled by `Tails`)*
+**Resolution:** see ## Implementation, review-chain fixes (F2 + R1): desktop
+process list recaptured live (46 procs, 17/17 named core set), step 6 wording
+kept — the claim is true at steady state (commit `917c6b5`). Finding body
+archived in ## Archive (Shadow finding bodies).
 
 ### Step 1's "(the 64 RPMs and the `repodata/` directory)" reintroduces the wording this branch corrected in Quick start
 **Severity:** should-fix
 **Where:** `INSTALL.md:93-98`
-**Problem:** A fresh clone has no `rpms/repodata/` (untracked, verified on
-both `3375a05` and `origin/main`), and the Quick-start text that commit
-`7975f1a` itself corrected says so explicitly (`INSTALL.md:23-27`), yet the
-new section describes the project as containing "the 64 RPMs and the
-`repodata/` directory".
-**Failure scenario:** A user who cloned the repo and is "verifying the
-transfer by comparing the sha256 sums of the RPMs on both sides" looks for
-`rpms/repodata/` as part of the integrity baseline, does not find it, and
-concludes the clone is incomplete or that metadata must exist before the copy
-is "intact" — the opposite of the corrected sentence, which states the
-fresh-clone path is the normal one and the script generates the metadata.
-**Suggested direction:** Match the Quick-start wording. Name `rpms/` with its
-64 RPMs, and state that `repodata/` is generated by the setup script when
-absent rather than shipped.
-**Resolution:** *(filled by `Tails`)*
+**Resolution:** see ## Implementation, review-chain fixes (F3): step 1
+parenthetical realigned with the corrected Quick-start wording (commit
+`90fb893`). Finding body archived in ## Archive (Shadow finding bodies).
 
 ---
 
@@ -1001,4 +752,159 @@ the user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-09-21 | Superseded Status progression (8 "Now" entries, Unknowns, PAUSED — user request, pause reason, and the 192.168.1.103-unavailable fact preserved below); completed Next Actions (all checked, compressed to one line each); superseded 2026-08-30 14-set verified procedure + Big's verify checklist (## Implementation); Tails audit Summary (pure restatement of D1-D6 + package-count reconciliation, deleted); Shadow F1-F3 finding bodies (## Review, resolutions kept as pointers) | ~230 lines moved, ~15 lines deleted |
+
+### Superseded Status entries (state progression to DONE, 2026-08-30 to 2026-09-19)
+
+- **2026-08-30, user request (task creation):** (1) verify every existing instruction in
+  `metalllinux/cinnamon-for-rocky10` `INSTALL.md` (on `main`); (2) add a section covering
+  installing **and running** the Cinnamon Desktop from a minimal-server Rocky Linux 10 install
+  with **no login manager present**. Grounding: bare-metal host `howard@192.168.1.103` — 48-RPM
+  set, GDM 47 installed+enabled, getty at `multi-user.target`.
+- **2026-08-30, PAUSED:** user desktop-completeness feedback (became TASK-0017) — the 13-RPM
+  "runtime set" is not a complete desktop (no applets/themes/extension manager/plugins/
+  screensaver/terminal); Tails' audit of every `INSTALL.md` instruction (six discrepancies D1-D6)
+  was done and stood during the pause.
+- **2026-09-14:** `192.168.1.103` no longer available for testing (user; verified unreachable
+  from the PM host). DoD "Verified by execution" moved to a fresh minimal Rocky 10.2 VM on host
+  `192.168.1.102`. TASK-0017 carried the desktop-feature-parity goal vs the Fedora Cinnamon
+  reference VM.
+- **2026-09-19, RESUMED:** TASK-0017 shipped (PR #4 merged to main `3375a05`), 64 RPMs, 22-name
+  install set — the set the section this task adds documents.
+- **Progression (compressed):** Tails audit (D1-D6) → Vector section + D5 + quick-start precision
+  (`760b852`/`c5f7046`) → Big fresh-VM run PASS 8/8, item 6 answered (`89b9b7b`/`bc85291`) →
+  Vector quick-start metadata wording fix (`7975f1a`) → review chain (Shadow F1-F3, Omega 3 low,
+  Big PASS) → Tails review-chain fixes (`ef8219d`/`90fb893`/`917c6b5`/`af100e9`) → user pixel
+  review, approved for public merge → Knuckles PR #5 merged to `893b22a` (planning `35142bf`).
+- **Unknowns (3):** the install set, the greeter's X11-entry behavior, and the no-reboot path —
+  all answered later; see ## Implementation (F1 live verification) and ## Test Results (item 6).
+
+### Completed Next Actions (all checked, superseded by DONE)
+
+- `Tails` (2026-08-30): audit of every existing `INSTALL.md` instruction complete — D1-D6 recorded
+  in ## Implementation (package-count reconciliation included).
+- `Vector` (2026-09-19): minimal-server section + D5 + quick-start precision fix; D1-D4/D6
+  confirmed already resolved by the TASK-0017 rewrite; project `760b852` (from main `3375a05`),
+  planning `c5f7046`.
+- `Big` (2026-09-19): fresh-VM run PASS, 8/8, item 6 answered (greeter does not list the X11
+  "Cinnamon" entry); evidence `89b9b7b`, planning `bc85291`.
+- `Vector` (2026-09-19): quick-start metadata wording fixed per Big's finding; project `7975f1a`;
+  before/after and the no-change list in ## Docs.
+- `Shadow` → `Omega` → `Big`: review chain — Shadow no blockers, F1-F3; Omega 3 low, none above
+  low; Big PASS 8/8 + R1/R2 evidence gaps + R5 nit.
+- `Tails` (2026-09-19): all findings fixed — F1 live-verified, F2/R1 desktop procs recaptured
+  (46 procs, 17/17 core set), R5 greeter tree renamed + a11y recaptured, F3 wording aligned,
+  Omega-1 redacted keeping the three flagged lines, R2 AVC grep = 0; project
+  `ef8219d`/`90fb893`/`917c6b5`, planning `af100e9`.
+- **User** (2026-09-19): pixel review of the three screenshots (`05-post-reboot-greeter.png`,
+  `05b-start-gdm-greeter.png`, `06-desktop.png`) — satisfied, approved for public merge (closes
+  Omega's low #2).
+- `Knuckles` (2026-09-19): branch pushed; PR #5 opened and merged via rebase to `893b22a`;
+  ## Release recorded; planning `35142bf` pushed.
+
+### Superseded verified minimal-server procedure (2026-08-30, 14-set era)
+
+Superseded by the 22-name TASK-0017-era section that landed in PR #5. Its `ldconfig` step (step 5)
+existed for the 14-set; the load-bearing facts (self-enabling GDM, no DM/X-server pull-in,
+graphical.target requirement, Cinnamon (Wayland) session) were re-verified by Big's fresh-VM run —
+see ## Test Results.
+
+**Start state:** Rocky Linux 10.2 (Red Quartz), minimal install. No login manager (gdm/lightdm/
+sddm not installed), no X server (no `xorg-x11-server-*`), no desktop packages, default target
+`multi-user.target`, getty on tty1, SELinux enforcing, 674 packages (verified baseline on
+192.168.1.103). A display manager is required to run the desktop; a minimal server has none.
+
+1. **Get the project onto the machine.** Clone or copy `metalllinux/cinnamon-for-rocky10`
+   (including `repo-setup/` and `rpms/` with the 48 RPMs + `repodata/`) to any directory, e.g.
+   `~/cinnamon-for-rocky10`. Verify the transfer: sha256 of all 48 RPMs local vs remote (Big's
+   bare-metal run diffed the manifests; the diff was empty).
+2. **`sudo ./repo-setup/setup-repo.sh`** (from the project root) or
+   `sudo bash <root>/repo-setup/setup-repo.sh <root>`. Installs `createrepo_c` if missing
+   (appstream), skips metadata generation (the shipped `repodata/` is valid), writes
+   `/etc/yum.repos.d/cinnamon-rocky10.repo` (`baseurl=file://<root>/rpms`, `enabled=1`,
+   `gpgcheck=0`, `metadata_expire=0`, `module_hotfixes=0`, `keepcache=0`), enables CRB (`crb`),
+   validates readability with `dnf makecache`. Success marker: `=== Repository setup complete ===`,
+   rc=0.
+3. **`sudo dnf install -y cinnamon`** → `Complete!`. Installs `cinnamon` + the 8 hard dependencies
+   (cjs, muffin, muffin-clutter, muffin-cogl, cinnamon-desktop, xapps-lib, cinnamon-menus,
+   mozjs115) from the local repo. On the 674-package baseline this added 157 packages total; it
+   pulls in **no login manager and no X server** (graphics pull-in is the mesa Wayland stack —
+   mesa-dri-drivers, mesa-libEGL, mesa-libgbm, mesa-libGL, mesa-filesystem — plus X11 link-time
+   libraries only).
+4. **`sudo dnf install -y cinnamon-session cinnamon-settings-daemon cinnamon-control-center nemo
+   mozjs115-devel`** → `Complete!`. `nemo` is load-bearing, not optional: the session's
+   `RequiredComponents` includes `nemo-autostart`, which resolves to `nemo-autostart.desktop`
+   shipped only by the nemo RPM (TASK-0008 F3).
+5. **`sudo ldconfig`** → rc=0 (the `cinnamon` RPM ships `.so` files without a ldconfig scriptlet).
+6. **`sudo dnf install -y gdm`** → `Complete!`. Pulls ~105 packages: `gdm-47.0-22.el10_2`,
+   `gnome-shell-49.4` (greeter stack), `xorg-x11-server-Xwayland` (X11 compatibility inside the
+   Wayland session). **GDM enables itself in the package post-install** (`systemctl is-enabled
+   gdm` → `enabled` immediately after install; no manual `systemctl enable` needed). GDM 47 is
+   Wayland-only: it ships `/usr/libexec/gdm-wayland-session` and no `gdm-x-session`
+   (`rpm -ql gdm | grep -c gdm-x-session` → 0).
+7. **`sudo systemctl set-default graphical.target`.** A minimal install defaults to
+   `multi-user.target`; without this the machine boots to the getty and GDM, though enabled, is
+   never started.
+8. **`sudo reboot`** (or, without a reboot, `sudo systemctl start gdm`).
+9. **At the GDM greeter, select the session "Cinnamon (Wayland)"** and log in. Expected end state:
+   `cinnamon-session` (muffin compositor), `nemo`, `cinnamon-screensaver` running; the `loginctl`
+   session reports `Type=wayland`.
+
+**Xorg-absent / Xwayland reality (must be stated in the doc):** `xorg-x11-server-Xorg` is not in
+any Rocky 10.2 repo (re-verified today on the bare-metal machine). The X11 "Cinnamon" entry in the
+greeter session menu has no X server to run on; X11 applications run through Xwayland inside the
+Wayland session. The working session on Rocky 10.2 is **Cinnamon (Wayland)**, and the Cinnamon RPM
+set does not force-pull a display manager or an X server.
+
+**Big's verify checklist (2026-08-30, superseded):** executed 2026-09-19 on `task0016-minimal`
+(192.168.122.142) — 8/8 PASS, item 6 answered (greeter does not list the X11 "Cinnamon" entry);
+full results in ## Test Results. The items were: `setup-repo.sh` rc=0 + `dnf makecache` OK; the
+two install commands pull 14/14 at table versions with zero DM and zero X server, both session
+entries present; GDM install self-enables; set-default + reboot boots to the greeter; harness
+login selecting "Cinnamon (Wayland)" reaches an active `Type=wayland` session with zero new PAM
+failures and no AVC denials under enforcing; record the greeter behavior of the X11 "Cinnamon"
+entry (listed-but-failing vs filtered out) to finalize the D1 wording.
+
+### Shadow finding bodies (F1-F3; resolved, shipped in PR #5)
+
+**F1 — Step 5 presents `systemctl start gdm` as an option no recorded run exercised**
+(`INSTALL.md:143-149`, should-fix). Problem: Step 5 offers `sudo systemctl start gdm` ("brings the
+greeter up without a reboot") alongside `sudo reboot`, but no committed evidence records that
+command being run to bring GDM up. Failure scenario: the 2026-09-19 minimal-VM run reached the
+greeter via reboot (`05-post-reboot.log`), and the 2026-08-30 bare-metal observation records the
+user at the physical console "brought GDM up" without naming the command (## Implementation,
+Bare-metal state observation). A user who picks the no-reboot path gets no verified expectation,
+and if starting GDM on a `multi-user.target` system needs something else first, the section's
+"That is the verified minimal-server path" (`INSTALL.md:82`) overstates what was verified.
+Suggested direction: verify the no-reboot path on the left-running minimal VM (stop GDM, run
+`systemctl start gdm`, confirm the greeter, commit the log) or drop the alternative and document
+reboot only.
+
+**F2 — Step 6's "verified end state is the full desktop" exceeds what the committed evidence
+verifies** (`INSTALL.md:151-154`, should-fix). Problem: the end-state claim names five working
+surfaces, but the committed machine evidence for this run verifies the session, not the desktop.
+Failure scenario: the only committed desktop process capture for the 2026-09-19 run lists exactly
+two processes, `gdm-wayland-session` and `cinnamon-session-binary`
+(`step6-6-desktop-procs.log:1-2`, duplicated at `06-step6-login.log:408-409`), the session-side
+a11y text capture was committed empty (`step6-9-desktop-text-as-user.log`, 0 bytes, verified with
+`git show 7975f1a:...`), and `step6-3-desktop-tree.log` re-dumped the GDM greeter stage rather than
+the desktop. The ## Test Results process list (`cinnamon --replace`, Xwayland, `nemo-desktop`,
+`csd-*` daemons, pipewire) appears in no committed log for this run. A release gate that trusts the
+doc would treat the five surfaces as machine-verified for the minimal path, when the committed
+record supports the active `Type=wayland` session plus the human-review pixel evidence
+`06-desktop.png`. Suggested direction: the five-surface claim is backed by the TASK-0017
+verification of this same 22-package set (2026-09-18 `task0017-fresh-vm` with a11y plus
+pixelstats, 2026-09-19 `t17-revB` under enforcing SELinux) — commit the session process list from
+the still-running VM, or reword step 6 and attribute the five-surface pass to the TASK-0017 run.
+
+**F3 — Step 1's "(the 64 RPMs and the `repodata/` directory)" reintroduces the wording this
+branch corrected in Quick start** (`INSTALL.md:93-98`, should-fix). Problem: a fresh clone has no
+`rpms/repodata/` (untracked, verified on both `3375a05` and `origin/main`), and the Quick-start
+text that commit `7975f1a` itself corrected says so explicitly (`INSTALL.md:23-27`), yet the new
+section describes the project as containing "the 64 RPMs and the `repodata/` directory". Failure
+scenario: a user cloning the repo and verifying the transfer by sha256 sums looks for
+`rpms/repodata/` as part of the integrity baseline, does not find it, and concludes the clone is
+incomplete or that metadata must exist before the copy is "intact" — the opposite of the corrected
+sentence, which states the fresh-clone path is the normal one and the script generates the
+metadata. Suggested direction: match the Quick-start wording — name `rpms/` with its 64 RPMs and
+state that `repodata/` is generated by the setup script when absent rather than shipped.
