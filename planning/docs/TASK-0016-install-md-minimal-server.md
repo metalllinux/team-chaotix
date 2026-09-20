@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**DONE (2026-09-19, Robotnik).** All 9 `## Definition of Done` boxes ticked against the recorded
+evidence. PR #5 merged to `metalllinux/cinnamon-for-rocky10` main via rebase (`893b22a`; tree
+identical to the reviewed branch tip `917c6b5`). `INSTALL.md` now carries the verified
+minimal-server (no login manager) install-and-run procedure, the audit's D5 fix, and the corrected
+Quick-start metadata wording; the fresh-VM run executed the documented procedure exactly as
+written (8/8 PASS). Screenshots human-reviewed by the user before the public merge. Follow-up
+task to create: Omega-3 — sign the RPMs, ship the key, `gpgcheck=1`, publish a sha256 manifest for
+the release (cross-task supply-chain item). Remaining: Espio prunes this doc.
+
 **Now (2026-09-19, user review): screenshots approved.** The user reviewed the three committed
 screenshots (05-post-reboot-greeter, 05b-start-gdm-greeter, 06-desktop) and is satisfied; they are
 cleared for the public merge (Omega's low #2 closed as human-reviewed). Dispatching Knuckles for
@@ -124,26 +133,30 @@ procedure against it. The audit's D1-D6 findings stand.
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] **Audit complete.** Every instruction in the current `INSTALL.md` (on main) is checked: each
-      step verified as correct against the repo and by execution, with every discrepancy recorded
-      in `## Implementation` (file, line, what's wrong, the correction).
-- [ ] **Minimal-server section added.** `INSTALL.md` has a section covering, from a minimal Rocky
-      10.2 server with no login manager and no X server: (a) installing the Cinnamon RPM set from
-      the local DNF repo, (b) installing + enabling a display manager (GDM), (c) setting the default
-      target to `graphical.target`, (d) rebooting, (e) selecting the Cinnamon (Wayland) session at
-      the greeter and logging in. It states plainly that a display manager is required to run the
-      desktop and that none is present to start.
-- [ ] **Verified by execution.** `Big` runs the exact minimal-server procedure from the doc on a
-      fresh minimal Rocky 10.2 VM and reaches a working Cinnamon (Wayland) desktop; the run is
-      recorded in `## Test Results` with the evidence.
-- [ ] **Doc reflects verified reality.** The doc states: Xorg is not installable on Rocky 10.2
-      (the X11 path is Xwayland), the working session is Cinnamon (Wayland), and the Cinnamon RPM
-      set does not force-pull a display manager or X server.
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`.
-- [ ] `Big`: all harness checks PASS, with no silently dropped checks.
-- [ ] `Vector`: `INSTALL.md` (and `README.md` if affected) updated and internally consistent.
-- [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR.
+- [x] **Audit complete.** Every instruction checked — six discrepancies D1-D6 recorded in
+      `## Implementation` (2026-08-30, Tails); D1-D4/D6 resolved by the TASK-0017 rewrite, D5 fixed
+      on this branch, each re-checked against the doc as it stands.
+- [x] **Minimal-server section added.** `INSTALL.md` "Minimal server (no display manager)" covers
+      (a) single-dnf install of the set from the local repo, (b) GDM + gnome-shell install/enable,
+      (c) `set-default graphical.target`, (d) reboot (or the now-verified no-reboot
+      `systemctl start gdm` alternative), (e) Cinnamon (Wayland) login; states plainly that a DM is
+      required and none is present to start.
+- [x] **Verified by execution.** Big ran the exact documented procedure on fresh minimal Rocky
+      10.2 VM `task0016-minimal` (192.168.122.142), all 8 checks PASS, working Cinnamon (Wayland)
+      desktop; recorded in `## Test Results` with committed evidence
+      (`vm-test/evidence/task0016-minimal/2026-09-19/`).
+- [x] **Doc reflects verified reality.** Xorg not installable on Rocky 10.2 (X11 path is
+      Xwayland), working session is Cinnamon (Wayland), the set force-pulls no DM or X (zero DM/X
+      in the full rpm-db diff of the 22-name install; `spec/` grep-verified).
+- [x] `Shadow`: no unresolved blockers or should-fix findings (F1-F3 all carry resolutions;
+      F1 verified live, F2/R1 recaptured, F3 reworded).
+- [x] `Omega`: no unresolved findings above `low` (low #1 redacted, low #2 closed by user pixel
+      review 2026-09-19, low #3 recorded as follow-up task).
+- [x] `Big`: all harness checks PASS, no silently dropped checks (8 requested, 8 executed;
+      review-chain close entry in `## Test Results`).
+- [x] `Vector`: `INSTALL.md` updated and internally consistent (README checked, no change needed).
+- [x] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR #5 (rebase merge
+      `893b22a`, tree identical to the reviewed branch tip).
 
 ---
 
@@ -182,7 +195,13 @@ the PM reads.*
       (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) — **user
       satisfied, approved for public merge** (closes Omega's low #2; Knuckles records it in
       `## Release`).
-- [ ] `Knuckles`: PR to main, merge.
+- [x] `Knuckles` (2026-09-19): branch pushed; PR #5 (`metalllinux/cinnamon-for-rocky10`) opened
+      against `main` at `3375a05` and merged via rebase to `893b22a` (tree identical to branch
+      tip `917c6b5`); `## Release` recorded (human-reviewed line, Omega-3 follow-up noted);
+      planning `35142bf` pushed.
+- [ ] `Espio`: prune this doc — move superseded narration, resolved-finding detail, and the
+      superseded plan into `## Archive`; keep every decision, verified fact, deviation, and the
+      final state; leave `## Status`, the ticked `## Definition of Done`, and `## Release` intact.
 
 ---
 

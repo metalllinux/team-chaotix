@@ -22,7 +22,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0013 | README: GMKtec EVO-X2 + Qwen 3.8 UD-Q4_K_XL model host setup | Robotnik | planning/docs/TASK-0013-evox2-readme-setup.md | Done |
 | TASK-0014 | Vector agent: extend bash permissions to finish TASK-0013 DoD items | Robotnik | planning/docs/TASK-0014-vector-bash-permissions.md | Done |
 | TASK-0015 | Cinnamon RPMs: minimal-server install + LightDM/SDDM test matrix | Robotnik | planning/docs/TASK-0015-cinnamon-server-multidm.md | Planning |
-| TASK-0016 | INSTALL.md: verify all instructions + add minimal-server install-and-run section | Robotnik | planning/docs/TASK-0016-install-md-minimal-server.md | In Progress (resumed 2026-09-19; complete-set docs landed with TASK-0017) |
+| TASK-0016 | INSTALL.md: verify all instructions + add minimal-server install-and-run section | Robotnik | planning/docs/TASK-0016-install-md-minimal-server.md | Done (2026-09-19; PR #5 merged, main `893b22a`) |
 | TASK-0017 | Complete Cinnamon desktop: missing subpackages, Rocky wallpaper, branding, terminal | Robotnik | planning/docs/TASK-0017-cinnamon-desktop-completeness.md | Done (2026-09-19; PR #4 merged, main `3375a05`) |
 | TASK-0018 | Provision reference + explore VMs for Cinnamon-for-Rocky10 | Robotnik | planning/docs/TASK-0018-vm-reference-explore-provisioning.md | Done |
 | TASK-0019 | Diagnose Espio empty-result failures; harden team against the 32k turn cap | Robotnik | planning/docs/TASK-0019-espio-32k-turn-cap.md | Done |
@@ -30,6 +30,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0021 | Team lesson: interactive-input test stubs fed via `$(...)` lose in-subshell state | Robotnik | planning/docs/TASK-0021-subshell-input-stub-lesson.md | Done |
 | TASK-0022 | Set IQ4_XS Qwen 3.8 as the team's default model | Robotnik | planning/docs/TASK-0022-team-model-iq4xs.md | Done |
 | TASK-0023 | Install ripgrep (rg) on the agent host | Robotnik | planning/docs/TASK-0023-rg-host.md | Done |
+| TASK-0024 | Sign the Cinnamon RPMs, enable gpgcheck, publish the release manifest | Robotnik | planning/docs/TASK-0024-rpm-signing-gpgcheck.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
