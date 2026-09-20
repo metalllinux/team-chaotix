@@ -12,6 +12,22 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-19, post-fixes): review chain closed, all findings fixed; AWAITING USER PIXEL
+REVIEW before Knuckles.** Review chain: Shadow (no blockers, 3 should-fix), Omega (3 low, none
+above low), Big (PASS as a test record, 8/8 checks, R1/R2 evidence gaps). Tails closed every
+finding: F1 no-reboot `start gdm` path verified live on `task0016-minimal` (greeter back in ~6 s,
+no reboot) with evidence; F2/R1 desktop process list recaptured (46 procs, 17/17 named core set,
+session `Type=wayland` active); R5 greeter-tree log renamed + real desktop a11y tree recaptured;
+F3 step-1 parenthetical aligned with the corrected wording; Omega-1 `step6-7-secure-tail.log`
+redacted (8 fingerprints, 23 NAT addresses) keeping Big's three flagged lines; R2 AVC grep = 0
+committed. Project branch tip `917c6b5` (local, unpushed, fast-forward ready); planning
+`af100e9` pushed. Remaining: (1) user pixel review of the three screenshots
+(`vm-test/evidence/task0016-minimal/2026-09-19/05-post-reboot-greeter.png`,
+`05b-start-gdm-greeter.png`, `06-desktop.png`) per Omega's recommendation, recorded as
+human-reviewed in `## Release`; (2) Knuckles PR to main + merge; (3) Omega-3 supply-chain
+follow-up (RPM signing, gpgcheck=1, sha256 manifest) recorded as a cross-task follow-up, not a
+blocker.
+
 **Now (2026-09-19, post-Vector fix): Quick-start metadata wording fixed.** INSTALL.md now states
 the fresh-clone truth (repodata/ untracked -> generation path; a copy carrying repodata/ skips;
 correct on both paths), each clause evidence-backed from Big's run. Project `7975f1a` on the
@@ -148,9 +164,19 @@ the PM reads.*
 - [x] `Vector` (2026-09-19): Quick-start metadata wording fixed per Big's finding. Project
       `7975f1a` (on top of `89b9b7b`, local. Feature-branch push blocked by Vector's permissions,
       Knuckles pushes). Before/after and the no-change list in `## Docs`.
-- [ ] `Shadow` → `Omega` → `Big`: review chain on the diff.
-- [ ] `Tails`: fix anything the chain returns.
-- [ ] `Knuckles`: PR to main, merge.
+- [x] `Shadow` → `Omega` → `Big`: review chain on the diff — Shadow: no blockers, 3 should-fix
+      (F1-F3, `## Review`); Omega: 3 low, none above low (`## Security`); Big: PASS as a test
+      record, 8/8 checks, R1/R2 evidence gaps + R5 nit (`## Test Results` close entry).
+- [x] `Tails` (2026-09-19): all findings fixed — F1 verified live (no-reboot `start gdm`,
+      greeter back ~6 s), F2/R1 desktop procs recaptured (46 procs, 17/17 core set), R5 greeter
+      tree renamed + desktop a11y recaptured, F3 wording aligned, Omega-1 redacted keeping the
+      three flagged lines, R2 AVC grep = 0. Project `ef8219d`/`90fb893`/`917c6b5` (local,
+      fast-forward ready); planning `af100e9`.
+- [ ] **User** (2026-09-19): pixel review of the three screenshots in
+      `~/Linux/projects/cinnamon-for-rocky10/vm-test/evidence/task0016-minimal/2026-09-19/`
+      (`05-post-reboot-greeter.png`, `05b-start-gdm-greeter.png`, `06-desktop.png`) before the
+      merge makes them public; OK goes into `## Release` as human-reviewed (Omega's low #2).
+- [ ] `Knuckles`: PR to main, merge (after the user's OK above).
 
 ---
 
