@@ -119,8 +119,15 @@ the PM reads.*
       ratified design — Option A rewritten, superseded no-passphrase recommendation preserved as a
       dated block with the user's rejection attached, §3.1 mechanism section added, standing cost
       and risks updated.
-- [ ] `Robotnik`: dispatch item 1 (key generation) to `Tails`, then the `## Plan` sequence
-      (14 items, critical path 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14).
+- [x] `Tails` (2026-09-21): item 1 executed — passphrase-protected RSA 4096 key
+      `1689676AF4D4F6FEC142B4429C0A8912FDA02785` in `~/.gnupg-cinnamon-rocky10` (protection
+      proven by signing), sibling passphrase location 700/600, public key + fingerprint +
+      key-material `.gitignore` guard committed as project-repo `7d47a02` and pushed;
+      `~/password.txt` deleted (user-approved); pre-push grep clean (only hit: the
+      `.gitignore` line itself). Execution record in `## Implementation`.
+- [ ] `Robotnik`: dispatch item 3 (sign all 64 RPMs in place, payload-identity evidence) to
+      `Tails` — items 1 and 2 are complete; critical path continues 3 → 4 → 5 → 7 → 8 → 9 →
+      10 → 11 → 14 (item 6 joins at 7).
 
 ---
 
@@ -359,7 +366,7 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 
 ## Implementation
 
-*Owner: `Tails`. Item 2 complete 2026-09-21; `repo-setup/sign-rpms.sh` committed as project-repo `b84ce3f` on `feature/TASK-0024-rpm-signing-gpgcheck`.*
+*Owner: `Tails`. Item 1 complete 2026-09-21 (key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; public key, fingerprint, and key-material `.gitignore` guard committed as project-repo `7d47a02`); item 2 complete 2026-09-21 (`repo-setup/sign-rpms.sh`, project-repo `b84ce3f`). Branch `feature/TASK-0024-rpm-signing-gpgcheck` pushed; no key material in the branch (pre-push grep in the item 1 record).*
 
 **Alternatives considered**
 
@@ -437,38 +444,63 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 - The script appends `allow-preset-passphrase` to the keyring's own `gpg-agent.conf` when missing and restarts the agent: a host-local, idempotent, one-line change inside a dedicated keyring, traded against requiring the user to pre-configure the agent at item 1.
 - The fingerprint is asserted by string equality against `EXPECTED_FINGERPRINT`, currently `PENDING-ITEM-1`: the script is intentionally inert until item 1 records the real fingerprint; no signing is possible before then by design.
 
-**Item 1 handoff (user-supervised; the agent must not execute these)**
+**Item 1 executed (2026-09-21, `Tails`).** User-directed change from the handoff (superseded by this record): the passphrase is the contents of `~/password.txt` (17 bytes, was 644); the agent placed the 600-mode copy by pure file operations (`mkdir -m 700` the sibling, `install -m 600` the copy) and generated the key non-interactively with `--pinentry-mode loopback --passphrase-file`; the user approved deleting `~/password.txt` after the copy. The passphrase contents were never read, echoed, displayed, logged, or recorded by any agent (AGENTS.md §4).
 
-Host identity, confirmed in writing per item 1 acceptance: hostname `shadow`, 192.168.1.102 (`enp2s0`), libvirt bridge 192.168.122.1 (`virbr0`), user `howard` — matches the plan's agent-host assumption (the libvirt host).
+**Fingerprint (public data, ships inside the public key): `1689676AF4D4F6FEC142B4429C0A8912FDA02785`**, keygrip `F8F7A85609E1F45830A76F68E66D97DFA7AA05D0`. Recorded in `sign-rpms.sh` `EXPECTED_FINGERPRINT` (replacing `PENDING-ITEM-1`), project-repo `7d47a02`.
 
-```bash
-# 1. Dedicated keyring + sibling passphrase location
-install -d -m 700 ~/.gnupg-cinnamon-rocky10
-install -d -m 700 ~/.gnupg-cinnamon-rocky10.passphrase
+Key, as generated (`GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --with-colons -K`):
 
-# 2. Key generation (interactive; passphrase chosen by the user, must not be empty)
-GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --full-generate-key
-#    uid    : Cinnamon for Rocky Linux 10 <repo-signing@metalinux.dev>   <- confirm the domain first
-#    type   : RSA and RSA, 4096, no expiry
-#    subkey : RSA (sign only), 4096, no expiry, SAME passphrase as the primary
-#    (a primary-only RSA 4096 sign key is also acceptable; the script handles both layouts)
+- Exactly one secret key (one `sec:` line, no `ssb:`): RSA 4096, capabilities `sc`, no expiry (colon field 7 empty), primary-only layout (the handoff's "primary-only RSA 4096 sign key also acceptable" branch)
+- uid exactly as ratified 2026-09-21: `metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>` (the pending-domain note in the handoff is resolved by this ratification)
+- Passphrase-protected, proven by signing: a loopback sign without a passphrase fails (`gpg: Sorry, we are in batchmode - can't get input`, rc=2); with `--passphrase-file` on the 600-mode sibling copy, a scratch clearsign succeeds and verifies `Good signature from "metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>"` (scratch artifacts destroyed)
+- Generation command (rc=0): `gpg --batch --yes --pinentry-mode loopback --passphrase-file <600-mode copy> --quick-generate-key "metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>" rsa4096 sign never`
 
-# 3. Passphrase file (user-written only; hidden prompt, no shell history)
-read -rs PASS; echo
-install -m 600 /dev/null ~/.gnupg-cinnamon-rocky10.passphrase/passphrase
-printf '%s' "$PASS" > ~/.gnupg-cinnamon-rocky10.passphrase/passphrase
-unset PASS
+Host identity, confirmed in writing per item 1 acceptance (carried over from the handoff, unchanged): hostname `shadow`, 192.168.1.102 (`enp2s0`), libvirt bridge 192.168.122.1 (`virbr0`), user `howard`, matches the plan's agent-host assumption (the libvirt host).
 
-# 4. Public key export + one-time rpm keyring import
-GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --armor --export 'Cinnamon for Rocky Linux 10' \
-    > <project>/keys/cinnamon-rocky10-public.asc
-sudo rpm --import <project>/keys/cinnamon-rocky10-public.asc
+**Pinned gpg 2.4.5 key-generation behavior** (throwaway keys in a `/tmp` scratch dir, all destroyed after the run; the throwaway passphrases were test strings, never the real one):
 
-# 5. Record the fingerprint (public data) in sign-rpms.sh EXPECTED_FINGERPRINT and in this section
-GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --with-colons -K | awk -F: '/^fpr/{print $10; exit}'
-```
+| Fact | Pinned value | Evidence |
+|---|---|---|
+| Non-interactive generation | `--batch --yes --pinentry-mode loopback --passphrase-file FILE --quick-generate-key uid rsa4096 sign never` produces a passphrase-protected RSA 4096 primary `[SC]`, no subkey, no expiry | man page (gpg 2.4.5): with `--batch` + loopback + one of the passphrase options "the supplied passphrase is used for the new key and the agent does not ask for it"; empirically, two throwaway keys generated exactly this way |
+| `usage sign` on a primary | yields `[SC]` (sign+certify), not sign-only, and no subkey is created ("If algo or usage are given, only the primary key is created") | throwaway listing `sec rsa4096 ... [SC]` with no `ssb`; man page: the default for a primary is certification+signing, `cert` is the only alternative usage value |
+| Trailing newline | gpg strips a trailing newline from the passphrase file/fd on both generation and signing | four probes on a throwaway key generated from a file containing `X\n`: signing with `--passphrase X` (exact argv), `--passphrase-fd` given `X\n`, `--passphrase-file` with `X`, and with `X\n` all succeeded → the key holds `X` (stripped at generation) and the fd/file paths strip too |
+| Consequence for item 3 | the script's `PASS=$(cat file)` (bash strips trailing newlines, sign-rpms.sh:174) presets the same effective passphrase gpg used at generation, whether or not the file ends in a newline; the multi-line round-trip check (sign-rpms.sh:178-179) still rejects anything else | the two rows above + inspection of the script |
 
-Notes: the uid cannot be changed after generation, and the `metalinux.dev` domain is still pending user confirmation (key-parameter table, 6-pager). The subkey must accept the same passphrase as the primary because the script presets a single passphrase. The item 1 acceptance additionally requires that `git status` show no private key material and no passphrase in either repo tree.
+**Host state after the run** (verified with `stat`/`ls`; passphrase contents never read):
+
+| Path | Mode | Check |
+|---|---|---|
+| `~/.gnupg-cinnamon-rocky10/` | 700 | dedicated keyring; `private-keys-v1.d/` 700 holding exactly one 600-mode key file (`F8F7A856...05D0.key`); `openpgp-revocs.d/` 700 (revocation certificate, host-local); `pubring.kbx` 644 (public data); `trustdb.gpg` 600 |
+| `~/.gnupg-cinnamon-rocky10.passphrase/` | 700 | sibling location (D1) |
+| `~/.gnupg-cinnamon-rocky10.passphrase/passphrase` | 600 | 17 bytes; `cmp` against the source reported byte-identical before the source was deleted |
+| `~/password.txt` | deleted | user-approved; was 644, 17 bytes; `rm` rc=0, absence confirmed by `ls` |
+| system rpm keyring | — | one-time `sudo rpm --import keys/cinnamon-rocky10-public.asc` rc=0 → `gpg-pubkey-fda02785-6ab101f4` (key id `FDA02785` = last 8 of the fingerprint); the three pre-existing `gpg-pubkey-*` packages (from the item 2 session's baseline) untouched |
+
+**Changes** (project repo, commit `7d47a02` on `feature/TASK-0024-rpm-signing-gpgcheck`, pushed to origin):
+
+| File | What changed |
+|---|---|
+| `keys/cinnamon-rocky10-public.asc` (new) | the public key, armored; grep on the committed blob: exactly one `BEGIN PGP PUBLIC KEY BLOCK`, zero private blocks |
+| `repo-setup/sign-rpms.sh` | `EXPECTED_FINGERPRINT` `PENDING-ITEM-1` → `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; header uid updated to the ratified string; `bash -n` clean |
+| `.gitignore` | new section guarding key material: `.gnupg-cinnamon-rocky10/`, `.gnupg-cinnamon-rocky10.passphrase/`, `private-keys-v1.d/`, `openpgp-revocs.d/`, `passphrase`, `*.passphrase`, `*-secret.asc`, `*-private.asc`, `*-secret.key`, `*-private.key`. Verified with `git check-ignore` on real on-disk paths: every key-material path ignored, `keys/cinnamon-rocky10-public.asc` still trackable |
+
+**Pre-push proof** (on the committed tree, `git grep ... HEAD` at `7d47a02`):
+
+| Check | Command | Result |
+|---|---|---|
+| No private key block in the branch | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` | zero hits (rc=1) |
+| Keyring dir name in the branch | `git grep -il "private-keys-v1.d" HEAD` | exactly one hit, `HEAD:.gitignore`: the `.gitignore` pattern line itself, anticipated by the item 1 brief |
+| Only public block in the tree | `git grep -l "BEGIN PGP" HEAD` | only `keys/cinnamon-rocky10-public.asc` |
+
+`git status` in the project tree shows no private key material and no passphrase (the untracked `AGENTS.md` in the project root pre-dates this run, is not key material, and was left untracked). The passphrase now exists only in the 600-mode sibling file on the host.
+
+**Alternatives considered (the handoff deviation).** The handoff specified interactive `gpg --full-generate-key` with the user entering the passphrase at the pinentry prompt.
+- **Option A, interactive generation as handed off** · Cons: the user's 2026-09-21 directive settled the passphrase by reference to `~/password.txt`, and an interactive prompt cannot consume a file without the user retyping the value; rejected against the user directive.
+- **Option B, `--passphrase <value>` on argv** · Cons: the value is visible in `ps` for the duration of the keygen; rejected (AGENTS.md §4).
+- **Option C, a batch file with `%passphrase <file>`** · Pros: documented non-interactive path · Cons: an extra artifact to manage, and the user named the flag combination; the batch file would also sit on disk during the run.
+- **Option D, `--pinentry-mode loopback --passphrase-file <600-mode copy>` (chosen)** · Pros: exactly the user-named combination, the value stays inside gpg (never argv), generation and the item 3 script consume the identical artifact, and the trailing-newline semantics were pinned on throwaway keys before the real generation · Cons: none material.
+
+Notes carried over: the uid cannot be changed after generation. The handoff's same-passphrase-on-subkey constraint is moot (no subkey exists; the script's keygrip derivation handles both layouts and takes the primary grip on this one). The §13 exception now covers this key plus its sibling passphrase file, both host-side, as ratified.
 
 ---
 
