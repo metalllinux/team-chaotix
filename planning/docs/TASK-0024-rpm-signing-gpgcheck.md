@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21, user decision, item 1 execution): passphrase and uid settled.** The user
+specified the key passphrase by reference: the contents of `~/password.txt` (17 bytes, was 644).
+Uid decided: `metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>`.
+Item 1 execution change (ratification substance intact): the agent places the passphrase into the
+sibling 700/600 location by pure file operations (contents never read or displayed by any agent),
+runs the key generation non-interactively with `--pinentry-mode loopback --passphrase-file`, and
+writes the passphrase nowhere new; the user approved deleting the 644 source file after the copy.
+The passphrase never enters a transcript, commit, log, or doc (AGENTS.md section 4).
+
 **Now (2026-09-21): plan complete and ratified; implementation starting.** Amy's 14-item plan is
 written and adjusted to the user-ratified passphrase-protected key; the 6-pager carries the
 ratified design as the current recommendation. Dispatching `Tails` for the implementation
@@ -63,9 +72,12 @@ TASK-0016-install-md-minimal-server.md` `## Security` (2026-09-19 entry) and `##
 if a box cannot be verified by looking at something, rewrite it.*
 
 - [ ] **Signing key.** A GPG signing key for the repo exists; the **public** key ships in the
-      project (documented path); no private key material appears anywhere in the repo, any commit,
-      any log, or any planning doc (verified by `git grep` over the merged tree + the key-management
-      decision recorded in `## Plan`).
+      project (documented path); no private key material appears anywhere in the public repo, any
+      commit, any log, or any planning doc: the keyring and passphrase live in `$HOME`, outside
+      the repo tree; the final merged tree passes `git grep` for `BEGIN PGP PRIVATE KEY BLOCK` and
+      `private-keys-v1.d` with zero hits; a `.gitignore` on the branch covers key-material paths;
+      the key-management decision is recorded in `## Plan`. (User instruction 2026-09-21: key
+      material must never reach the public GitHub repository.)
 - [ ] **RPMs signed.** Every one of the 64 published RPMs in `rpms/` carries a valid signature
       from that key: `rpm --checksig` over the full set reports only valid signatures, with the
       command and output recorded in `## Test Results`.
