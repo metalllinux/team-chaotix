@@ -12,6 +12,12 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21): plan complete and ratified; implementation starting.** Amy's 14-item plan is
+written and adjusted to the user-ratified passphrase-protected key; the 6-pager carries the
+ratified design as the current recommendation. Dispatching `Tails` for the implementation
+sequence. Note: item 1 (key generation) is user-supervised — the passphrase is entered by the
+user at generation and written to the 600-mode file by the user; no agent ever writes it.
+
 **Now (2026-09-21, user decision): key parameters ratified WITH A MODIFICATION — the signing key
 is passphrase-protected.** The user approved Amy's 6-pager storage design (dedicated host-local
 keyring, RSA 4096, the recorded §13 exception) but rejected the no-passphrase choice; the key is
@@ -97,9 +103,10 @@ the PM reads.*
       `gpg-preset-passphrase` argv exposure, direct-gpg flags unreachable from `rpm --addsign`);
       passphrase lives in a sibling 700-mode location, never written by any agent; D2/D3/D4
       unchanged; estimates +0.4 h.
-- [ ] `Amy`: update the 6-pager `planning/docs/TASK-0024-gpg-key-management.md` to the ratified
-      design — the rejected no-passphrase rationale (including "a passphrase-protected key breaks
-      unattended `rpm --addsign`") must not survive as the current recommendation.
+- [x] `Amy` (2026-09-21): 6-pager `planning/docs/TASK-0024-gpg-key-management.md` updated to the
+      ratified design — Option A rewritten, superseded no-passphrase recommendation preserved as a
+      dated block with the user's rejection attached, §3.1 mechanism section added, standing cost
+      and risks updated.
 - [ ] `Robotnik`: dispatch item 1 (key generation) to `Tails`, then the `## Plan` sequence
       (14 items, critical path 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14).
 

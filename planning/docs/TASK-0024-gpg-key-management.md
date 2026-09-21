@@ -2,15 +2,18 @@
 
 *Decision doc for TASK-0024 (planning/docs/TASK-0024-rpm-signing-gpgcheck.md). Six-pager per the
 template, because this touches credentials, is expensive to reverse, and spans multiple components
-(setup-repo.sh, INSTALL.md, the sign script, the release process).*
+(setup-repo.sh, INSTALL.md, the sign script, the release process). Current recommendation
+(section 4): the user-ratified design of 2026-09-21, a passphrase-protected key in a dedicated
+host-local keyring, with a sibling 700-mode passphrase location and a gpg-agent preset at sign
+time. The original no-passphrase recommendation is marked superseded in section 3.*
 
 ## 1. Problem
 
-The public install path (metalllinux/cinnamon-for-rocky10, repo is Public, verified 2026-09-19 in
+The public install path (metallinux/cinnamon-for-rocky10, repo is Public, verified 2026-09-19 in
 TASK-0016 `## Security`) ships 64 RPMs from a `file://` repo with `gpgcheck=0`
 (`repo-setup/setup-repo.sh:119-128` writes the `.repo`; the manual block in
 `INSTALL.md:177-189` matches). No signature is ever checked, and the documented sha256 step
-(`INSTALL.md:93-99`) verifies the copy, not the origin. A compromised `metalllinux` account or a
+(`INSTALL.md:93-99`) verifies the copy, not the origin. A compromised `metallinux` account or a
 bad merged in-account PR altering `rpms/` (in-account PRs merge without human review per
 AGENTS.md §8) runs attacker code as root on a follower's machine. Source:
 `planning/docs/TASK-0016-install-md-minimal-server.md:447-454` (Omega finding 3, low, supply-chain).
@@ -28,7 +31,9 @@ Read strictly, the private key may only live in GitHub Secrets. But signing happ
 host inside the local build loop (section 2), and local agents cannot read GitHub Secrets. The
 strict reading therefore either forces a process change or makes the task infeasible. This doc
 resolves the conflict explicitly, per the TASK-0024 brief and the Definition of Done line that
-requires the key-management decision to be recorded in `## Plan`.
+requires the key-management decision to be recorded in `## Plan`. As of 2026-09-21 the storage
+design is user-ratified (section 2, last bullet); this doc records the ratified design and the
+rejected alternatives.
 
 ## 2. Background
 
@@ -51,6 +56,11 @@ requires the key-management decision to be recorded in `## Plan`.
 - The Release template checks "Commits: GPG-signed" (planning-doc template). Any git commit
   signing key the user has is a different key with a different scope. A dedicated keyring keeps
   the repo-signing key isolated from it.
+- **2026-09-21, user decision.** The user ratified the storage design of section 3 (dedicated
+  host-local keyring, RSA 4096, the recorded §13 exception) but rejected the no-passphrase
+  sub-choice; the signing key is passphrase-protected. Source: `## Status` of the TASK-0024 doc,
+  2026-09-21 entry. The original no-passphrase recommendation in this doc is marked superseded in
+  section 3, with the corrected unattended-signing analysis in sections 3 and 3.1.
 
 ## 3. Options
 
@@ -58,28 +68,78 @@ requires the key-management decision to be recorded in `## Plan`.
 
 - **How it works:** generate one RSA 4096 key on the agent/build host (which is the libvirt host
   192.168.1.102 where the `rpms/` tree and the builds live; item 1 of `## Plan` confirms the host
-  identity) inside a dedicated GNUPGHOME (`~/.gnupg-cinnamon-rocky10/`, mode 700), no passphrase,
-  uid "Cinnamon for Rocky Linux 10 <repo-signing@metalinux.dev>" (domain to be confirmed by the
-  user). The public key is exported to `keys/cinnamon-rocky10-public.asc` and committed. The
-  private key stays in the dedicated keyring, mode 600, and never leaves the host. A committed
-  script `repo-setup/sign-rpms.sh` reads the key from `GNUPGHOME` (env var, defaulting to the
-  dedicated directory), asserts the expected fingerprint (the fingerprint is public data; it ships
-  inside the public key), and runs `rpm --addsign` over `rpms/*.rpm`. Fingerprint and key path are
+  identity) inside a dedicated GNUPGHOME (`~/.gnupg-cinnamon-rocky10/`, mode 700),
+  **passphrase-protected** (user decision 2026-09-21; the no-passphrase variant is marked
+  superseded below), uid "Cinnamon for Rocky Linux 10 <repo-signing@metalinux.dev>" (domain to be
+  confirmed by the user). Generation is interactive and user-supervised: `gpg --full-generate-key`
+  under the dedicated `GNUPGHOME`; the user selects RSA 4096, no expiry, the uid, and enters the
+  passphrase at the pinentry prompt. The generation batch file must not contain `%no-protection`
+  (which forces a key without passphrase) and never contains the passphrase. The passphrase is
+  chosen by the user at generation time and written by the user to a **sibling 700-mode
+  location** (`~/.gnupg-cinnamon-rocky10.passphrase/`, directory mode 700, file `passphrase` mode
+  600); no agent writes, reads, or records the passphrase, and it appears in no command, batch
+  file, log, or doc. Sibling, not co-located in the keyring, deliberately: one 700 directory
+  holding both key and passphrase makes them a single protection target, which defeats the point
+  of passphrase protection; the sibling keeps them separate at the cost of a second path in backup
+  and re-key. Both locations live in `$HOME`, outside the project repo tree
+  (`~/Linux/projects/cinnamon-for-rocky10/`), so neither can be committed even by accident. The
+  public key is exported to `keys/cinnamon-rocky10-public.asc` and committed. The private key
+  stays in the dedicated keyring, mode 600, and never leaves the host. A committed script
+  `repo-setup/sign-rpms.sh` reads the key from `GNUPGHOME` (env var, defaulting to the dedicated
+  directory), asserts the expected fingerprint (the fingerprint is public data; it ships inside
+  the public key), presets the passphrase into the gpg-agent on stdin before the sign run
+  (section 3.1), and runs `rpm --addsign` over `rpms/*.rpm`. Fingerprint and key path are
   documented in INSTALL.md and README.md.
 - **Pros:** fits the existing build loop (agent builds and republishes `rpms/` locally, no
-  round-trip). Zero new infrastructure. §4 is fully honored. Verification (`rpm --checksig`) works
-  locally with the public key only. The key's protection model is the one the team already accepts
-  for the fleet SSH key (lib.sh:45).
-- **Cons:** it is a recorded exception to the strict reading of §13 (this doc is the record). A
-  compromise of the `  howard` account on the build host can sign. The no-passphrase trade-off
-  (below) means file mode 600 is the only barrier.
-- **Effort:** one-time ~30 min key generation plus ~1 h for the sign script. No per-release cost.
+  round-trip). Zero new infrastructure. §4 is fully honored: no key material and no passphrase in
+  the repo, commits, logs, or planning docs. Verification (`rpm --checksig`) works locally with
+  the public key only. The key's protection model is the one the team already accepts for the fleet
+  SSH key (lib.sh:45), **plus** the passphrase barrier: a leaked key file without the passphrase
+  is not immediately usable.
+- **Cons:** it is a recorded exception to the strict reading of §13 (this doc is the record), now
+  covering key and passphrase. A compromise of the `howard` account on the build host can sign
+  **if the passphrase is also available** (both locations are on the same host). The standing
+  cost: loss of the key or of the passphrase is a one-way re-key event (section 5).
+- **Effort:** one-time ~30 min key generation (interactive, user-supervised) plus ~1 h for the
+  sign script including the agent-preset mechanism (section 3.1). No per-release cost beyond the
+  preset step inside the script.
 
-Passphrase note: a passphrase-protected key would break unattended `rpm --addsign` unless the
-passphrase is stored somewhere, which creates a second secret file and is strictly worse. The
-accepted model is a no-passphrase key whose entire protection is host access control (mode 700
-keyring, mode 600 key file, dedicated key, no key material in any doc or log). This is the same
-model as the fleet SSH key, and it is the trade-off the user is asked to ratify.
+**Superseded recommendation (no-passphrase key), 2026-09-21.** The original recommendation of this
+doc was a no-passphrase key under Option A, on the rationale as written in its old "Passphrase
+note": a passphrase-protected key would break unattended `rpm --addsign` unless the passphrase is
+stored somewhere, which creates a second secret file and is strictly worse; the accepted model was
+therefore a no-passphrase key whose entire protection is host access control (mode 700 keyring,
+mode 600 key file, dedicated key, no key material in any doc or log), the same model as the fleet
+SSH key, "the trade-off the user is asked to ratify". **The user rejected the no-passphrase choice
+on 2026-09-21** (recorded in `## Status` of the TASK-0024 doc, 2026-09-21 entry). The
+unattended-signing premise is wrong, corrected here: the gpg-agent preset mechanism (section 3.1)
+signs unattended with a passphrase-protected key, with the passphrase never on argv, never in a
+batch file, never in any doc. The "second secret file" objection is answered by the sibling
+700-mode location, written by the user, never by an agent. The no-passphrase rationale survives in
+this doc only as a superseded record, not as a recommendation.
+
+### 3.1 Passphrase mechanism at sign time
+
+The sign step is `rpm --addsign` (`## Plan` D2), which invokes gpg internally. Three mechanisms
+were considered:
+
+- **Chosen: gpg-agent preset via `gpg-connect-agent` on stdin.** The sign script reads the 600-mode
+  sibling file and feeds it to `gpg-connect-agent`'s `/PRESET_PASSPHRASE` (for the key's keygrip)
+  **on stdin, never argv** (heredoc input, so also invisible to `set -x` traces; the script
+  additionally runs without `set -x`), `rpm --addsign` then finds the passphrase cached in the
+  agent and signs without a pinentry prompt, and the script clears the preset from the agent after
+  the run. Unattended signing works; the passphrase never appears in process arguments, shell
+  history, a batch file, or a log. Tails pins the exact preset command (keygrip derivation, mode
+  flags) against the host's gpg version in item 2 of `## Plan`, and proves in item 3 that the sign
+  run leaves the passphrase out of `ps`, shell history, and logs.
+- **Rejected: `gpg-preset-passphrase --preset PASSWD=...`.** Same preset goal, but that form puts
+  the passphrase in the process arguments, visible in `ps` to any local user and recorded in any
+  trace. Rejected on argv exposure.
+- **Rejected: direct gpg call with a passphrase flag (e.g. `gpg --sign --passphrase-file`).**
+  Unreachable from `rpm --addsign`: the sign step **is** `rpm --addsign`, which invokes gpg
+  internally, and handing that internal gpg a `--passphrase-file` would mean overriding rpm's
+  internal signing command (a version-fragile macro). Independently, a detached gpg signature is
+  not a valid RPM signature (rpm's header signature format requires `rpm --addsign`/`rpmsign`).
 
 ### Option B: private key in a GitHub repo secret, sign inside a workflow
 
@@ -101,10 +161,11 @@ model as the fleet SSH key, and it is the trade-off the user is asked to ratify.
 
 ### Option C: hybrid — Option A now, Option B as the named migration path
 
-- **How it works:** Option A is adopted for this task. Option B is recorded as the migration path
-  for when builds move off this host (e.g., a remote CI runner on a different machine) or when the
-  user explicitly demands strict §13. Migration is a one-time human operation (export the private
-  key into the secret store) documented in `## Release` when it happens.
+- **How it works:** Option A (as updated, the ratified design) is adopted for this task. Option B
+  is recorded as the migration path for when builds move off this host (e.g., a remote CI runner
+  on a different machine) or when the user explicitly demands strict §13. Migration is a one-time
+  human operation (export the private key and the passphrase into the secret store) documented in
+  `## Release` when it happens.
 - **Pros:** unblocks the task. The strict-§13 path stays available and the exception has a named
   exit condition instead of being "temporary forever".
 - **Cons:** the exception remains on the record until the migration happens.
@@ -112,52 +173,70 @@ model as the fleet SSH key, and it is the trade-off the user is asked to ratify.
 
 ## 4. Recommendation
 
-Option A, with Option C's migration trigger recorded: if builds move off this host, or the user
-explicitly wants strict §13, move the private key to a GitHub secret and adopt Option B's
+The ratified design, approved by the user 2026-09-21: **Option A as updated** — dedicated
+host-local keyring, RSA 4096, no expiry, **passphrase-protected key**, sibling 700-mode
+passphrase location, and the gpg-agent preset mechanism (section 3.1) at sign time. Option C's
+migration trigger stays recorded: if builds move off this host, or the user explicitly wants
+strict §13, move the private key **and the passphrase** to a GitHub secret and adopt Option B's
 workflow.
 
-Why A wins: the threat model this task addresses (compromised account, bad merged PR altering
+Why it wins: the threat model this task addresses (compromised account, bad merged PR altering
 `rpms/`) is closed by the signature itself, which the attacker cannot forge without the private
-key. Option B's only additional protection is keeping the key file permanently off the host, which
-on a same-host self-hosted runner is not real protection, while the process cost is real. The team
-already operates the fleet SSH key under exactly Option A's protection model (lib.sh:45, lib.sh:85).
-What would change this decision: the user declining the §13 exception, or builds moving to a
-machine where the key is not already present.
+key **and the passphrase**. The passphrase adds a second barrier against host compromise without
+the passphrase file, and the agent preset keeps signing unattended, so the original objection to
+a passphrase (the corrected claim in section 3) does not hold. Option B's only additional
+protection is keeping the key file permanently off the host, which on a same-host self-hosted
+runner is not real protection, while the process cost is real. The team already operates the fleet
+SSH key under Option A's protection model (lib.sh:45, lib.sh:85); the passphrase is a
+strengthening the user chose, not a model change. What would change this decision: the user
+declining the §13 exception, or builds moving to a machine where the key is not already present.
 
 The exception, stated plainly for the record: AGENTS.md §13's "no local credential files" does not
-bind this one key, by recorded decision with this rationale. AGENTS.md §4 binds in full: no
-private key material in the repo, commits, logs, or planning docs (verified by `git grep` over the
-merged tree per the DoD). Only public data is committed: the public key, the fingerprint, the key
-id.
+bind this key **or this passphrase**, by recorded decision with this rationale. AGENTS.md §4 binds
+in full: no private key material and no passphrase in the repo, commits, logs, or planning docs
+(verified by `git grep` over the merged tree per the DoD). Only public data is committed: the
+public key, the fingerprint, the key id.
 
-Key parameters (assumptions; the user confirms before item 1 runs, since generation is one-way):
+**The standing cost, recorded.** Loss of the key **or the passphrase** is one-way (a re-key
+event). A passphrase-protected key cannot be recovered from the key file alone, and the offline
+backup must carry both; a key-only backup is useless. After a re-key, every machine that imported
+the old key must re-run `setup-repo.sh` from the new tag before it can install updates, and a
+machine mid-migration (repo configured, install half done) is stranded in that window. That is the
+price of the ratified design, accepted by the user 2026-09-21 together with the passphrase
+modification.
+
+Key parameters (ratified 2026-09-21; the uid domain is still pending user confirmation; generation
+is one-way):
 
 | Parameter | Value | Note |
 |---|---|---|
 | Type | RSA 4096 | The rpm/dnf verify path on EL10 demonstrably handles RSA GPG signatures (the distro-standard path). Ed25519 gpg-signature support in the dnf verify path is not verified; do not introduce a key type the toolchain has not demonstrated the day the key becomes one-way. |
 | Expiry | none | A repo key that expires mid-lifecycle strands every follower's `dnf` on an expiry event. Rotation is manual and deliberate (section 5). |
-| Passphrase | none | See the passphrase note in Option A. |
+| Passphrase | User-chosen at generation, entered at the pinentry prompt, written by the user to the sibling 700-mode location (`~/.gnupg-cinnamon-rocky10.passphrase/`, directory 700, file 600); preset into the gpg-agent on stdin at sign time (section 3.1); never written, read, or recorded by any agent | The user's modification of the original no-passphrase recommendation (superseded 2026-09-21, section 3). Loss of the passphrase is a one-way re-key event (section 5). |
 | uid | Cinnamon for Rocky Linux 10 <repo-signing@metalinux.dev> | `metalinux.dev` is the user's domain; confirm before generation. The uid cannot be changed later. |
 
 ## 5. Risks and mitigations
 
 | Risk | Likelihood | Impact | Mitigation | Contingency |
 |---|---|---|---|---|
-| Private key leaks (host compromise, `howard` account compromise) | low | critical. The attacker can forge future RPMs that pass signature verification on every machine that imports the key | mode 600 key file, mode 700 dedicated keyring, no key material in any doc or log, key isolated from the user's main GNUPGHOME | Re-key, re-sign the set, new tag, followers re-run `setup-repo.sh` (re-imports the new key), public notice. Machines that already installed cannot distinguish a genuine update from a forged one; accepted and recorded. |
-| Private key lost (host disk death, keyring corruption) | low | high. No future package can be signed under this key. The key is not backed up by the team: a backup is a copy of the key, which §4 keeps out of the repo, so any backup is a human action in the user's own off-host storage, never an agent action | The user keeps an offline armored export in their own secure storage (ratified or declined at the key-parameter review) | Re-key path as above. Every machine that imported the old key must re-run `setup-repo.sh` from the new tag before it can install updates. |
+| Private key and passphrase leak (host compromise, `howard` account compromise) | low | critical. The attacker can forge future RPMs that pass signature verification on every machine that imports the key | mode 600 key file, mode 700 dedicated keyring, sibling passphrase location (dir 700, file 600), no key material and no passphrase in any doc or log, key isolated from the user's main GNUPGHOME; the key file alone is not immediately usable without the passphrase | Re-key, re-sign the set, new tag, followers re-run `setup-repo.sh` (re-imports the new key), public notice. If only the key file leaks (the passphrase stays in the sibling file), the key is not immediately usable, but treat it as compromised and re-key. Machines that already installed cannot distinguish a genuine update from a forged one; accepted and recorded. |
+| Private key or passphrase lost (host disk death, keyring corruption, sibling file loss) | low | high. No future package can be signed under this key. A passphrase-protected key cannot be recovered from the key file alone, so the offline backup must carry both. The key is not backed up by the team: a backup is a copy of the key, which §4 keeps out of the repo, so any backup is a human action in the user's own off-host storage, never an agent action | The user keeps an offline armored export **plus the passphrase** in their own secure storage (ratified or declined at the key-parameter review); a key-only backup is useless, recorded | Re-key path as above. Every machine that imported the old key must re-run `setup-repo.sh` from the new tag before it can install updates; a machine mid-migration is stranded in that window. |
 | Signing key lands in the user's main keyring by mistake | low | medium. Hygiene breach, key sprawl | `sign-rpms.sh` uses an explicit GNUPGHOME; item 1 acceptance: the dedicated keyring holds exactly one secret key; the script refuses to run if the keyring holds more than one | Regenerate the key (cheap, pre-sign); remove the stray copy from the main keyring. |
-| No-passphrase key misused in an interactive context (shell history, `set -x`) | low | medium | The script never places key material or passphrases on a command line; `set -euo pipefail`, no `set -x`; a no-passphrase key needs no prompt at all | Re-key. |
+| Passphrase exposed during signing (process arguments, `set -x` trace, shell history, log) | low | high. Key plus passphrase lets an attacker sign; the passphrase is the second barrier | The preset goes on stdin via heredoc, never argv (section 3.1); the script runs without `set -x`; the preset is cleared from the agent after the run; the 600-mode file is never written by an agent; item 3 proves the sign run leaves the passphrase out of `ps`, shell history, and logs | If only the passphrase leaks, change it in the keyring (a keyring edit; the public key is unchanged, so no follower impact) and update the sibling file. If the key is exposed too, re-key. |
 | uid email domain wrong or unowned | low | cosmetic | User confirms the uid before generation (human-look page) | The uid cannot be changed later; a new key is only needed if the uid becomes actively misleading. |
 
 ## 6. Plan and validation
 
 Steps 1-4 of `## Plan` in the TASK-0024 doc execute this decision. Key acceptance:
 
-- The dedicated keyring exists (mode 700) and holds exactly one RSA 4096 key;
-  `keys/cinnamon-rocky10-public.asc` is in the working tree; the fingerprint is recorded in
-  `## Plan` (public data).
-- `git status` over the branch shows no private key material; Omega re-verifies with `git grep`
-  over the branch commits (DoD).
+- The dedicated keyring exists (mode 700) and holds exactly one **passphrase-protected** RSA 4096
+  key; the sibling passphrase location exists (dir 700, file 600), verified by existence and mode
+  only, content never read; `keys/cinnamon-rocky10-public.asc` is in the working tree; the
+  fingerprint is recorded in `## Plan` (public data).
+- `git status` over the branch shows no private key material and no passphrase; Omega re-verifies
+  with `git grep` over the branch commits (DoD).
+- The sign run (item 3) leaves the passphrase out of `ps` output, shell history, and logs
+  (AGENTS.md §4; preset via stdin, never argv).
 - `rpm --checksig` over the signed set reports valid signatures for all 64 files (item 3 on the
   host, re-verified by Big on the fresh VM in item 10).
 
@@ -166,6 +245,7 @@ Success criteria: a follower's `dnf` with `gpgcheck=1` verifies every package by
 is refused with a signature error (negative run). That pair of results proves the key is in the
 verification path, not merely present in the tree.
 
-Rollback: the key cannot be un-generated. The pre-sign state (unsigned `rpms/`, `gpgcheck=0`) is
-restored by reverting the PR before merge. After merge plus tag, the two points of no return
-(repo state, key state) are defined in `## Plan`, Rollback.
+Rollback: the key cannot be un-generated, and the passphrase cannot be un-chosen. The pre-sign
+state (unsigned `rpms/`, `gpgcheck=0`) is restored by reverting the PR before merge. After merge
+plus tag, the two points of no return (repo state, key state) are defined in `## Plan`, Rollback;
+loss of the key or of the passphrase is a one-way re-key event (section 5).
