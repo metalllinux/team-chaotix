@@ -347,23 +347,116 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 
 ## Implementation
 
-*Owner: `Tails`.*
+*Owner: `Tails`. Item 2 complete 2026-09-21; `repo-setup/sign-rpms.sh` committed as project-repo `b84ce3f` on `feature/TASK-0024-rpm-signing-gpgcheck`.*
 
 **Alternatives considered**
 
-### Problem: <what needed solving>
-**Option A — <approach>** · How: · Pros: · Cons:
-**Option B — <approach>** · How: · Pros: · Cons:
-**Chosen:** , because .
-**Competing priorities:** what was traded away, explicitly.
+### Problem 1: unattended signing of a passphrase-protected key under `rpm --addsign` (D1)
+**Option A — per-invocation loopback pinentry** (`gpg --pinentry-mode loopback --passphrase-fd 0`) · How: inject loopback flags into every gpg call · Pros: no agent state · Cons: `rpm --addsign` shells out to `rpmsign`, which invokes gpg with fixed arguments (`%__gpg_sign_cmd`, `/usr/lib/rpm/macros:624`); loopback cannot be injected without overriding rpm's macro and forking the invocation.
+**Option B — the `gpg-preset-passphrase` wrapper** (gnupg-tools; source `agent/preset-passphrase.c`) · How: call the wrapper with the keygrip · Pros: upstream tool, one command · Cons: an extra binary dependency and the script does not own the exact assuan line.
+**Option C — raw agent protocol via `gpg-connect-agent` (D1, ratified)** · How: heredoc stdin, hex passphrase, assert the OK line · Pros: no extra dependency, the exact pinned command lives in the script, clearable after the run · Cons: the script owns protocol details that a wrapper would hide.
+**Chosen:** C, because D1 pins it and the protocol is verified against the host's gpg 2.4.5 below.
+**Competing priorities:** protocol ownership stays in the script (more code to review) rather than delegating to a wrapper binary.
+
+### Problem 2: passphrase encoding on the assuan line
+**Option A — raw passphrase on the line** · Cons: byte-unsafe on a line protocol; cleartext persists in agent debug logs.
+**Option B — hex** · How: `xxd -p` of the file content, matching the upstream reference tool (`agent/preset-passphrase.c:162` sends `PRESET_PASSPHRASE %s%s -1 %s` with `bin2hex`) · Pros: byte-safe, upstream-blessed, cleartext never crosses a process boundary.
+**Chosen:** B, because it matches the reference implementation exactly. Cost: the line is 2x the passphrase length.
+
+### Problem 3: full-set verification (item 2: "verifies the full set with `rpm --checksig`")
+**Option A — `gpg --verify` against a scratch gpg homedir** · Cons: requires extracting signatures out of RPM headers; not the path a dnf consumer exercises.
+**Option B — `rpm --checksig` (alias of `rpm -K`)** · How: verifies against the system rpm keyring (installed `gpg-pubkey-*` packages in the rpmdb), the same path dnf uses at install time · Cons: requires a one-time root `rpm --import` of the public key (a non-root import fails with `can't create transaction lock on /usr/lib/sysimage/rpm/.rpm.lock (Permission denied)` — verified on the host).
+**Chosen:** B, because it is the consumer's verification path. The script pre-flights the rpm keyring and prints the exact import command when the key is absent.
+**Competing priorities:** one host-state change outside the dedicated keyring (a keyring package in the system rpmdb) traded for verification on the consumer's exact path.
+
+### Problem 4: which keygrip to preset
+**Option A — always the primary keygrip** · Cons: wrong when a signing subkey exists; gpg signs with the subkey and the agent's unprotect looks up the subkey's keygrip (`agent/findkey.c`).
+**Option B — colon-format parse, signing subkey preferred, primary fallback** · How: `sec`/`ssb` lines, capability field 12, `grp` field 10 · Pros: mirrors gpg's own key selection; handles both subkey and primary-only layouts (item 1's `--full-generate-key` yields a subkey; a primary-only key is also acceptable per the key-parameter table).
+**Chosen:** B, because the layout is decided by the user at item 1 and both must work.
+
+**Pinned protocol (host gpg 2.4.5, `gnupg2-2.4.5-4.el10_1`; source read from the extracted source RPM, now removed — citations are the record)**
+
+| Fact | Pinned value | Evidence |
+|---|---|---|
+| Preset command | `PRESET_PASSPHRASE <KEYGRIP> -1 <HEX>` | handler `agent/command.c:2549`; arg 2 is a **timeout** and only `-1` is accepted (any other value → `ERR 67108933 Not implemented`, verified empirically) |
+| Command prefix | none. A leading `/` makes it a local control command (`unknown command`, verified empirically) | `gpg-connect-agent` man page, local command list |
+| Clear command | `CLEAR_PASSPHRASE <KEYGRIP>` (separate command, not a flag) | `agent/command.c` handler; verified empirically (re-sign hangs after clear) |
+| Termination | lowercase `/bye` | uppercase `/BYE` → unknown command, verified empirically |
+| Keygrip case | uppercase, exactly as displayed by `gpg --with-colons -K` (`grp` line, field 10) | cache match is case-sensitive `strcmp` (`agent/cache.c`); agent debug log (`debug 0x40`, DBG_CACHE, `agent/agent.h:206`) showed the internal lookup key is uppercase on this build |
+| Passphrase form | hex (`xxd -p`), round-trip checked in the script | reference tool `agent/preset-passphrase.c:162` |
+| Agent prerequisite | `allow-preset-passphrase` in `gpg-agent.conf` (off by default; absent → `ERR 67108924 Not supported`) | verified empirically; script ensures it idempotently + `gpgconf --kill gpg-agent` |
+| `gpg-connect-agent` exit status | returns 0 even on `ERR` replies | script asserts the `OK` line, not the exit code (verified empirically) |
+| rpm's gpg invocation | `%__gpg_sign_cmd` = `gpg --no-verbose --no-armor --no-secmem-warning -sbo <sig> -- <plain>` | `/usr/lib/rpm/macros:624` |
+| rpm macro requirement | `%_gpg_name` must be set or `rpmsign` errors (`You must set "%_gpg_name" in your macro file`); script passes `--define` | verified empirically |
+| `rpm -K` strings | verified signature → `digests signatures OK` (lowercase); unverifiable → `SIGNATURES NOT OK` (uppercase); unsigned → `digests OK` | verified empirically; the script's case-insensitive `signatures OK` match cannot hit the failure string, which inserts `NOT` |
+| `rpmsign` ownership | package `rpm-sign` (BaseOS), not `rpm-plugin-rpmsign` | `rpm -qf /usr/bin/rpmsign`; **host state change made: `sudo dnf install -y rpm-sign` → `rpm-sign-4.19.1.1-23.el10`** (reversible: `sudo dnf remove rpm-sign`) |
+
+**Proof (throwaway keys in `/tmp` scratch; all artifacts destroyed after the run, rpm keyring import erased)**
+
+- Two throwaway RSA-4096 keys generated in scratch keyrings (`--quick-generate-key`, loopback, passphrase on stdin; fingerprints `D6EC9260...7AC2B97E` and `977CE5CB...45EF7A2` are public data; passphrases existed only in shell variables and a 600-mode `/tmp` file, both now deleted).
+- gpg cycle (key 1, single file): preset `OK` → `gpg --batch --yes --detach-sign` rc=0 with no prompt → `gpg --verify` "Good signature" → `CLEAR_PASSPHRASE` `OK` → re-sign hangs on pinentry (killed by timeout), proving the clear.
+- Full-set run (key 2): all 64 real RPMs copied to a `/tmp` scratch project; the committed script run with `GNUPGHOME` pointed at the throwaway keyring and a sed-substituted fingerprint → rc=0, 64 signed, all 64 pass `rpm --checksig`, embedded signature key ID `d45ef7a2` matches the throwaway fingerprint. Re-run → rc=0, 0 signed, 64 skipped (idempotency), all 64 verified.
+- Real `rpms/` untouched: 64/64 report `digests OK` (unsigned) before and after the scratch runs.
+- The throwaway public key was `sudo rpm --import`ed temporarily to exercise the verification path, then erased (`sudo rpm --erase gpg-pubkey-d45ef7a2-6ab0df1c`); `rpm -qa` confirms only the three pre-existing `gpg-pubkey-*` packages remain.
 
 **Changes**
 
 | File | What changed |
 |---|---|
-| | |
+| `repo-setup/sign-rpms.sh` (project repo, `b84ce3f`) | new, 256 lines: the item 2 artifact. Pre-flight (fingerprint, single secret key, keygrip derivation, passphrase-file modes, rpm-keyring presence), preset/clear around the sign loop, `rpm --checksig` verification, idempotent skip, fails loud naming the offending file |
+| `planning/docs/TASK-0024-rpm-signing-gpgcheck.md` (team repo) | this section |
 
-**Checks run:** compile · linter · harness
+**Checks run**
+
+| Test | Command | Result |
+|---|---|---|
+| Syntax | `bash -n repo-setup/sign-rpms.sh` | clean |
+| Placeholder fingerprint | `GNUPGHOME=<scratch> bash sign-rpms.sh` | rc=1, `EXPECTED_FINGERPRINT is not recorded yet (TASK-0024 item 1 pending)` |
+| Empty keyring, fingerprint substituted | sed'd copy, `GNUPGHOME=<empty scratch>` | rc=1, `keyring must hold exactly one secret key, found 0` |
+| Full-set sign (64 copies, throwaway key) | `GNUPGHOME=<keyring2> bash sign-rpms.sh` on the scratch project | rc=0, 64 signed, 64 verified, preset cleared on exit |
+| Idempotent re-run | same | rc=0, 0 signed, 64 skipped, 64 verified |
+| Real set untouched | `rpm -K` loop over `rpms/*.rpm` | 64/64 `digests OK` (unsigned) |
+| Passphrase exposure, by inspection | script review | read only from the 600-mode file into a shell variable, hex-encoded, sent on `gpg-connect-agent` stdin via heredoc; never in argv; no `set -x`; hex and cleartext wiped (`PASS=""`, `PASS_HEX=""`) after use; cleared from the agent on every exit path via the EXIT trap |
+
+**Competing priorities**
+
+- The rpm-keyring pre-flight makes the one-time root import a hard dependency of the script rather than a suggestion; traded because the verification claim is only as strong as the consumer's path.
+- Hex encoding doubles the assuan line length; traded for byte-safety and exact match with the upstream reference tool.
+- The script appends `allow-preset-passphrase` to the keyring's own `gpg-agent.conf` when missing and restarts the agent: a host-local, idempotent, one-line change inside a dedicated keyring, traded against requiring the user to pre-configure the agent at item 1.
+- The fingerprint is asserted by string equality against `EXPECTED_FINGERPRINT`, currently `PENDING-ITEM-1`: the script is intentionally inert until item 1 records the real fingerprint; no signing is possible before then by design.
+
+**Item 1 handoff (user-supervised; the agent must not execute these)**
+
+Host identity, confirmed in writing per item 1 acceptance: hostname `shadow`, 192.168.1.102 (`enp2s0`), libvirt bridge 192.168.122.1 (`virbr0`), user `howard` — matches the plan's agent-host assumption (the libvirt host).
+
+```bash
+# 1. Dedicated keyring + sibling passphrase location
+install -d -m 700 ~/.gnupg-cinnamon-rocky10
+install -d -m 700 ~/.gnupg-cinnamon-rocky10.passphrase
+
+# 2. Key generation (interactive; passphrase chosen by the user, must not be empty)
+GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --full-generate-key
+#    uid    : Cinnamon for Rocky Linux 10 <repo-signing@metalinux.dev>   <- confirm the domain first
+#    type   : RSA and RSA, 4096, no expiry
+#    subkey : RSA (sign only), 4096, no expiry, SAME passphrase as the primary
+#    (a primary-only RSA 4096 sign key is also acceptable; the script handles both layouts)
+
+# 3. Passphrase file (user-written only; hidden prompt, no shell history)
+read -rs PASS; echo
+install -m 600 /dev/null ~/.gnupg-cinnamon-rocky10.passphrase/passphrase
+printf '%s' "$PASS" > ~/.gnupg-cinnamon-rocky10.passphrase/passphrase
+unset PASS
+
+# 4. Public key export + one-time rpm keyring import
+GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --armor --export 'Cinnamon for Rocky Linux 10' \
+    > <project>/keys/cinnamon-rocky10-public.asc
+sudo rpm --import <project>/keys/cinnamon-rocky10-public.asc
+
+# 5. Record the fingerprint (public data) in sign-rpms.sh EXPECTED_FINGERPRINT and in this section
+GNUPGHOME=~/.gnupg-cinnamon-rocky10 gpg --with-colons -K | awk -F: '/^fpr/{print $10; exit}'
+```
+
+Notes: the uid cannot be changed after generation, and the `metalinux.dev` domain is still pending user confirmation (key-parameter table, 6-pager). The subkey must accept the same passphrase as the primary because the script presets a single passphrase. The item 1 acceptance additionally requires that `git status` show no private key material and no passphrase in either repo tree.
 
 ---
 
