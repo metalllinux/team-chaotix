@@ -132,9 +132,17 @@ the PM reads.*
       samples, run log, shell history all clean); project-repo `db60bb6` on
       `feature/TASK-0024-rpm-signing-gpgcheck` pushed, pre-push grep zero hits. Execution
       record in `## Implementation`.
-- [ ] `Robotnik`: dispatch item 4 (generate and commit `rpms/SHA256SUMS` from the signed set)
-      to `Tails` — critical path continues 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14 (item 6 joins at
-      7).
+- [x] `Tails` (2026-09-21): items 4 + 5 executed — `rpms/SHA256SUMS` generated from the signed
+      set (`sha256sum *.rpm | sort -k2`, 64 lines, `sha256sum -c` 64/64 OK) as project-repo
+      `1b57ac8`; `setup-repo.sh` imports `keys/cinnamon-rocky10-public.asc` (assert
+      `rpm -q "gpg-pubkey-fda02785*"`, 8-hex keyid width pinned), writes `gpgcheck=1` with no
+      `gpgkey=` line; reference template flipped to `gpgcheck=1` and harness test 6 updated to
+      match (conflict noted in `## Implementation`, flagged for Shadow); statelessness re-proven
+      on the host; `55a38ba` pushed, pre-push grep zero hits. Execution records in
+      `## Implementation`.
+- [ ] `Robotnik`: dispatch item 6 (docs: Quick start, Manual, new "Verifying the release"
+      section, README signing section) to `Tails` — critical path continues 6 → 7 → 8 → 9 →
+      10 → 11 → 14.
 
 ---
 
@@ -373,7 +381,7 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 
 ## Implementation
 
-*Owner: `Tails`. Item 1 complete 2026-09-21 (key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; public key, fingerprint, and key-material `.gitignore` guard committed as project-repo `7d47a02`); item 2 complete 2026-09-21 (`repo-setup/sign-rpms.sh`, project-repo `b84ce3f`). Branch `feature/TASK-0024-rpm-signing-gpgcheck` pushed; no key material in the branch (pre-push grep in the item 1 record).*
+*Owner: `Tails`. Item 1 complete 2026-09-21 (key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; public key, fingerprint, and key-material `.gitignore` guard committed as project-repo `7d47a02`); item 2 complete 2026-09-21 (`repo-setup/sign-rpms.sh`, project-repo `b84ce3f`); item 3 complete 2026-09-21 (all 64 RPMs signed in place, project-repo `db60bb6`); item 4 complete 2026-09-21 (`rpms/SHA256SUMS` from the signed set, project-repo `1b57ac8`); item 5 complete 2026-09-21 (`setup-repo.sh` key import + `gpgcheck=1`, project-repo `55a38ba`). Branch `feature/TASK-0024-rpm-signing-gpgcheck` pushed; no key material in the branch (pre-push grep in the item 1 and item 5 records).*
 
 **Alternatives considered**
 
@@ -529,6 +537,59 @@ Notes carried over: the uid cannot be changed after generation. The handoff's sa
 | logs on disk | keyring directory listing: no log files (agent logging is off by default, none enabled) | clean |
 
 **Commit and push.** `git diff --stat` before committing: 64 files changed, all `rpms/*.rpm`, nothing outside `rpms/` (0 non-RPM paths; file sizes unchanged, signatures land in fixed header slots). Committed as `db60bb6` ("TASK-0024 item 3: sign all 64 RPMs in place with the repo signing key"); pre-push `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` → zero hits (rc=1); pushed `7d47a02..db60bb6`. GitHub's advisory warning that two pre-existing mozjs115 debuginfo RPMs exceed 50 MB (tracked before this task; sizes unchanged by signing) — noted for the release, not a failure.
+
+**Item 4 executed (2026-09-21, `Tails`).** `rpms/SHA256SUMS` generated from the signed set (generated on `feature/TASK-0024-rpm-signing-gpgcheck` at tip `db60bb6`, so every hash covers the signed bytes per the item 3 record). Committed as project-repo `1b57ac8` ("TASK-0024 item 4: add rpms/SHA256SUMS manifest for the signed set"), one file, 64 insertions.
+
+- **Generation command:** `cd rpms && sha256sum *.rpm | sort -k2 > SHA256SUMS` (D4 format: sha256sum output, basenames only, sorted by filename). `wc -l` → 64 lines; `sort -c -k2` clean; zero path separators in any field 2 (`awk '{print $2}' SHA256SUMS | grep -c '/'` → 0). `git check-ignore rpms/SHA256SUMS` → rc=1 (not ignored; only `rpms/repodata/` and `rpms/.repodata/` are gitignored, .gitignore:13-14).
+- **Acceptance:** `cd rpms && sha256sum -c SHA256SUMS` → 64/64 `: OK`, zero FAILED, rc=0 (full output host-local at `/tmp/opencode/task0024-item4-verify.txt`).
+- `createrepo_c` only ingests RPM files, so `SHA256SUMS` in `rpms/` is inert for repodata (plan assumption, D4; cheaply falsified by item 10's `dnf makecache`). The tag pin (D4) is Knuckles' at item 14, not cut here.
+
+**Item 5 executed (2026-09-21, `Tails`).** `setup-repo.sh` now imports the public key per D3 and writes `gpgcheck=1`. Committed as project-repo `55a38ba` ("TASK-0024 item 5: import GPG public key in setup-repo.sh, write gpgcheck=1"): `repo-setup/setup-repo.sh` (+49/−5 lines), `repo-setup/cinnamon-rocky10.repo` (1 line), `vm-test/test-repo-setup.sh` (test 6, 7/6 lines). Pushed `db60bb6..55a38ba` (the push also carried `1b57ac8`).
+
+**Keyid width, determined at implementation (the plan row's open question).** rpm 4.19 on the host names the imported key package **8 hex chars, lowercase**: `rpm -qa | grep gpg-pubkey` → `gpg-pubkey-fda02785-6ab101f4` (keyid `fda02785` = last 8 of the fingerprint, timestamp `6ab101f4` = per-machine import time). So the script sets `KEY_ID="fda02785"` (setup-repo.sh:42) and asserts with a prefix glob, because the timestamp suffix makes a full-name query non-portable. Glob behavior pinned on the host: `rpm -q "gpg-pubkey-fda02785*"` → `gpg-pubkey-fda02785-6ab101f4`, rc=0; `rpm -q "gpg-pubkey-00000000*"` → "not installed", rc=1.
+
+**Changes**
+
+| File | What changed |
+|---|---|
+| `repo-setup/setup-repo.sh` | new step 3 (setup-repo.sh:117-142): `KEY_FILE="${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc"`, existence check, `rpm --import`, assert via `rpm -q "gpg-pubkey-${KEY_ID}*"`, fails loud naming the expectation; subsequent steps renumbered (4 .repo write, 5 CRB, 6 makecache) and the header list updated (setup-repo.sh:10-17); the .repo printf's gpgcheck argument `"0"` → `"1"` (setup-repo.sh:156-165) with no `gpgkey=` line per D3; `KEY_ID` constant with the width evidence in the comment (setup-repo.sh:37-42) |
+| `repo-setup/cinnamon-rocky10.repo` | reference template line 11: `gpgcheck=0` → `gpgcheck=1` (the plan row's named edit) |
+| `vm-test/test-repo-setup.sh` | test 6 only: the template assertion `grep -q "gpgcheck=0"` → `grep -q "gpgcheck=1"` (see the conflict note below) |
+
+**Statelessness contract preserved (the plan row's second acceptance point).** The new step is state-changing and sits below project-root resolution (setup-repo.sh:59-66) and the root check, so the bad-argument path still dies before any state-changing step. Re-ran the harness test-3 pattern on the host: `sudo bash repo-setup/setup-repo.sh /tmp/nonexistent-task0024-<ts>` → rc=1 at `cd -P` (line 62, "No such file or directory"), with before/after snapshots identical for: createrepo_c install state, `/etc/yum.repos.d/cinnamon-rocky10.repo` presence, md5 of every `/etc/yum.repos.d/*.repo`, `rpm -qa | grep gpg-pubkey` (the keyring the new step would touch), and `find rpms -type f -newer <marker>`. The `vm-test/test-repo-setup.sh` statelessness assertion therefore still holds, by inspection and by this run.
+
+**Import idempotency.** Re-ran `sudo rpm --import keys/cinnamon-rocky10-public.asc` on the host (key already present since item 1): rc=0, `rpm -qa | grep gpg-pubkey` byte-identical before/after — no duplicate keyring package, so a re-run of `setup-repo.sh` (the rollback section's interrupted-VM case) is idempotent.
+
+**The `.repo` block the script now writes** (the script's exact printf, run with this clone's baseurl):
+
+```
+[cinnamon-rocky10]
+name=Cinnamon for Rocky Linux 10 (local)
+baseurl=file:///home/howard/Linux/projects/cinnamon-for-rocky10/rpms
+enabled=1
+gpgcheck=1
+metadata_expire=0
+module_hotfixes=0
+keepcache=0
+```
+
+**Checks run**
+
+| Test | Command | Result |
+|---|---|---|
+| Syntax | `bash -n repo-setup/setup-repo.sh`; `bash -n vm-test/test-repo-setup.sh` | both clean |
+| Bad-argument path, as root | `sudo bash repo-setup/setup-repo.sh /tmp/nonexistent-task0024-<ts>` + state snapshots | rc=1 at line 62 (`cd -P`), zero host state change including the `gpg-pubkey-*` keyring |
+| Keyring assertion | `rpm -q "gpg-pubkey-fda02785*"` / `rpm -q "gpg-pubkey-00000000*"` | rc=0, package named / rc=1, not installed |
+| Import idempotency | `sudo rpm --import keys/cinnamon-rocky10-public.asc` (re-run) | rc=0, keyring unchanged |
+| Written `.repo` block | the script's printf verbatim to a `/tmp` file | `gpgcheck=1` present, no `gpgkey=` line |
+| Pre-push key-material | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `55a38ba` | zero hits (rc=1); `git grep -il "private-keys-v1.d" HEAD` → only `HEAD:.gitignore` (the pattern line itself, same as item 1); `git grep -l "BEGIN PGP" HEAD` → only `keys/cinnamon-rocky10-public.asc` |
+
+**Alternatives considered (the keyring assertion form).**
+- **Option A — full-name query `rpm -q gpg-pubkey-fda02785-<timestamp>`** · Cons: the timestamp is the import time on that machine; unknowable in the script.
+- **Option B — `rpm -qa | grep fda02785`** · Cons: matches any package whose name merely contains the string, and departs from the `rpm -q` form the plan row names.
+- **Option C — prefix glob `rpm -q "gpg-pubkey-${KEY_ID}*"` (chosen)** · Pros: the plan-named `rpm -q` form, stable across machines, matches exactly the one package name rpm 4.19 produces for this key (width evidence above).
+
+**Conflict with the existing harness, surfaced (AGENTS.md §5).** `vm-test/test-repo-setup.sh` test 6 (lines 314-320 pre-change) asserted `gpgcheck=0` in the reference template — the old, unsigned value. Item 5's plan row flips that value in the template, so the old assertion would go red against the correct new behavior. Test 6 was updated to assert `gpgcheck=1` and recorded here; flagged for `Shadow` (item 8, which specifically checks the statelessness-contract change). No other test in the file references gpgcheck. The end-to-end proof that a follower actually gets dnf signature verification remains items 10-11 (fresh VM, negative test); on the host the components are each proven as above, and the host's keyring already held the key since item 1, so this run exercised the idempotent path, not a first import.
 
 ---
 
