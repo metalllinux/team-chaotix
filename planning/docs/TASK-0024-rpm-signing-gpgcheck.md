@@ -125,9 +125,16 @@ the PM reads.*
       key-material `.gitignore` guard committed as project-repo `7d47a02` and pushed;
       `~/password.txt` deleted (user-approved); pre-push grep clean (only hit: the
       `.gitignore` line itself). Execution record in `## Implementation`.
-- [ ] `Robotnik`: dispatch item 3 (sign all 64 RPMs in place, payload-identity evidence) to
-      `Tails` — items 1 and 2 are complete; critical path continues 3 → 4 → 5 → 7 → 8 → 9 →
-      10 → 11 → 14 (item 6 joins at 7).
+- [x] `Tails` (2026-09-21): item 3 executed — all 64 RPMs signed in place with
+      `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; payload identity proven (per-RPM
+      `rpm2cpio | sha256sum` digests identical before/after, 64/64, no D2 flip);
+      `rpm --checksig` 64/64 `digests signatures OK`; runtime no-leak proven (ps/environ
+      samples, run log, shell history all clean); project-repo `db60bb6` on
+      `feature/TASK-0024-rpm-signing-gpgcheck` pushed, pre-push grep zero hits. Execution
+      record in `## Implementation`.
+- [ ] `Robotnik`: dispatch item 4 (generate and commit `rpms/SHA256SUMS` from the signed set)
+      to `Tails` — critical path continues 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14 (item 6 joins at
+      7).
 
 ---
 
@@ -501,6 +508,27 @@ Host identity, confirmed in writing per item 1 acceptance (carried over from the
 - **Option D, `--pinentry-mode loopback --passphrase-file <600-mode copy>` (chosen)** · Pros: exactly the user-named combination, the value stays inside gpg (never argv), generation and the item 3 script consume the identical artifact, and the trailing-newline semantics were pinned on throwaway keys before the real generation · Cons: none material.
 
 Notes carried over: the uid cannot be changed after generation. The handoff's same-passphrase-on-subkey constraint is moot (no subkey exists; the script's keygrip derivation handles both layouts and takes the primary grip on this one). The §13 exception now covers this key plus its sibling passphrase file, both host-side, as ratified.
+
+**Item 3 executed (2026-09-21, `Tails`).** Production sign run on `feature/TASK-0024-rpm-signing-gpgcheck` (project repo, `db60bb6`, pushed). No script fixes were needed; `sign-rpms.sh` is unchanged since `7d47a02`. Evidence files in `/tmp/opencode/task0024-item3/` (host-local, not in the repo).
+
+**Pre-sign baseline.** 64/64 unsigned: `for f in *.rpm; do rpm -K "$f"; done | sed 's|.*/||' | awk -F': ' '{print $2}' | sort | uniq -c` → `64 digests OK`. Per-RPM payload digests captured BEFORE signing with `for f in $(ls *.rpm | sort); do printf '%s  %s\n' "$(rpm2cpio "$f" | sha256sum | awk '{print $1}')" "$f"; done > payload-before.txt` (64 lines; `rpm2cpio` emits the file payload stream, so the header signature slots are excluded by construction).
+
+**Sign run.** `bash repo-setup/sign-rpms.sh` (production path: default keyring `~/.gnupg-cinnamon-rocky10`, default sibling passphrase location), rc=0: 64 signed, 0 skipped, 64 verified, preset cleared on exit. The run added `allow-preset-passphrase` to the keyring's `gpg-agent.conf` (idempotent, it was absent) and restarted the agent — the one host-local change, already recorded under item 2's competing priorities. Post-run agent state: a batch sign without passphrase now fails (`gpg: Sorry, we are in batchmode - can't get input`, rc=2), proving the preset was really cleared, not just reported as.
+
+**Payload identity (D2).** The identical digest command after signing → `payload-after.txt`; `diff payload-before.txt payload-after.txt` empty → **64/64 identical**. The D2 flip condition did not trigger; no `spec/` rebuilds.
+
+**Full-set verification.** `for f in *.rpm; do rpm --checksig "$f"; done | sed 's|.*/||' | awk -F': ' '{print $2}' | sort | uniq -c` → `64 digests signatures OK`. All 64 valid against key `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (public key in the rpm keyring as `gpg-pubkey-fda02785-6ab101f4` since item 1).
+
+**Runtime no-leak proof** (`## Plan` validation: the sign run leaves the passphrase out of `ps`, shell history, and logs). The passphrase value was loaded into an in-memory shell variable only for the checks below; it was never printed, and the commands reference only the 600-mode path.
+
+| Check | Method | Result |
+|---|---|---|
+| process argv, whole run | background sampler for the duration of the sign run: `ps -eo args=` (every process on the host) plus `tr '\0' '\n' /proc/<pid>/environ` for the `sign-rpms.sh` process(es), 95 samples at ~0.4 s spacing (each sample ~45 KB; 4.3 MB total, `ps-samples.txt`) | zero matches (`grep -qF` on the in-memory value) |
+| run log | the sign run's stdout+stderr captured to `sign-run.log` | zero matches |
+| shell history | `grep -qF` on `~/.bash_history` | zero matches |
+| logs on disk | keyring directory listing: no log files (agent logging is off by default, none enabled) | clean |
+
+**Commit and push.** `git diff --stat` before committing: 64 files changed, all `rpms/*.rpm`, nothing outside `rpms/` (0 non-RPM paths; file sizes unchanged, signatures land in fixed header slots). Committed as `db60bb6` ("TASK-0024 item 3: sign all 64 RPMs in place with the repo signing key"); pre-push `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` → zero hits (rc=1); pushed `7d47a02..db60bb6`. GitHub's advisory warning that two pre-existing mozjs115 debuginfo RPMs exceed 50 MB (tracked before this task; sizes unchanged by signing) — noted for the release, not a failure.
 
 ---
 
