@@ -159,6 +159,15 @@ the PM reads.*
       signing section); `gpgcheck=0` no longer appears in either doc; project-repo `e6ee370`
       pushed, pre-push greps zero hits, passphrase absent from the committed diff. Execution
       record in `## Implementation`. Critical path continues at item 7 (open the PR to main).
+- [ ] `Shadow` → `Omega` → `Big`: review chain on the full branch diff
+      (`feature/TASK-0024-rpm-signing-gpgcheck` vs `main` at `893b22a`). `Big`'s pass also runs
+      the plan's functional verification (fresh-VM positive with `gpgcheck=1`, negative tamper
+      test) and records it in `## Test Results`.
+- [ ] `Tails`: fix anything the chain returns.
+- [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces.
+- [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14).
+      *PM sequencing note: the plan's item 7 "open the PR" is folded into this Knuckles release
+      step per house rules; the PR is not opened before the review chain.*
 
 ---
 
