@@ -153,6 +153,12 @@ the PM reads.*
 - [ ] `Robotnik`: dispatch item 6 (docs: Quick start, Manual, new "Verifying the release"
       section, README signing section) to `Tails` — critical path continues 6 → 7 → 8 → 9 →
       10 → 11 → 14.
+- [x] `Tails` (2026-09-21): item 6 executed — all four doc surfaces updated (Quick start
+      gpgcheck=1 + key import, Manual 6 steps with key import and `gpgcheck=1` template, new
+      "Verifying the release" section with the manifest/signature division of labor, README
+      signing section); `gpgcheck=0` no longer appears in either doc; project-repo `e6ee370`
+      pushed, pre-push greps zero hits, passphrase absent from the committed diff. Execution
+      record in `## Implementation`. Critical path continues at item 7 (open the PR to main).
 
 ---
 
@@ -391,7 +397,7 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 
 ## Implementation
 
-*Owner: `Tails`. Item 1 complete 2026-09-21 (key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; public key, fingerprint, and key-material `.gitignore` guard committed as project-repo `7d47a02`); item 2 complete 2026-09-21 (`repo-setup/sign-rpms.sh`, project-repo `b84ce3f`); item 3 complete 2026-09-21 (all 64 RPMs signed in place, project-repo `db60bb6`); item 4 complete 2026-09-21 (`rpms/SHA256SUMS` from the signed set, project-repo `1b57ac8`); item 5 complete 2026-09-21 (`setup-repo.sh` key import + `gpgcheck=1`, project-repo `55a38ba`). Branch `feature/TASK-0024-rpm-signing-gpgcheck` pushed; no key material in the branch (pre-push grep in the item 1 and item 5 records).*
+*Owner: `Tails`. Item 1 complete 2026-09-21 (key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; public key, fingerprint, and key-material `.gitignore` guard committed as project-repo `7d47a02`); item 2 complete 2026-09-21 (`repo-setup/sign-rpms.sh`, project-repo `b84ce3f`); item 3 complete 2026-09-21 (all 64 RPMs signed in place, project-repo `db60bb6`); item 4 complete 2026-09-21 (`rpms/SHA256SUMS` from the signed set, project-repo `1b57ac8`); item 5 complete 2026-09-21 (`setup-repo.sh` key import + `gpgcheck=1`, project-repo `55a38ba`); item 6 complete 2026-09-21 (docs: Quick start, Manual, new "Verifying the release" section, README signing section, project-repo `e6ee370`). Branch `feature/TASK-0024-rpm-signing-gpgcheck` pushed; no key material in the branch (pre-push grep in the item 1, item 5, and item 6 records).*
 
 **Alternatives considered**
 
@@ -600,6 +606,40 @@ keepcache=0
 - **Option C — prefix glob `rpm -q "gpg-pubkey-${KEY_ID}*"` (chosen)** · Pros: the plan-named `rpm -q` form, stable across machines, matches exactly the one package name rpm 4.19 produces for this key (width evidence above).
 
 **Conflict with the existing harness, surfaced (AGENTS.md §5).** `vm-test/test-repo-setup.sh` test 6 (lines 314-320 pre-change) asserted `gpgcheck=0` in the reference template — the old, unsigned value. Item 5's plan row flips that value in the template, so the old assertion would go red against the correct new behavior. Test 6 was updated to assert `gpgcheck=1` and recorded here; flagged for `Shadow` (item 8, which specifically checks the statelessness-contract change). No other test in the file references gpgcheck. The end-to-end proof that a follower actually gets dnf signature verification remains items 10-11 (fresh VM, negative test); on the host the components are each proven as above, and the host's keyring already held the key since item 1, so this run exercised the idempotent path, not a first import.
+
+**Item 6 executed (2026-09-21, `Tails`).** All four doc surfaces from the plan row updated on `feature/TASK-0024-rpm-signing-gpgcheck`, committed as project-repo `e6ee370` ("TASK-0024 item 6: document signing, gpgcheck=1, and release verification"), pushed `55a38ba..e6ee370`. Only `INSTALL.md` and `README.md` changed (99 insertions, 7 deletions).
+
+**Before/after by surface**
+
+- **(a) INSTALL.md, Quick start step 2.** Before: the step described the script as writing the `.repo` file, enabling CRB, and validating readability, with no mention of signatures. After: the step states that the script imports the public GPG key from `keys/cinnamon-rocky10-public.asc` into the rpm keyring and writes the `.repo` with `gpgcheck=1`, so dnf verifies the signature of every package it installs, the same model as the EL base repositories.
+- **(b) INSTALL.md, Manual repository setup.** Before: 5 steps; the `.repo` template carried `gpgcheck=0`; no key import. After: 6 steps. New step 3 imports the key (`sudo rpm --import keys/cinnamon-rocky10-public.asc` from the project root, fingerprint stated, re-import noted as a no-op). Step 4's template flipped to `gpgcheck=1` with the explanation of what the line does and why there is no `gpgkey=` line (the key already lives in the rpm keyring, D3). CRB and install renumbered to 5 and 6. The old template's `gpgcheck=0` was the only occurrence of that string in either doc; it no longer appears anywhere.
+- **(c) INSTALL.md, new "Verifying the release" section** (after "Direct RPM install (fallback)", before "Prerequisites"). Opens with clone-at-tag (`git clone --depth 1 --branch v1.0.0`, per D4 the first signed release is `v1.0.0` and every future republish gets a new tag). Three subsections. "The sha256 manifest, corruption and drift" gives `cd rpms && sha256sum -c SHA256SUMS` (64/64 `OK` required) and states what the check cannot catch, a tree in which both the RPMs and the manifest were changed together, because the tree is its own baseline. "The GPG signature, origin tampering" covers dnf under `gpgcheck=1` plus the direct path (`sudo rpm --import` then `rpm --checksig` over all 64, expected output `digests signatures OK`, the pinned string from the item 2 record), with the key path and fingerprint. "Why both" states the division of labor Omega asked for (TASK-0016 doc, carried into this plan's D4) in one place. The manifest verifies the copy against the trusted baseline pinned at the tag and catches transfer corruption and drift. The signature verifies the origin and catches a tampered set that a matching manifest would accept, because re-signing needs the private key.
+- **(d) README.md, new "Signing and release verification" section** (before "## Installation"). Short, one paragraph plus the facts. The 64 RPMs are signed with a dedicated GPG key, the repository installs with `gpgcheck=1`, the public key ships at `keys/cinnamon-rocky10-public.asc` (fingerprint), `setup-repo.sh` imports it, each release is pinned to a git tag, the manifest is `rpms/SHA256SUMS`, and INSTALL.md's "Verifying the release" section carries the two checks with the one-line division of labor.
+
+**Checks run**
+
+| Test | Command | Result |
+|---|---|---|
+| `gpgcheck=0` absent from docs | `grep -n "gpgcheck=0" INSTALL.md README.md` | zero hits (rc=1) |
+| House style, em/en dashes | `grep -nP '[\x{2014}\x{2013}]' INSTALL.md README.md` | zero hits (rc=1) |
+| Fingerprint present | `grep -n 1689676AF4D4F6FEC142B4429C0A8912FDA02785 INSTALL.md README.md` | 3 hits. Manual step 3, the signature subsection, README (public data, permitted) |
+| Diff scope | `git diff --cached --stat` before commit | only `INSTALL.md` and `README.md`, 99 insertions / 7 deletions |
+| Pre-push private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `e6ee370` | zero hits (rc=1) |
+| Keyring dir name in branch | `git grep -il "private-keys-v1.d" HEAD` | exactly one hit, `HEAD:.gitignore` (the pattern line itself, same as items 1 and 5) |
+| Only public block in tree | `git grep -l "BEGIN PGP" HEAD` | only `keys/cinnamon-rocky10-public.asc` |
+| Passphrase in committed diff | value loaded into a shell variable from the 600-mode sibling file (never printed), `grep -qF` on `git diff 55a38ba e6ee370` | zero matches (the staged-diff check before commit was also clean) |
+
+**Alternatives considered**
+
+- **Placement of "Verifying the release".** Option A, before the Quick start, because verification precedes trust. Rejected. The section's own first step is clone-at-tag, and it cross-references the Quick start and Manual steps by name, so it reads as the answer to "how do I know what I cloned is what it claims" once the install methods are in hand. Option B, after "Direct RPM install (fallback)", chosen. It closes the block of install methods and precedes the reference sections.
+- **Naming `v1.0.0` in the docs before the tag exists.** D4 names the tag and says INSTALL.md tells followers to clone at the tag, and the DoD manifest box requires the doc tie to a tag, so the name goes in now. The tag is cut at item 14 after merge, which is also when the docs stop being branch-only. Recorded as a known short window, not a defect.
+- **README section placement.** Before "## Installation", chosen, because signing is a property of what the reader is about to install and the section sits next to the INSTALL.md pointer. Rejected, after "Build notes", which is about how the set was built, not how the release is verified.
+
+**Competing priorities**
+
+- The "Direct RPM install (fallback)" section is deliberately untouched by this item. Item 11c will characterize the local-file signature behavior, and item 11's acceptance row explicitly lets Tails correct item 6's wording afterward if needed. Labeling the fallback "unverified-by-signature" now would state a claim (likelihood medium per the plan risk table) that is neither proven nor refuted yet.
+- The docs repeat the fingerprint in three places (Manual step 3, the signature subsection, README) rather than pointing to a single location. Traded for a follower who never opens the key file still having the public value to compare against, and the fingerprint is public data that ships inside the key.
+- House style held to AGENTS.md §10. Prose over bullets in the new section, no em/en dashes (grep-verified), no colons introducing explanations, and the division of labor stated as a position (run both checks) rather than presented as equal options.
 
 ---
 
