@@ -12,6 +12,16 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21, implementation): items 1-5 complete, item 6 (docs) dispatching to Tails.**
+Key generated (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, passphrase-protected,
+proven by signing); all 64 RPMs signed in place (payload identity 64/64, `rpm --checksig` 64/64
+OK, runtime no-leak proven); `rpms/SHA256SUMS` published from the signed set; `setup-repo.sh`
+imports the public key and writes `gpgcheck=1` (no `gpgkey=` line); key-material `.gitignore`
+guard committed; `~/password.txt` deleted (user-approved). Branch
+`feature/TASK-0024-rpm-signing-gpgcheck` at `55a38ba`, pushed, pre-push greps clean every time.
+Next: item 6 docs (Tails), then the review chain, then Big's functional verification (items 7-11),
+then Vector, then Knuckles (item 14, tag `v1.0.0` on the merge).
+
 **Now (2026-09-21, user decision, item 1 execution): passphrase and uid settled.** The user
 specified the key passphrase by reference: the contents of `~/password.txt` (17 bytes, was 644).
 Uid decided: `metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>`.
