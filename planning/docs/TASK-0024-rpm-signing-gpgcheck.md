@@ -656,13 +656,65 @@ keepcache=0
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### <short claim>
-**Severity:** blocker | should-fix | nit
-**Where:** `path/to/file:123`
-**Problem:** one sentence.
-**Failure scenario:** concrete inputs or state → the wrong outcome.
-**Suggested direction:** what to do instead.
+### Harness ships no `keys/` to the VM; the new setup-repo.sh key step always dies there
+**Severity:** blocker
+**Where:** `vm-test/test-repo-setup.sh:349-364` (phase 1 copies), `repo-setup/setup-repo.sh:127-130` (new requirement)
+**Problem:** phase 1 rsyncs only `repo-setup/` and `rpms/` to the VM, but item 5 added a step to `setup-repo.sh` that requires `${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc` and dies without it.
+**Failure scenario:** fresh VM after phase 1; phase 2 runs `bash ./repo-setup/setup-repo.sh /root/cinnamon-for-rocky10` (test line 392) → the `[ ! -f "$KEY_FILE" ]` test at `setup-repo.sh:128` is true (no `keys/` on the VM) → die at line 129 → cascading FAILs: "setup-repo.sh execution" (test line 408), "completion message" (line 415), ".repo file installed" (line 432), "dnf repolist includes repo" (line 481), phase 4 `dnf install cinnamon` (line 558). The DoD items "Fresh-VM end-to-end" and "Big: all harness checks PASS" are unreachable on this branch as-is.
+**Suggested direction:** rsync `keys/` to the VM in phase 1 alongside the existing two copies, and update the header comment at test line 9 and the phase-1 log lines to match. Re-run the harness to green.
 **Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### sign-rpms.sh verification does not pin the signing key; the summary claim is stronger than the check
+**Severity:** should-fix
+**Where:** `repo-setup/sign-rpms.sh:245` (per-RPM check), `repo-setup/sign-rpms.sh:257` (final claim)
+**Problem:** verification is `rpm --checksig | grep -qi "signatures OK"`, which accepts a valid signature from *any* key in the host rpm keyring, but the script then reports "All RPMs in ... carry a valid signature from ${FPR}".
+**Failure scenario:** a host whose rpm keyring holds the project key plus at least one other key (any imported key qualifies); one RPM is swapped for a copy signed by that other key → `rpm --checksig` reports signatures OK → line 245 passes → the script certifies the whole set as signed by `1689676AF4D4F6FEC142B4429C0A8912FDA02785` when it is not. The pre-flight at line 150 proves the project key is present, not that it is the only key in the rpm keyring. The current set is unaffected (signed by the sole secret key in the dedicated keyring, item 3 evidence), but the script's standing guarantee is weaker than its output.
+**Suggested direction:** pin the expected signer in the verification step (assert the signing key identity in each RPM's signature data matches the expected fingerprint/keyid) so the line-257 claim matches what was actually checked.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Harness asserts 48 RPMs on the VM; the repo ships 64
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:369-373`
+**Problem:** the "RPMs copied to VM" check asserts exactly 48, but the published set is 64 RPMs.
+**Failure scenario:** verified pre-existing on main (`git show 893b22a:vm-test/test-repo-setup.sh` line 366 carries the same `-eq 48`; `git show 893b22a:rpms` lists 64 RPMs), so the check FAILs on every run on either branch: 64 files land on the VM, the count test fails, the suite is red, and the DoD item "Big: all harness checks PASS" cannot be met. The branch already modifies this file (commit `55a38ba`), so the fix belongs here.
+**Suggested direction:** raise the constant to 64, or better, derive the expected count from the source tree (count `*.rpm` in `${PROJECT_DIR}/rpms` the same way line 368 counts the remote side) so the assertion cannot go stale again.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### Passphrase round-trip check is dead code and its comment is factually wrong
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:178-180`
+**Problem:** the "round-trip check" compares `xxd -r -p` of the hex encoding against the original, but hex encoding/decoding is an exact identity for any byte sequence (both sides undergo the same command-substitution trailing-newline stripping), so the comparison can never fail and the `die "passphrase file must be a single line"` at line 180 is unreachable; the comment at line 178 ("a multi-line file would not survive the hex round trip") is wrong.
+**Failure scenario:** none functionally — that is the point: a multi-line passphrase file passes the check and would work end-to-end through the hex protocol (hex represents every byte), so the documented "single line" invariant (header line 35) is simply never enforced.
+**Suggested direction:** either enforce the invariant on the raw file bytes (e.g. newline count in the file) or drop the invariant from the header and delete the check.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### `xxd` and `stat` are used but missing from the tool pre-flight
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:105-107` (pre-flight loop), first use of `xxd` at line 177
+**Problem:** the pre-flight checks `gpg gpg-connect-agent rpm` only, but the script also requires `xxd` (line 177; shipped by `vim-common` on RHEL, not guaranteed on a minimal server) and `stat` (lines 141, 143).
+**Failure scenario:** a host without `vim-common` → line 177 aborts under `set -euo pipefail` with the bare shell message "xxd: command not found" and a non-zero rc, instead of the pre-flight's actionable "required tool not found: ..." die.
+**Suggested direction:** add `xxd` and `stat` to the pre-flight loop.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### `rpm -qa | grep -q` under pipefail is a host-dependent latent false positive in the keyring pre-flight
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:150` (with `set -o pipefail` at line 42)
+**Problem:** if the `rpm -qa` output exceeds the pipe buffer (~64 KB, i.e. roughly 1300+ installed packages) and the `gpg-pubkey-fda02785-*` line is not the last line, `grep -q` exits as soon as it matches, the next write from `rpm -qa` hits SIGPIPE (rc 141), and pipefail makes the pipeline return 141.
+**Failure scenario:** a host that grew past ~1300 packages after the key import → line 150's `if !` sees rc 141 → dies with "public key fda02785 is not in the rpm keyring" although the key is present; the message misdirects the operator to re-import a key that is already there. Not triggered on the release host today (item 3 ran clean; the key's db entry sits near the end of the list, so grep reads to the end) — it is a degradation path, not a current failure.
+**Suggested direction:** query the keyring directly with no pipeline, as `repo-setup/setup-repo.sh:139` already does (`rpm -q "gpg-pubkey-<keyid>*"`).
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+### DoD "zero hits" wording is unsatisfiable on a correctly guarded tree
+**Severity:** nit
+**Where:** Definition of Done, `planning/docs/TASK-0024-rpm-signing-gpgcheck.md:88`
+**Problem:** the DoD requires the merged tree to pass `git grep` for `private-keys-v1.d` "with zero hits", but the guard that makes the tree safe is itself the literal pattern line `private-keys-v1.d/` in `.gitignore:22` (verified via `git show feature/TASK-0024-rpm-signing-gpgcheck:.gitignore`), so `git grep private-keys-v1.d` returns exactly one hit on the merged tree.
+**Failure scenario:** merge the branch as-is → the literal DoD check fails on a tree that has no key material, because the .gitignore guard line matches the search string.
+**Suggested direction:** reword to "zero hits for `BEGIN PGP PRIVATE KEY BLOCK`, and for `private-keys-v1.d` only the `.gitignore` guard line". (DoD is Robotnik's section; flagged here, not edited.)
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+
+---
+
+**Verified, no finding.** The following were checked and cleared: passphrase handling in `sign-rpms.sh` (read from the 600-mode file, hex-encoded, sent on `gpg-connect-agent` stdin only, never in argv; `PASS`/`PASS_HEX` wiped at lines 181/194; `clear_preset` EXIT trap covers all exit paths, lines 199-208); `setup-repo.sh` statelessness contract (bad argument dies at the `cd -P` resolution, lines 61-62, before the root check at line 78 and every state-changing step, matching the contract at lines 21-28); the `is_signed` grep (lowercase "signatures OK" cannot match the failure string "SIGNATURES NOT OK", lines 213-221); harness test 6's flip to `gpgcheck=1` (asserts the new intended behavior, `vm-test/test-repo-setup.sh:314-323`; the template and the script's printf both carry `gpgcheck=1` with no `gpgkey=`, consistent); the public key file's fingerprint subpacket decodes exactly to `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, and `KEY_ID="fda02785"` is its last 8 hex chars (`repo-setup/setup-repo.sh:42`); `rpms/SHA256SUMS` structure (64 lines, basenames only, 1:1 with the tree listing) plus the commit-range argument that no `rpms/*.rpm` changed after the manifest commit (`git log --stat db60bb6..1b57ac8` and `1b57ac8..e6ee370`), on top of the recorded item 4 evidence (`sha256sum -c` 64/64 OK). Note: the hashes themselves were not independently re-computed — this review has no `sha256sum` permission — so the manifest's correctness rests on the recorded item 4 run plus the commit-range argument.
 
 ---
 
