@@ -722,14 +722,58 @@ keepcache=0
 
 *Owner: `Omega`. Read-only. Severity order.*
 
-### <short claim>
-**Severity:** critical | high | medium | low
-**Vector:** injection | authz | secrets | input-validation | crypto | supply-chain | actions | license
-**Where:** `path/to/file:123`
-**Attack:** who the attacker is, what they control, the concrete steps.
-**Impact:** what they get.
-**Fix:** the specific change.
+**Review scope.** Branch `feature/TASK-0024-rpm-signing-gpgcheck` (tip `e6ee370`) against main
+`893b22a`, 6 commits. Read-only: `git diff`/`git show`/`git grep` against branch objects, `gh` on the
+repo, web fetch of metalinux.dev (2026-09-22). No `rpm`, `gpg`, or `sha256sum` in this review's tool
+set, so signature and digest claims rest on the recorded item runs, Shadow's `## Review`
+verification, and byte inspection of git objects (`git grep -a` is reliable only for patterns
+without the 0x0A byte; validated here with control patterns).
+
+### No out-of-band anchor for the signing fingerprint; a key swap is undetectable inside the account
+**Severity:** medium
+**Vector:** supply-chain
+**Where:** `keys/cinnamon-rocky10-public.asc`, `INSTALL.md:188`, `INSTALL.md:282`, `README.md:102`, `repo-setup/setup-repo.sh:38`
+**Attack:** the attacker is a compromised `metalllinux` GitHub account (named in the threat model at task origin, this doc line 54). One in-account PR or commit does all of: (a) replace `keys/cinnamon-rocky10-public.asc` with the attacker's public key, (b) re-sign all 64 RPMs with the attacker's key, (c) update the fingerprint strings in `INSTALL.md` and `README.md`, (d) regenerate `rpms/SHA256SUMS`. A follower running `setup-repo.sh` imports the attacker's key into the rpm keyring, `gpgcheck=1` then passes on the attacker's packages, and attacker code runs as root (the threat model states packages install as root). Every in-repo check passes: signatures verify against the shipped (attacker) key, the manifest matches the re-signed RPMs, and the documented manual `rpm --checksig` procedure verifies against whatever key was imported.
+**Impact:** RCE as root on every follower who installs from a tag cut after the swap. The signing layer does close the stated `rpms/`-tampering threat with the key held constant (a PR altering only `rpms/` is caught: the altered packages do not verify against the shipped key). The key-swap variant requires the same capability as account compromise, so this is the residual of the named threat, not a hole in the implemented design.
+**Evidence for severity.** No out-of-band copy of the fingerprint exists. Checked metalinux.dev homepage and the Linux Journey index (2026-09-22): no article publishes it, and the key (generated 2026-09-21) postdates any Cinnamon article the project could have written. The fingerprint is published only inside `metalllinux` account territory: the project repo (the five locations above) and this planning doc. The user's memory is the only current out-of-band knowledge.
+**Fix:** non-blocking; recommended before the first public tag. Publish the fingerprint on metalinux.dev (separate domain and hosting, a distinct trust domain) and add one line to the `INSTALL.md` manual procedure telling the follower to compare the imported key's fingerprint against that out-of-band value before trusting the repo. This converts a silent key swap into a detectable one.
 **Resolution:** *(filled by `Tails`)*
+
+### Final verification does not pin the signing key, and the completion log overstates the guarantee
+**Severity:** low
+**Vector:** crypto
+**Where:** `repo-setup/sign-rpms.sh:241-246` (verification loop, die at :245), `repo-setup/sign-rpms.sh:257` (log), `repo-setup/sign-rpms.sh:219-221` (`is_signed`)
+**Attack:** `rpm --checksig`/`rpm -K` verifies "a valid signature by a key in the rpm keyring, or by the public key embedded in the package", not "by key 1689...FDA02785". An RPM in `rpms/` re-signed with a key absent from the host's rpm keyring would be accepted through the embedded-key fallback by both the skip check (`is_signed`, :220) and the final verification (:245). Exploiting this needs write access to `rpms/` on the release host (or to the script itself), and an attacker with that capability does not need this path, so the exposure is robustness, not a reachable vulnerability. On the release host the check is in fact pinned: the pre-flight (:150-151) guarantees key `fda02785` is in the rpm keyring before anything runs, so verification resolves by key ID.
+**Impact:** a future run against pre-placed re-signed packages would log "All RPMs in rpms/ carry a valid signature from 1689...FDA02785" (:257) for packages that do not carry such a signature. False assurance in recorded evidence, not a broken current signature: for this run the guarantee holds, byte inspection of the committed git objects shows the key-ID tail `fda02785` embedded in the branch blobs (2 hits in the `cinnamon-rocky-defaults` sample) and absent from the main blobs (0 hits).
+**Fix:** consolidate with Shadow's should-fix on these same lines (no duplicate work). Pin the key in verification, for example by extracting the embedded public key (`rpm -qp --qf '%{SIGPGP}'`) and comparing its fingerprint to `EXPECTED_FINGERPRINT`, and reword the :257 log to state what was actually checked.
+**Resolution:** *(filled by `Tails`)*
+
+### "Never run with set -x" warning is not enforced
+**Severity:** low
+**Vector:** secrets
+**Where:** `repo-setup/sign-rpms.sh:24-26` (warning) versus the script body (no guard)
+**Attack:** the header warns that running under `set -x` prints the passphrase via the trace (AGENTS.md section 4), but nothing enforces it. `bash -x repo-setup/sign-rpms.sh` (or a wrapper that sources it into an xtrace shell) traces lines 177 and 179 with the expanded cleartext passphrase (and its hex form) on stderr, because `printf '%s' "$PASS"` and `printf '%s' "$PASS_HEX"` are traced with their arguments expanded. Line 175 (`PASS=$(cat ...)`) does not leak (the trace shows the command, not the substitution result), and the heredoc at :186-190 is not traced.
+**Impact:** the passphrase lands in the operator's terminal, shell history, or any captured log of the signing run. Host-local only: the script never runs in CI, output stays on the release host, and the attacker is the operator misusing the script or a local process reading the terminal or log.
+**Fix:** refuse to run when xtrace is active, near the top of the script after :42: `case "${BASHOPTS:-}" in *xtrace*) die "refusing to run under set -x: the passphrase would be traced (AGENTS.md section 4)";; esac`.
+**Resolution:** *(filled by `Tails`)*
+
+### All 64 signed RPMs are byte-identical in size to the unsigned baseline
+**Severity:** low
+**Vector:** crypto
+**Where:** `rpms/*.rpm` (all 64); `## Implementation` item 3 record
+**Attack:** none. This is a records gap, not an attack path. `git diff --stat 893b22a..e6ee370` shows all 64 RPMs as `Bin N -> N` (unchanged size, for example `cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` 15241 to 15241). Ordinary `rpm --addsign` with an RSA-4096 key grows the file by roughly 1 KB (signature plus embedded public key). The Implementation record attributes the identity to "the signature landing in a fixed header slot", a mechanism this review could not verify (no `rpm`/`gpg` access). Byte inspection of the git objects (patterns without 0x0A, validated by control) confirms the committed branch blobs carry the key-ID tail `fda02785` and the main blobs do not, so the committed bytes do carry a signature from the expected key.
+**Impact:** if the size identity ever turned out to mask a malformed signature, the recorded `rpm -K` evidence (item 3, run against exactly these bytes, Shadow verified no `rpms/*.rpm` changed after the manifest commit) would already have failed. The realistic risk is a gap in the evidence trail, not a broken signature.
+**Fix:** no code change. The item 14 fresh-clone run should record per-file sizes and the full `rpm --checksig` output in `## Test Results`, closing the anomaly on the record.
+**Resolution:** *(filled by `Big` at item 14)*
+
+### Verified, no finding
+- **Secrets in history.** `git log -S "BEGIN PGP PRIVATE KEY BLOCK"` on the branch range: 0 hits. `git log -S "private-keys-v1"`: 1 hit, commit `7d47a02`, whose diff scope (via `--stat`) is `.gitignore` +19, `keys/cinnamon-rocky10-public.asc` +30, `sign-rpms.sh` +7/-6, i.e. the guard, not key material. `git log -S "BEGIN PGP"`: only `7d47a02`. The planning doc holds no passphrase value: roughly 100 "passphrase" hits, all mechanism, reference, or byte-length; the user's passphrase is referenced as the contents of `~/password.txt`, never written (AGENTS.md section 4 upheld).
+- **No new GitHub secrets or variables.** `gh secret list` and `gh variable list` on `metalllinux/cinnamon-for-rocky10` both return empty. The section 13 exception (host-local keyring, user-approved 2026-09-21, six-pager `planning/docs/TASK-0024-gpg-key-management.md` sections 4-5) adds no workflow secrets, and the project repo has no `.github/`. The precedent cited for the exception, the fleet test SSH key, is verified as claimed at `vm-test/lib.sh:45` and `:85` (host-local key files under `$HOME/.ssh`, not GitHub secrets).
+- **Key material shipped is public-only.** `keys/cinnamon-rocky10-public.asc` is a 30-line `PGP PUBLIC KEY BLOCK`; the UID matches the spec; the fingerprint subpacket decodes to `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (Shadow, `## Review`, line 717). `.gitignore` guards cover the keyring directory, passphrase file names, `private-keys-v1.d/`, and `openpgp-revocs.d/` (a leaked revocation cert is a key-revocation DoS, so this is covered).
+- **No injection surface in the new scripts.** All expansions reaching the shell are quoted; the `rpms/` glob expands to absolute paths (no leading-dash argument injection); gpg colon output is consumed field-wise and never re-interpreted as shell.
+- **License (AGENTS.md section 9).** The diff adds no forked code; no license-header or compatibility concern.
+
+**Verdict.** No security blockers. The medium finding is residual by design of the single-account model, documented in the six-pager risk table, and non-blocking: the signing layer closes the stated `rpms/`-tampering threat, and the key-swap variant is the named account-compromise residual with a documented response (re-key). Recommend merge on security grounds. The out-of-band fingerprint publication should land before the first public tag (follow-up task or a small docs addition; it touches metalinux.dev content, so it is the user's call). Tails must still clear Shadow's Review blocker (the harness ships no `keys/` to the VM, so item 10's test 6 cannot pass) before item 10 runs; that is a Review item, not a Security one.
 
 ---
 
