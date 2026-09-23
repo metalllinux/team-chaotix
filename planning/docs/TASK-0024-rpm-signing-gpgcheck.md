@@ -118,10 +118,12 @@ if a box cannot be verified by looking at something, rewrite it.*
       dnf (not just a copy check).
 - [ ] **Release manifest.** A sha256 manifest of the released set is published in the repo and
       tied to a git tag; `INSTALL.md` documents verifying against it.
-- [ ] **Fresh-VM end-to-end.** On a fresh minimal Rocky 10.2 VM on host `192.168.1.102`: the
+- [x] **Fresh-VM end-to-end.** On a fresh minimal Rocky 10.2 VM on host `192.168.1.102`: the
       documented procedure with `gpgcheck=1` installs the complete 22-name set (signatures
       verified by dnf) and reaches a working Cinnamon (Wayland) desktop; recorded in `## Test
-      Results` with evidence.
+      Results` with evidence. (Flipped 2026-09-23 per dispatch on the `ce7b084` re-run: harness
+      OVERALL PASS, install + signature verification verified; the desktop-boot half remains under
+      TASK-0017 per the recorded caveat in `## Test Results`.)
 - [ ] **Negative test.** A tampered copy of one RPM is detected: dnf refuses the install with a
       signature/repodata error (recorded in `## Test Results`); this is what the old `gpgcheck=0`
       path silently accepted.
@@ -1017,6 +1019,96 @@ full harness (item 10) is blocked by a harness bug: the harness does not ship `k
 positive DoD line (22-name install + working Cinnamon Wayland desktop) is not yet verified. That fix
 (copy `keys/` to the VM before `setup-repo.sh` runs) stays with `Big`; it is the only blocker on the
 positive DoD line. The "no signature" message is explained and is a reporting quirk, not a code bug.
+
+### Re-run (ce7b084), 2026-09-23
+
+*Big, re-dispatched against Tails' fix tip `ce7b084`. Harness fixes committed as `80ade06`
+(`vm-test/test-repo-setup.sh` only), stale pin refresh as `8672013` (`vm-test/verify-install-packages.sh`
+only); both sit on top of `ce7b084` and touch no functional tree, so the signed content under test is
+byte-identical to `ce7b084`. Evidence in `/tmp/opencode/task0024-rerun/` (host-local, not in the
+repo).*
+
+**Item 3 (literal).** `ls -l rpms/`: 64 files, all `-rw-r--r--.` `howard howard`, mtime 21 Sep 19:55
+(the in-place signing window, ~5 min before `db60bb6`). `rpm --checksig` over the full set: 64/64
+`digests signatures OK` (rc=0, zero non-OK lines). Transcripts: `item3-ls-l.txt` (64 lines),
+`item3-checksig-full.txt` (64 lines).
+
+**Item 10 (fresh-VM harness).** `vm-test/test-repo-setup.sh` on a provisioned `cinnamon-test-repo`
+VM (Rocky 10.2 minimal, 192.168.122.20, SSH pinned from the disk). **OVERALL: PASS** — 60 checks:
+50 PASS, 0 FAIL, 6 SKIP, 4 WARN. Log: `item10-harness-2.out`.
+
+| Phase | What it exercises | Result |
+|---|---|---|
+| 0 | host-side error handling; .repo template carries `gpgcheck=1`, `enabled=1`, `metadata_expire=0` | 7/7 PASS |
+| 1 | copies `repo-setup/`, `rpms/` (64/64), `keys/` to VM | PASS — `keys/` now ships (the run-1 blocker, `harness-run1.log:99`, is fixed) |
+| 2 | `setup-repo.sh` on VM: createrepo_c, keyring `fda02785`, .repo, repodata | PASS (exit 0) |
+| 3 | `repolist`, 64 packages visible, 12 core names, CRB enabled | PASS |
+| 4/4b | `dnf install cinnamon` + 5 extra names via the `gpgcheck=1` repo | PASS (rc=0; `cinnamon-6.7.4-3.el10` installed, signatures verified by dnf) |
+| 5 | 14 base packages, GDM session file, 2 shared libraries | 10 PASS, 4 WARN |
+| 6 | 6 binaries: `ldd` (0 missing libs) + `--version` smoke | 6/6 ldd PASS; `cjs 6.4.0` PASS; 5 SKIP |
+| Cleanup | VM destroyed, volume removed | PASS |
+
+The 4 WARNs are stale version pins in `verify-install-packages.sh` (expected 6.7.2-1/6.7.4-1 vs
+installed 6.7.2-2/6.7.4-2/6.7.4-3); the installed versions match the committed `rpms/` filenames
+exactly, so the content is correct and the pins were wrong. Fixed in `8672013`; a re-run would show
+0 WARN. The 6 SKIPs are named, not dropped: 4 `--version` smoke checks (muffin,
+cinnamon-control-center, nemo, cinnamon) need Xvfb, which the minimal image lacks (`No match for
+argument: xorg-x11-server-Xvfb`), and 2 binaries (cinnamon-session, csd-xsettings) have no
+`--version` flag. Each SKIPped binary's `ldd` link check PASSES (0 missing libraries).
+
+The first re-run attempt (pre-`80ade06`) failed at Phase 2 with a 64/64 SHA256SUMS mismatch: the
+working tree carried a stale gitignored `rpms/repodata/` (mtime 18 Sep, pre-dating the `db60bb6`
+signing) that the rsync copied to the VM, and it did not match the signed bytes. Fixes in `80ade06`:
+rsync `--exclude='repodata/'`, the inverted `cinnamon installed` check, and the pipefail
+`grep -q` pattern. Stale `repodata/` deleted from the working tree.
+
+**Item 11c (fallback path, not run in the original pass).** Driver `item11c-driver.sh` on a fresh
+minimal VM `task0024-fallback` (192.168.122.121, SSH pinned): rsync the project (repodata
+excluded), `sha256sum -c SHA256SUMS` 64/64 OK, `setup-repo.sh` (keyring
+`gpg-pubkey-fda02785-6ab101f4`; `.repo` carries `gpgcheck=1` and zero `gpgkey=` lines, so the key
+comes from the rpm keyring, not the .repo file), then a single-byte payload flip of
+`cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` (offset 11803, 0x9e to 0x9f; sha before
+`95f2cbbb…c5e20`, after `fc26dd8c…23953`; `rpm -Kv` on the tampered file: `Header V4 RSA/SHA256
+Signature, key ID fda02785: OK`, `Payload SHA256 digest: BAD`), then both dnf runs:
+
+| Check | Result |
+|---|---|
+| `dnf install -y ./rpms/<tampered>.rpm` (key imported, gpgcheck=1) | **REFUSED** — rc=1, `Transaction test error: package cinnamon-rocky-defaults-1.0-2.el10.noarch does not verify: no signature`; state NOT-INSTALLED |
+| `dnf install -y ./rpms/<pristine>.rpm` (same local path, restored file) | **INSTALLED** — rc=0, `Complete!`, `rpm -q` = `cinnamon-rocky-defaults-1.0-2.el10.noarch`; restored sha equals the committed original |
+
+The A/B is clean, so the refusal is attributable to the tamper, not the path. dnf4 4.20.0 verifies
+GPG signatures on local-file installs, so the documented fallback (`dnf install ./rpms/*.rpm`) is
+not a hole. The `does not verify: no signature` wording is the same rpm/rpmvs reporting quirk
+resolved above (BAD payload digests mask the message as `no signature`); the refusal itself is
+correct. One driver note: `s2-norepodata` reports PRESENT on the re-run because the previous attempt's
+`setup-repo.sh` had regenerated `rpms/repodata/` on the same VM; the check is informational
+(`item11c-driver.sh:65`), and step 3 regenerated the metadata from the SHA256SUMS-verified pristine
+files before either dnf run, so the A/B conditions are identical. The harness runs on a fresh VM
+every time and cannot hit this. A first driver attempt without `-y` aborted at dnf's interactive
+`Is this ok [y/N]:` prompt before reaching verification, so its rc=1 said nothing about signatures;
+that attempt's logs are kept as `a1-*`. Logs: `item11c-driver-3.out`, evidence `s1`–`s7`.
+
+**Host event (surfaced, not caused by this run).** Between 20:44 and 20:48 on 2026-09-23, all libvirt
+domain definitions on host 192.168.1.102 were deleted out-of-band while the QEMU processes kept
+running: `/var/lib/libvirt/qemu/` is empty, `virsh list --all` shows zero domains, six QEMU
+processes are orphaned but alive, all guest disks are intact in
+`/var/lib/libvirt/images/cinnamon-test/`, and the pin files in `vm-test/results/known-hosts/` are
+intact. This run's harness destroyed its own VM at ~20:03 (`item10-harness-2.out:240-247`) and the
+driver's VM was provisioned at 19:32 via `virt-install`, both before the deletion window. I killed
+my own orphaned QEMU (`task0024-fallback`, PID 598480, `sudo kill`) and removed its qcow2 after
+pulling all evidence; the other five orphaned VMs are not mine and are left for the host operator.
+
+**Verdict (re-run).** Item 3: PASS — 64/64 `rpm --checksig` OK, literal `ls -l` and checksig
+transcripts in the record. Item 10: PASS — OVERALL: PASS with 0 FAIL; the 4 WARNs are diagnosed as
+stale harness pins (fixed in `8672013`) and the 6 SKIPs are named with reasons, each SKIPped
+binary's ldd counterpart passing. Item 11c: PASS — a payload-tampered local-file install is refused
+under keyring + `gpgcheck=1` (`does not verify: no signature`, rc=1, NOT-INSTALLED) while the
+pristine positive control on the identical path installs (rc=0, INSTALLED); the documented fallback
+is signature-checked, not a bypass. All three requested checks ran; none dropped. Caveats carried
+forward, recorded here rather than silently reduced: the desktop-boot half of the fresh-VM DoD (GDM
+Wayland login, five surfaces) is not part of this harness and remains under TASK-0017, and the four
+Xvfb-dependent `--version` smoke checks remain SKIP on minimal images until Xvfb is added to the
+image. DoD box 5 is flipped to `[x]` per dispatch with those caveats on record.
 
 ---
 
