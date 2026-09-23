@@ -781,21 +781,80 @@ without the 0x0A byte; validated here with control patterns).
 
 *Owner: `Big`. Verdicts, never raw log dumps.*
 
-**Workflow run:**
+**Scope.** Functional verification of the signing + `gpgcheck=1` change on a libvirt VM
+(`task0024-tamper`, Rocky Linux 10.2, dnf 4.20.0, rpm 4.19.1.1), branch
+`feature/TASK-0024-rpm-signing-gpgcheck` tip `e6ee370`. Signing key
+`1689676AF4D4F6FEC142B4429C0A8912FDA02785` (short ID `fda02785`). Two tamper vectors, each with
+`createrepo_c --update` so repodata matches the tampered bytes: a payload byte flip (offset 11803,
+0x9e to 0x9f) and a PGP-signature byte flip (offset 400, 0x56 to 0x57). This is a signing/repo task,
+not a UI task, so Sparky does not apply. Evidence in `/tmp/opencode/task0024/` (host-local, not in the
+repo). The VM is destroyed; all artifacts are pulled.
+
+**Checks run (VM functional verification):**
 
 | Check | What it exercises | Result | Notes |
 |---|---|---|---|
-| compile | changed files | PASS/FAIL | |
-| linter | style and correctness | PASS/FAIL | |
-| unit tests | individual functions | PASS/FAIL | |
-| integration tests | end-to-end flows | PASS/FAIL | |
-| Sparky tests | Rocky Linux UI (if applicable) | PASS/FAIL | |
+| Positive control, gpgcheck=1 | pristine signed package installs | PASS | `dnf install` rc=0, `rpm -q` confirms |
+| Negative: payload flip, gpgcheck=1 (item 11a) | payload tamper caught by the signature | PASS | `dnf install` rc=1, `does not verify: no signature`; `rpm --test` rc=1, same message |
+| Negative: payload flip, gpgcheck=0 (item 11b) | the gap gpgcheck=1 closes | PASS | `dnf install` rc=0, package installs. The old path accepts payload tamper |
+| Negative: pgpsig flip, gpgcheck=1 (added) | signature tamper caught | PASS | `dnf install` rc=1, `Header V4 RSA/SHA256 Signature, key ID fda02785: BAD` |
+| Negative: pgpsig flip, gpgcheck=0 (added) | corrupted signature under the old path | REFUSED | `dnf install` rc=1, `…Signature: BAD`. dnf4 4.20.0 refuses a present-but-BAD signature even at gpgcheck=0 |
+| Negative: unsigned package, gpgcheck=0 (added) | absent signature under the old path | ACCEPTED | `dnf install` rc=0. gpgcheck=0 accepts a package with no signature |
+| Fresh-VM full harness (item 10) | end-to-end repo setup + 22-name install + desktop | FAIL | `harness-run1.log`: 16 PASS / 41 FAIL / 2 WARN, `OVERALL: FAIL` |
+| "no signature" mechanism | why the payload flip reports "no signature" | RESOLVED | below |
 
-**Checks requested vs run:** N requested, N executed. *If any were dropped or skipped, say so here
-explicitly — a truncated run reporting green reads as full coverage.*
+**Checks requested vs run.** Item 11a (payload flip + regenerated repodata, gpgcheck=1 refuses) is
+run and PASS; the exact wording is `does not verify: no signature`. Item 11b (the same payload-flipped
+package under gpgcheck=0 installs) is run and PASS. Item 11c (the fallback
+`dnf install ./rpms/<tampered>.rpm` with the key imported) was NOT run; there is no evidence of it in
+the record. The pgpsig-flip and unsigned rows are additional vectors I ran beyond the plan; the
+pgpsig-flip result (refused under both gpgcheck settings) refines the plan's assumption that gpgcheck=0
+accepts any tampered package, it does not contradict item 11b, whose vector is the payload flip. Item
+10 (fresh-VM full harness: 22-name install, GDM Wayland login, five surfaces) is BLOCKED, not run to
+completion. Not silently dropped. The harness copies `repo-setup/` but not `keys/` to the VM, so
+`setup-repo.sh` dies at the key check (`harness-run1.log:99`, `ERROR: GPG public key not found`) before
+any install. This is a harness bug (stays with `Big`) and matches Shadow's Review blocker (`## Review`
+line 663) and the Omega note (`## Security` line 776).
 
-**Verdict:** prose. For each FAIL: the failing check, the evidence, and whether it is a code bug (goes
-to `Tails`) or a harness bug (stays with `Big`).
+**The "no signature" question, resolved.** The payload flip reports `does not verify: no signature`
+even though the package is signed and the real failure is the BAD payload digests. The transaction sinfo
+table is identical between the pristine and flipped packages except the payload digest rc (pristine
+`[5] NOTFOUND, [6] OK, [9] OK`; flipped `[5] BAD, [6] BAD, [9] BAD`), decoded in `gdb-decode.out`
+(flipped) and `gdb-decode-4.out` (pristine). The mechanism, from the Rocky `rpmvsVerify` disassembly
+(`rpmvsVerify-rocky.dis`):
+
+1. The payload SHA256 digest entry `[6]` is wrapped (`wrapped=1`), so it is promoted to signature
+   strength (`testb $0x1,0x50(%rsp)` at `0x51b95`).
+2. On a digest OK, the verify sets `verified[type] |= range` and `verified[strength] |= range`
+   (`0x51e59` to `0x51e68`). Pristine `[6]` OK sets `verified[SIG]` to `0x3` (HEADER|PAYLOAD); flipped
+   `[6]` BAD leaves `verified[SIG]` at `0x1` (HEADER).
+3. The second loop's skip condition is `required = sinfo->range & (range & ~verified[SIG])`, skipping a
+   `NOTFOUND` entry only when `required == 0` (`andn` at `0x51c0a`). The absent payload DSA/RSA
+   signature entries `[7]`/`[8]` (range `0x3`, rc NOTFOUND in both cases):
+   - Pristine: `0x3 & (0x3 & ~0x3) = 0`, so skipped.
+   - Flipped: `0x3 & (0x3 & ~0x1) = 0x2`, so required and passed to the callback (`0x51c67`).
+4. The callback sets `no signature` for the NOTFOUND signature entries and continues past the BAD digest
+   entries without overwriting that message (trace `gdb-cb3.out`, final message `no signature`;
+   `gdb-cb4.out` shows the pristine run exits 0).
+5. `prc` is non-zero because the real failure is the BAD payload digests, and `verifyPackageFiles` adds
+   the problem with `vd.msg`, which is `no signature` (`transaction.c:1310` to `1311`).
+
+So the transaction is correctly refused; only the message is masked. A corrupted payload digest fails to
+mark the payload range signature-verified, which makes the (absent) payload signatures required, which
+triggers the `no signature` callback text. This is an rpm/rpmvs reporting quirk in the wrapped-digest
+promotion path, not a defect in this task's code and not a security issue (the refuse is correct). The
+Rocky `vfyCb` source is static (not breakable by name) and could not be read directly; its
+continue-past-BAD and preserve-`no-signature` behavior is confirmed empirically from the trace.
+
+**Verdict.** The negative tamper test PASSES on the plan's vector. A payload-tampered package with
+regenerated repodata is refused under gpgcheck=1 (item 11a) and accepted under gpgcheck=0 (item 11b),
+which is exactly the gap the signing + gpgcheck=1 change closes. Two findings to carry forward. First,
+dnf4 4.20.0 refuses a present-but-BAD signature even under gpgcheck=0, so gpgcheck=0 is not a blanket
+accept for any tampered package, only for payload tamper and for absent signatures. Second, the fresh-VM
+full harness (item 10) is blocked by a harness bug: the harness does not ship `keys/` to the VM, so the
+positive DoD line (22-name install + working Cinnamon Wayland desktop) is not yet verified. That fix
+(copy `keys/` to the VM before `setup-repo.sh` runs) stays with `Big`; it is the only blocker on the
+positive DoD line. The "no signature" message is explained and is a reporting quirk, not a code bug.
 
 ---
 
