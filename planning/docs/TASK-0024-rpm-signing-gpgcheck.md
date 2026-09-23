@@ -176,7 +176,7 @@ the PM reads.*
       (1 blocker, 2 should-fix, 4 nits) in `## Review`. Omega: no security blockers (1 medium, 3
       low) in `## Security`. Big: negative tamper PASS, positive fresh-VM BLOCKED by the harness
       `keys/` gap in `## Test Results`.
-- [ ] `Tails`: fix the chain's findings — (1) BLOCKER: `vm-test/test-repo-setup.sh` phase 1 must
+- [x] `Tails`: fix the chain's findings — (1) BLOCKER: `vm-test/test-repo-setup.sh` phase 1 must
       ship `keys/` to the VM before `setup-repo.sh` runs; (2) should-fix: `repo-setup/sign-rpms.sh`
       pin the signing key so verification checks the expected fingerprint, not any keyring key
       (consolidates with Omega low #1); (3) should-fix: `vm-test/test-repo-setup.sh:369-373` RPM
@@ -675,6 +675,34 @@ keepcache=0
 - The "Direct RPM install (fallback)" section is deliberately untouched by this item. Item 11c will characterize the local-file signature behavior, and item 11's acceptance row explicitly lets Tails correct item 6's wording afterward if needed. Labeling the fallback "unverified-by-signature" now would state a claim (likelihood medium per the plan risk table) that is neither proven nor refuted yet.
 - The docs repeat the fingerprint in three places (Manual step 3, the signature subsection, README) rather than pointing to a single location. Traded for a follower who never opens the key file still having the public value to compare against, and the fingerprint is public data that ships inside the key.
 - House style held to AGENTS.md §10. Prose over bullets in the new section, no em/en dashes (grep-verified), no colons introducing explanations, and the division of labor stated as a position (run both checks) rather than presented as equal options.
+
+**Fix pass executed (2026-09-23, `Tails`).** All six chain findings cleared on `feature/TASK-0024-rpm-signing-gpgcheck`, committed as project-repo `ba7babf` ("TASK-0024 fix pass: clear the review chain findings", 3 files, +98/−30), pushed `e6ee370..ba7babf`.
+
+- (1) BLOCKER, `vm-test/test-repo-setup.sh`: phase 1 now rsyncs `keys/` to the VM after the `rpms/` copy and before phase 2, with a `record` check that `keys/cinnamon-rocky10-public.asc` landed (new "public key copied to VM" record); header step 2 updated to name `keys/`.
+- (2) should-fix, `repo-setup/sign-rpms.sh` signer pinning: the final verification now runs against a scratch rpm keyring, not the host keyring. `mktemp -d` (mode 700) + `rpm --root $S --import keys/cinnamon-rocky10-public.asc`, then per RPM `rpm --root $S -K file | grep -qi "signatures OK"` or die. No sudo; the scratch dir is removed by the EXIT trap (renamed `cleanup`). The final report names the pinned fingerprint.
+- (3) should-fix, `vm-test/test-repo-setup.sh`: remote RPM count assertion 48 → 64 (comment cites the item 3 record).
+- (4) nits, `repo-setup/sign-rpms.sh`: dropped the tautological hex round-trip check (`unhex(hex(x))=x` cannot fail; a malformed file is rejected by gpg-agent, which then answers without an OK line and the preset step dies); added `xxd`/`stat` to the tool pre-flight; replaced `rpm -qa | grep -q` with `rpm -q "gpg-pubkey-${KEYID8}-*"`. The glob is required, a bare prefix matches nothing (verified rc=1 on the host with the key installed); same naming rule as `setup-repo.sh:139`.
+- (5) Omega low, `repo-setup/sign-rpms.sh`: startup refusal under `set -x`/`bash -x`. Deviation from the brief, recorded: the brief said check `BASHOPTS` for `xtrace`, but on this host `BASHOPTS` does not list `xtrace` in a script shell even when launched with `bash -x` (verified, identical BASHOPTS under `bash -x` and plain, `$-` differs `hxBc` vs `hBc`). The guard probes `$-` instead. Verified: `bash -x repo-setup/sign-rpms.sh /nonexistent` → refusal to stderr, rc=1, trace stops at 5 lines.
+- (6) Omega medium, `INSTALL.md`: one line in "Verifying the release" telling the follower to compare the fingerprint against the out-of-band value on metalinux.dev before trusting the key.
+
+**Alternatives considered**
+
+- **Pinning mechanism for (2).** Option A, extract the public key embedded in the RPM signature header (`rpm -qp --qf '%{SIGPGP}'`, per Omega's note) and build the keyring from that. Rejected after verification: this rpm does not embed the key, `%{SIGPGP}`/`%{SIGGPG}` return `(none)`, `%{PGPSIG}`/`%{PGP}` are unknown tags, and numeric tags (`%{1005}`) are unsupported in queryformat on rpm 4.19.1.1. Option B, chosen, the `rpm --root` scratch keyring importing the repository's public key file. Pinning proven in all four directions: throwaway-signed pkg vs real-only keyring → NOT OK rc=1; throwaway-signed vs throwaway keyring → OK rc=0; real-signed vs throwaway-only keyring → NOT OK rc=1; real-signed vs real-only keyring → OK rc=0. Also verified: `rpm --initdb --root` fails rc=255 silently and creates nothing, so the script skips it and relies on `--import` auto-initializing the rpmdb.
+- **Idempotency gate kept on host-keyring semantics.** `is_signed()` (used to skip already-signed packages) still consults the host keyring; only the final claim is pinned. A package signed by a different key would be skipped as already signed and then fail the pinned verification, so nothing unpinned passes the script. Traded away: a second `rpm -K` per package in the sign loop, not worth it for a run that skips 64/64 in steady state.
+
+**Checks run**
+
+| Check | Command | Result |
+|---|---|---|
+| Syntax, both scripts | `bash -n repo-setup/sign-rpms.sh`, `bash -n vm-test/test-repo-setup.sh` | both OK |
+| Pinned loop, full set | scratch keyring via `rpm --root --import`, per-RPM `rpm --root -K` grep, all 64 RPMs | 64 pass, 0 fail, 1 s |
+| End-to-end script run | `bash repo-setup/sign-rpms.sh` | rc=0; "Signed now 0 / Already signed 64 / Total verified 64"; trap cleared the preset |
+| Files unchanged by the run | `sha256sum -c rpms/SHA256SUMS` after the run | 0 non-OK lines |
+| xtrace guard | `bash -x repo-setup/sign-rpms.sh /nonexistent` | refusal, rc=1, 5 trace lines |
+| Keyring preflight pattern | `rpm -q "gpg-pubkey-fda02785-*"`, `rpm -q "gpg-pubkey-00000000-*"` | rc=0 present, rc=1 absent |
+| Lint | `shellcheck -x repo-setup/sign-rpms.sh`, `shellcheck vm-test/test-repo-setup.sh` | sign-rpms clean; harness warnings only pre-existing (SC1091 lib.sh path, SC2046:248, SC2034:410), none on new lines |
+| Pre-push, private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `ba7babf` | zero hits (rc=1) |
+| Pre-push, passphrase | value loaded from the 600-mode file (never printed), `git show HEAD \| grep -cFf` | 0 matches |
 
 ---
 
