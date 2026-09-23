@@ -194,9 +194,14 @@ the PM reads.*
       refuse to run under `set -x` (check `BASHOPTS` for `xtrace`); (6) Omega medium: add one line
       to INSTALL.md telling the follower to compare the fingerprint against the out-of-band value
       published on metalinux.dev (the metalinux.dev publish itself is a separate follow-up, not
-      blocking). Record each fix in `## Implementation`.
+       blocking). Record each fix in `## Implementation`.
+- [x] `Tails` (2026-09-23): both re-review nits landed on `feature/TASK-0024-rpm-signing-gpgcheck`
+       (project-repo `ce7b084`, pushed `ba7babf..ce7b084`). The false preset comment is corrected and
+       the single-line invariant is now enforced in the pre-flight; a KEYFILE existence/armor-header
+       check is added to the pre-flight so a missing/corrupt key file fails before any mutation.
+       Execution record in `## Implementation` ("Trivial nits").
 - [ ] Re-run the chain (`Shadow` → `Omega` → `Big`) after the fixes; `Big` re-runs the positive
-      fresh-VM line (item 10) and the skipped fallback (item 11c) for a clean pass.
+       fresh-VM line (item 10) and the skipped fallback (item 11c) for a clean pass.
 - [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces.
 - [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14).
       *PM sequencing note: the plan's item 7 "open the PR" is folded into this Knuckles release
@@ -712,6 +717,44 @@ keepcache=0
 | Lint | `shellcheck -x repo-setup/sign-rpms.sh`, `shellcheck vm-test/test-repo-setup.sh` | sign-rpms clean; harness warnings only pre-existing (SC1091 lib.sh path, SC2046:248, SC2034:410), none on new lines |
 | Pre-push, private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `ba7babf` | zero hits (rc=1) |
 | Pre-push, passphrase | value loaded from the 600-mode file (never printed), `git show HEAD \| grep -cFf` | 0 matches |
+
+**Trivial nits executed (2026-09-23, `Tails`).** Both one-line nits from Shadow's re-review of
+`ba7babf` (`## Review`, "Re-review (ba7babf)") landed on `feature/TASK-0024-rpm-signing-gpgcheck`
+as project-repo `ce7b084` (only `repo-setup/sign-rpms.sh`, +29/−4), pushed `ba7babf..ce7b084`.
+
+- **False preset comment (reopened nit, `ba7babf:202-205`).** The comment claimed gpg-agent
+  rejects a malformed/multi-line passphrase file without an OK line. Wrong: `PRESET_PASSPHRASE` is
+  a cache operation, the agent stores the hex-decoded bytes and answers OK for any valid hex without
+  verifying them against the key, so a multi-line or wrong-bytes file passes the preset and only
+  fails at the first `rpm --addsign` as an unprotect error. The comment (`sign-rpms.sh:224-230`)
+  now states what the check actually does (non-emptiness plus single-line; the hex encoding is a
+  transformation, not a check) and names the real failure point. **Decision: enforce the single-line
+  invariant** (over dropping it), added to the pre-flight on the raw file bytes (`sign-rpms.sh:175-181`,
+  newline count plus a last-byte-is-newline test) so a multi-line file dies with a clear message
+  before any mutation, consistent with the pre-flight-before-mutation design. The invariant the
+  header (`:37`) and the read comment (`:218-220`) assert is now true, so those lines stand unchanged.
+- **KEYFILE checked after the sign loop (new nit).** The scratch-keyring import consumed
+  `keys/cinnamon-rocky10-public.asc` only in the verification step, after all RPMs were signed in
+  place, so a missing/corrupt key file was detected late. Added a pre-flight check (`sign-rpms.sh:130-132`):
+  the file must exist and carry the public-key armor header, anchored on `PGP PUBLIC KEY BLOCK-----`
+  rather than `BEGIN PGP PUBLIC KEY BLOCK` so the script stays out of the tree's `git grep "BEGIN PGP"`
+  key-material probe. It dies before the sign loop, before any mutation.
+
+**Checks run**
+
+| Check | Command | Result |
+|---|---|---|
+| Syntax | `bash -n repo-setup/sign-rpms.sh` | clean |
+| Lint | `shellcheck -x repo-setup/sign-rpms.sh` | clean |
+| Pre-flight, key file missing | scratch project with no `keys/` | rc=1, `GPG public key not found`, no mutation |
+| Pre-flight, key file corrupt | scratch project, file without the armor header | rc=1, `not a valid armored public key`, no mutation |
+| Pre-flight, multi-line passphrase | `PASSPHRASE_DIR` at a 2-newline 600 file | rc=1, `must be a single line, found 2 newlines`, no mutation |
+| Pre-flight, embedded newline | `PASSPHRASE_DIR` at an embedded-newline file | rc=1, `has an embedded newline`, no mutation |
+| Full run, signed set | `bash repo-setup/sign-rpms.sh` | rc=0, 0 signed / 64 skipped / 64 verified vs the pinned key |
+| Set unchanged | `cd rpms && sha256sum -c SHA256SUMS` | 64/64 OK, rc=0 |
+| Pre-push, private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `ce7b084` | zero hits (rc=1) |
+| Pre-push, passphrase | value loaded from the 600-mode file (never printed), `git show HEAD \| grep -F` | 0 matches |
+| Tree property | `git grep -l "BEGIN PGP" HEAD` | only `keys/cinnamon-rocky10-public.asc` |
 
 ---
 
