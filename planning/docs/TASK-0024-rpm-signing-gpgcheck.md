@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21, review chain complete): implementation items 1-6 done; chain returned 1
+blocker + 2 should-fix, dispatching Tails fixes.** Review chain ran on the full branch diff
+(`feature/TASK-0024-rpm-signing-gpgcheck` vs `main` `893b22a`). Shadow: 7 findings (1 blocker, 2
+should-fix, 4 nits) in `## Review` — the blocker is that `vm-test/test-repo-setup.sh` ships no
+`keys/` to the VM, so `setup-repo.sh`'s new key-import step dies there and the DoD's fresh-VM
+end-to-end is unreachable as-is. Omega: no security blockers (1 medium — no out-of-band
+fingerprint anchor; 3 low) in `## Security`. Big: negative tamper test PASS (gpgcheck=1 refuses a
+payload flip, gpgcheck=0 accepts it), positive fresh-VM line BLOCKED (not failed) by the harness
+`keys/` gap in `## Test Results`; RPM-size question closed with evidence. Tails is fixing the
+blocker + should-fixes + nits; the chain re-runs after.
+
 **Now (2026-09-21, implementation): items 1-5 complete, item 6 (docs) dispatching to Tails.**
 Key generated (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, passphrase-protected,
 proven by signing); all 64 RPMs signed in place (payload identity 64/64, `rpm --checksig` 64/64
@@ -84,8 +95,10 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [ ] **Signing key.** A GPG signing key for the repo exists; the **public** key ships in the
       project (documented path); no private key material appears anywhere in the public repo, any
       commit, any log, or any planning doc: the keyring and passphrase live in `$HOME`, outside
-      the repo tree; the final merged tree passes `git grep` for `BEGIN PGP PRIVATE KEY BLOCK` and
-      `private-keys-v1.d` with zero hits; a `.gitignore` on the branch covers key-material paths;
+      the repo tree; the final merged tree passes `git grep` for `BEGIN PGP PRIVATE KEY BLOCK`
+      with zero hits, and `git grep` for `private-keys-v1.d` hits only the `.gitignore` guard
+      line itself (no keyring, cert, or passphrase path in the tree); a `.gitignore` on the
+      branch covers key-material paths;
       the key-management decision is recorded in `## Plan`. (User instruction 2026-09-21: key
       material must never reach the public GitHub repository.)
 - [ ] **RPMs signed.** Every one of the 64 published RPMs in `rpms/` carries a valid signature
@@ -159,15 +172,28 @@ the PM reads.*
       signing section); `gpgcheck=0` no longer appears in either doc; project-repo `e6ee370`
       pushed, pre-push greps zero hits, passphrase absent from the committed diff. Execution
       record in `## Implementation`. Critical path continues at item 7 (open the PR to main).
-- [ ] `Shadow` → `Omega` → `Big`: review chain on the full branch diff
-      (`feature/TASK-0024-rpm-signing-gpgcheck` vs `main` at `893b22a`). `Big`'s pass also runs
-      the plan's functional verification (fresh-VM positive with `gpgcheck=1`, negative tamper
-      test) and records it in `## Test Results`.
-- [ ] `Tails`: fix anything the chain returns.
+- [x] `Shadow` → `Omega` → `Big`: review chain run on the full branch diff. Shadow: 7 findings
+      (1 blocker, 2 should-fix, 4 nits) in `## Review`. Omega: no security blockers (1 medium, 3
+      low) in `## Security`. Big: negative tamper PASS, positive fresh-VM BLOCKED by the harness
+      `keys/` gap in `## Test Results`.
+- [ ] `Tails`: fix the chain's findings — (1) BLOCKER: `vm-test/test-repo-setup.sh` phase 1 must
+      ship `keys/` to the VM before `setup-repo.sh` runs; (2) should-fix: `repo-setup/sign-rpms.sh`
+      pin the signing key so verification checks the expected fingerprint, not any keyring key
+      (consolidates with Omega low #1); (3) should-fix: `vm-test/test-repo-setup.sh:369-373` RPM
+      count 48 → 64; (4) nits: `sign-rpms.sh` dead hex round-trip comment (:178-180), add `xxd`/`stat`
+      to the tool pre-flight (:105-107), guard the `rpm -qa | grep` SIGPIPE (:150); (5) Omega low:
+      refuse to run under `set -x` (check `BASHOPTS` for `xtrace`); (6) Omega medium: add one line
+      to INSTALL.md telling the follower to compare the fingerprint against the out-of-band value
+      published on metalinux.dev (the metalinux.dev publish itself is a separate follow-up, not
+      blocking). Record each fix in `## Implementation`.
+- [ ] Re-run the chain (`Shadow` → `Omega` → `Big`) after the fixes; `Big` re-runs the positive
+      fresh-VM line (item 10) and the skipped fallback (item 11c) for a clean pass.
 - [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces.
 - [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14).
       *PM sequencing note: the plan's item 7 "open the PR" is folded into this Knuckles release
       step per house rules; the PR is not opened before the review chain.*
+- [ ] Follow-up (non-blocking, Omega medium): publish the fingerprint on metalinux.dev so there is
+      an out-of-band anchor before the first public tag.
 
 ---
 
