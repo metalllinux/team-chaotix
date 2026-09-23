@@ -12,6 +12,15 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-21, fix pass complete): Tails cleared all six chain findings; re-running the chain.**
+Project branch at `ba7babf` (pushed). Blocker cleared (harness now ships `keys/` to the VM, so the
+positive fresh-VM line is unblocked); signer now pinned via a scratch rpm keyring (deviation from
+Omega's suggested `%{SIGPGP}`, which does not exist on this rpm); RPM count 48→64; nits cleared;
+`set -x` guard probes `$-` (deviation: `BASHOPTS` does not list `xtrace` in a script shell);
+INSTALL.md points the follower at the metalinux.dev out-of-band fingerprint. Pre-push greps clean,
+passphrase absent from the diff. Re-running `Shadow` → `Omega` → `Big`; Big re-runs the positive
+fresh-VM line (item 10) and the skipped fallback (item 11c).
+
 **Now (2026-09-21, review chain complete): implementation items 1-6 done; chain returned 1
 blocker + 2 should-fix, dispatching Tails fixes.** Review chain ran on the full branch diff
 (`feature/TASK-0024-rpm-signing-gpgcheck` vs `main` `893b22a`). Shadow: 7 findings (1 blocker, 2
