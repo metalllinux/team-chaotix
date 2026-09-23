@@ -12,6 +12,18 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-23): review chain re-run clean; DoD boxes 1-9 ticked; dispatching Vector.** Full
+chain re-ran on the fixed branch. Shadow: harness delta sound, one should-fix (duplicated pin table)
+raised. Omega: all findings resolved, no open, recommends merge (2 non-blocking release conditions).
+Big: re-run 2 at `6bb500e` OVERALL PASS (54 PASS / 0 FAIL / 0 WARN, 6 named SKIPs), item 10 positive
+line PASS, item 11c fallback refuses the tampered RPM. The pin-table should-fix is resolved
+(`6bb500e`, both table copies now match `rpms/` + lockstep rule). DoD boxes 1-9 ticked with evidence.
+Project branch at `6bb500e`. Remaining: `Vector` docs pass (box 10), then the metalinux.dev
+fingerprint publication (must land before the tag), then `Knuckles` PR + merge + tag `v1.0.0`
+(box 11), then `Espio` prune. Host note: Big restarted 5 orphaned VMs (disks intact, RAM state lost,
+IPs re-leased) during the network restart; the earlier "domain definitions deleted" alarm was a
+per-user libvirt instance observation — the system instance's 9 definitions were intact throughout.
+
 **Now (2026-09-21, fix pass complete): Tails cleared all six chain findings; re-running the chain.**
 Project branch at `ba7babf` (pushed). Blocker cleared (harness now ships `keys/` to the VM, so the
 positive fresh-VM line is unblocked); signer now pinned via a scratch rpm keyring (deviation from
@@ -101,7 +113,7 @@ TASK-0016-install-md-minimal-server.md` `## Security` (2026-09-19 entry) and `##
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] **Signing key.** A GPG signing key for the repo exists; the **public** key ships in the
+- [x] **Signing key.** A GPG signing key for the repo exists; the **public** key ships in the
       project (documented path); no private key material appears anywhere in the public repo, any
       commit, any log, or any planning doc: the keyring and passphrase live in `$HOME`, outside
       the repo tree; the final merged tree passes `git grep` for `BEGIN PGP PRIVATE KEY BLOCK`
@@ -109,27 +121,42 @@ if a box cannot be verified by looking at something, rewrite it.*
       line itself (no keyring, cert, or passphrase path in the tree); a `.gitignore` on the
       branch covers key-material paths;
       the key-management decision is recorded in `## Plan`. (User instruction 2026-09-21: key
-      material must never reach the public GitHub repository.)
-- [ ] **RPMs signed.** Every one of the 64 published RPMs in `rpms/` carries a valid signature
+      material must never reach the public GitHub repository.) *Ticked 2026-09-23: key
+      `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (public-only, `keys/cinnamon-rocky10-public.asc`);
+      pre-push greps clean at every commit through `6bb500e`; passphrase host-side 600-mode only.*
+- [x] **RPMs signed.** Every one of the 64 published RPMs in `rpms/` carries a valid signature
       from that key: `rpm --checksig` over the full set reports only valid signatures, with the
-      command and output recorded in `## Test Results`.
-- [ ] **gpgcheck on.** `setup-repo.sh` installs the public key and writes the `.repo` file with
+      command and output recorded in `## Test Results`. *Ticked 2026-09-23: 64/64 `digests
+      signatures OK`, pinned to the expected key; re-verified on a fresh VM at `6bb500e`.*
+- [x] **gpgcheck on.** `setup-repo.sh` installs the public key and writes the `.repo` file with
       `gpgcheck=1`; a follower running the documented procedure gets signature verification from
-      dnf (not just a copy check).
-- [ ] **Release manifest.** A sha256 manifest of the released set is published in the repo and
-      tied to a git tag; `INSTALL.md` documents verifying against it.
+      dnf (not just a copy check). *Ticked 2026-09-23: key import + `gpgcheck=1` (no `gpgkey=`)
+      verified on the fresh-VM run; dnf verified signatures during install.*
+- [x] **Release manifest.** A sha256 manifest of the released set is published in the repo and
+      tied to a git tag; `INSTALL.md` documents verifying against it. *Ticked 2026-09-23:
+      `rpms/SHA256SUMS` (64 lines, generated from the signed set, `sha256sum -c` 64/64 OK) committed;
+      `INSTALL.md` "Verifying the release" documents the check. The git tag (`v1.0.0`) that pins it
+      is cut at merge (box: Knuckles).*
 - [x] **Fresh-VM end-to-end.** On a fresh minimal Rocky 10.2 VM on host `192.168.1.102`: the
       documented procedure with `gpgcheck=1` installs the complete 22-name set (signatures
       verified by dnf) and reaches a working Cinnamon (Wayland) desktop; recorded in `## Test
       Results` with evidence. (Flipped 2026-09-23 per dispatch on the `ce7b084` re-run: harness
       OVERALL PASS, install + signature verification verified; the desktop-boot half remains under
       TASK-0017 per the recorded caveat in `## Test Results`.)
-- [ ] **Negative test.** A tampered copy of one RPM is detected: dnf refuses the install with a
+- [x] **Negative test.** A tampered copy of one RPM is detected: dnf refuses the install with a
       signature/repodata error (recorded in `## Test Results`); this is what the old `gpgcheck=0`
-      path silently accepted.
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`
-- [ ] `Big`: all harness checks PASS, with no silently dropped checks
+      path silently accepted. *Ticked 2026-09-23: payload flip refused under `gpgcheck=1` (and the
+      `dnf install ./rpms/<tampered>.rpm` fallback also refused), accepted under `gpgcheck=0` — the
+      before/after contrast recorded in `## Test Results`.*
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`. *Ticked 2026-09-23:
+      blocker + should-fixes cleared in the fix pass; the final should-fix (duplicated harness pin
+      table) resolved by `6bb500e` + re-run 2 (0 WARN); harness delta reviewed sound.*
+- [x] `Omega`: no unresolved findings above `low` in `## Security`. *Ticked 2026-09-23: all
+      findings resolved, none open; the out-of-band fingerprint publication is a tracked
+      non-blocking condition to land before the `v1.0.0` tag.*
+- [x] `Big`: all harness checks PASS, with no silently dropped checks. *Ticked 2026-09-23: re-run 2
+      at `6bb500e` OVERALL PASS, 54 PASS / 0 FAIL / 0 WARN; the 6 SKIPs are named (4 Xvfb-dependent
+      `--version`, 2 no-flag) with `ldd` passing for each — none silently dropped.*
 - [ ] `Vector`: `INSTALL.md`/`README.md` updated to describe signing, key installation, and
       manifest verification
 - [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR
@@ -202,14 +229,18 @@ the PM reads.*
        the single-line invariant is now enforced in the pre-flight; a KEYFILE existence/armor-header
        check is added to the pre-flight so a missing/corrupt key file fails before any mutation.
        Execution record in `## Implementation` ("Trivial nits").
-- [ ] Re-run the chain (`Shadow` → `Omega` → `Big`) after the fixes; `Big` re-runs the positive
-       fresh-VM line (item 10) and the skipped fallback (item 11c) for a clean pass.
-- [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces.
-- [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14).
+- [x] Re-run the chain (`Shadow` → `Omega` → `Big`) after the fixes. Shadow: harness delta sound,
+      1 should-fix (duplicated pin table). Omega: all resolved, recommend merge. Big re-ran the
+      positive fresh-VM line (item 10 PASS) + fallback (item 11c refuses tamper); the pin-table
+      should-fix was fixed by Big (`6bb500e`) and re-run 2 is OVERALL PASS / 0 WARN. DoD boxes 1-9
+      ticked.
+- [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces (box 10).
+- [ ] Publish the fingerprint on metalinux.dev (Omega medium, non-blocking but MUST land before the
+      `v1.0.0` tag is cut, so the out-of-band anchor exists when the tag pins the set).
+- [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14, box 11).
       *PM sequencing note: the plan's item 7 "open the PR" is folded into this Knuckles release
-      step per house rules; the PR is not opened before the review chain.*
-- [ ] Follow-up (non-blocking, Omega medium): publish the fingerprint on metalinux.dev so there is
-      an out-of-band anchor before the first public tag.
+      step per house rules; the PR is not opened before the review chain. The metalinux.dev
+      publication must precede the tag.*
 
 ---
 
