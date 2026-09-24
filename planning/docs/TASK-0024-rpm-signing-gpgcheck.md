@@ -157,8 +157,11 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [x] `Big`: all harness checks PASS, with no silently dropped checks. *Ticked 2026-09-23: re-run 2
       at `6bb500e` OVERALL PASS, 54 PASS / 0 FAIL / 0 WARN; the 6 SKIPs are named (4 Xvfb-dependent
       `--version`, 2 no-flag) with `ldd` passing for each — none silently dropped.*
-- [ ] `Vector`: `INSTALL.md`/`README.md` updated to describe signing, key installation, and
-      manifest verification
+- [x] `Vector`: `INSTALL.md`/`README.md` updated to describe signing, key installation, and
+      manifest verification. *Ticked 2026-09-23: docs pass landed as project-repo `2466b70` (Quick
+      start, Manual 6 steps, "Verifying the release" section, README signing section); house style
+      clean, all consistency anchors agree, no factual mismatch vs the scripts; the out-of-band
+      fingerprint anchor it references is now live on metalinux.dev (site commit `075a3c9`).*
 - [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR
 
 ---
@@ -1384,6 +1387,41 @@ These two boxes block the repo merge and the `v1.0.0` tag, not this anchor publi
   `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, matching the page.
 - **Grammar fix:** one line in `_pages/cinnamon-rocky10-signing-key.md` (comma added after
   "character by character"), user-approved; nothing else in that file changed.
+
+### Project release v1.0.0 (2026-09-24)
+
+**DONE checklist verified:** yes. All 11 DoD boxes ticked; box 11 (merged to `main` via PR)
+closed by this step. Omega's before-tag condition (the out-of-band anchor) was satisfied before
+the tag cut: the anchor above is live at site commit `075a3c9`, confirmed with `curl` (HTTP 200,
+fingerprint present, key block byte-identical).
+
+- **Branch:** `feature/TASK-0024-rpm-signing-gpgcheck` at `2466b70` (the reviewed state,
+  Vector's docs pass). Pre-merge safety at the tip: `git grep -il "BEGIN PGP PRIVATE KEY BLOCK"
+  HEAD` zero hits, no passphrase or keyring file in `git ls-tree -r HEAD`, merge-base is the
+  `main` tip (`893b22a`) and `git merge-tree --write-tree` reports a clean merge. Pushed with
+  `git push origin feature/TASK-0024-rpm-signing-gpgcheck` → `6bb500e..2466b70`.
+- **Commits:** unsigned (no `commit.gpgsign` in the project repo config). The squash commit on
+  `main` is `a70aedc` "feat(release): TASK-0024 signed RPM set with gpgcheck=1 and SHA256
+  manifest (#6)".
+- **PR:** #6, https://github.com/metalllinux/cinnamon-for-rocky10/pull/6, state MERGED
+  (2026-09-24T01:54:14Z). Merge strategy: squash, the repo standard (zero merge commits across
+  all 40 prior commits on `main`); `gh pr merge 6 --squash`.
+- **Tag:** `v1.0.0`, annotated and unsigned (repo convention, no `tag.gpgsign`), on `a70aedc`;
+  tag object `954c14a`; `git push origin v1.0.0` → `[new tag] v1.0.0 -> v1.0.0`. The message
+  names the signed, gpgcheck=1 release, the SHA256 manifest baseline, and the metalinux.dev
+  verification anchor.
+- **Verified post-merge:** fresh clone of the tag
+  (`git clone --depth 1 --branch v1.0.0`) → HEAD `a70aedc`, 64 RPMs in `rpms/`,
+  `sha256sum -c SHA256SUMS` 64/64 OK, `rpm --checksig` 64/64 `digests signatures OK`;
+  `keys/cinnamon-rocky10-public.asc` present; `repo-setup/setup-repo.sh:156` writes `gpgcheck=1`
+  with no `gpgkey=` line; the out-of-band anchor reference is in `INSTALL.md:282-285`
+  (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, compare against metalinux.dev).
+- **Deploy:** none. This is a source-tag release on `metalllinux/cinnamon-for-rocky10`; no
+  workflow dispatch.
+- **Open follow-up (not a blocker):** Omega's tracked condition 2, the item 14 fresh-clone
+  record (per-file sizes + the full `rpm --checksig` output against the tag), is still to be
+  recorded in `## Test Results`. The verification run above covers the tag; the record belongs
+  to `Big` per section ownership.
 
 ---
 
