@@ -30,7 +30,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0021 | Team lesson: interactive-input test stubs fed via `$(...)` lose in-subshell state | Robotnik | planning/docs/TASK-0021-subshell-input-stub-lesson.md | Done |
 | TASK-0022 | Set IQ4_XS Qwen 3.8 as the team's default model | Robotnik | planning/docs/TASK-0022-team-model-iq4xs.md | Done |
 | TASK-0023 | Install ripgrep (rg) on the agent host | Robotnik | planning/docs/TASK-0023-rg-host.md | Done |
-| TASK-0024 | Sign the Cinnamon RPMs, enable gpgcheck, publish the release manifest | Robotnik | planning/docs/TASK-0024-rpm-signing-gpgcheck.md | In Progress (2026-09-21; plan ratified with passphrase-protected key, implementation starting) |
+| TASK-0024 | Sign the Cinnamon RPMs, enable gpgcheck, publish the release manifest | Robotnik | planning/docs/TASK-0024-rpm-signing-gpgcheck.md | Done (2026-09-24; PR #6 merged, main `a70aedc`, tag `v1.0.0`; all 11 DoD ticked) |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the

@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**COMPLETE (2026-09-24): all 11 DoD boxes ticked; release shipped.** Both Omega release conditions
+closed: the metalinux.dev out-of-band fingerprint anchor is live (site commit `075a3c9`, confirmed
+HTTP 200) and landed before the tag; the `v1.0.0` fresh-clone verification (64/64 `rpm --checksig`,
+64/64 `sha256sum -c`) is recorded in `## Test Results`. Project repo: PR #6 squash-merged to `main`
+(`a70aedc`), annotated tag `v1.0.0` (`954c14a`) cut on the merge and pushed. 64 RPMs signed,
+`gpgcheck=1`, `rpms/SHA256SUMS` manifest, docs + verification anchor all shipped. Only remaining
+action is the `Espio` prune of this (now ~1500-line) doc. Host note for the user: during the Big
+re-run, 5 pre-existing orphaned VMs on `192.168.1.102` were restarted (disks intact, RAM state lost,
+IPs re-leased) as a side effect of a network restart; the earlier "domain definitions deleted" alarm
+was a per-user libvirt instance observation, the system instance's definitions were intact throughout.
+
 **Now (2026-09-23): review chain re-run clean; DoD boxes 1-9 ticked; dispatching Vector.** Full
 chain re-ran on the fixed branch. Shadow: harness delta sound, one should-fix (duplicated pin table)
 raised. Omega: all findings resolved, no open, recommends merge (2 non-blocking release conditions).
@@ -237,13 +248,14 @@ the PM reads.*
       positive fresh-VM line (item 10 PASS) + fallback (item 11c refuses tamper); the pin-table
       should-fix was fixed by Big (`6bb500e`) and re-run 2 is OVERALL PASS / 0 WARN. DoD boxes 1-9
       ticked.
-- [ ] `Vector`: docs pass (consistency/house style) on the item 6 surfaces (box 10).
-- [ ] Publish the fingerprint on metalinux.dev (Omega medium, non-blocking but MUST land before the
-      `v1.0.0` tag is cut, so the out-of-band anchor exists when the tag pins the set).
-- [ ] `Knuckles`: open the PR to main, merge, cut tag `v1.0.0` on the merge (plan item 14, box 11).
-      *PM sequencing note: the plan's item 7 "open the PR" is folded into this Knuckles release
-      step per house rules; the PR is not opened before the review chain. The metalinux.dev
-      publication must precede the tag.*
+- [x] `Vector`: docs pass (consistency/house style) on the item 6 surfaces (box 10). Landed as
+      project-repo `2466b70`; house style clean, all anchors agree, no factual mismatch.
+- [x] Publish the fingerprint on metalinux.dev (Omega medium). Drafted by Vector, wording approved
+      by the user, published as site commit `075a3c9` and confirmed live (HTTP 200) before the tag.
+- [x] `Knuckles`: PR #6 squash-merged to `main` (`a70aedc`), annotated tag `v1.0.0` (`954c14a`)
+      cut on the merge and pushed (box 11). The metalinux.dev anchor preceded the tag as required.
+- [ ] `Espio`: prune this doc (now ~1570 lines) — move superseded narration to `## Archive`, keep
+      all decisions and verified facts.
 
 ---
 
@@ -1231,6 +1243,134 @@ the 6 named SKIPs. The pin drift is fixed in both table copies and documented
 as a lockstep rule. Item 10 (fresh-VM full harness) is PASS on a fresh VM at
 the signed tip; the desktop-boot half of the DoD remains under TASK-0017 as
 recorded above.
+
+### Release tag v1.0.0 (a70aedc) fresh-clone verification, 2026-09-24
+
+*Big. Final record for the release: the plan item 14 clone-at-tag check run
+against the merged and tagged state. Closes Omega's tracked release condition
+2 (`## Security` re-review verdict, line 1008: "item 14's fresh-clone run must
+record per-file sizes and the full `rpm --checksig` output in `## Test
+Results`"), the record work scheduled with finding 4 (low, signed RPMs
+byte-identical in size to the unsigned baseline).*
+
+**Setup.** Throwaway clone; the working clone's branches were not touched.
+`git clone --depth 1 --branch v1.0.0 https://github.com/metalllinux/
+cinnamon-for-rocky10.git` into
+`/tmp/opencode/task0024-release-verify/cinnamon-for-rocky10`. Tag `v1.0.0` is
+annotated (tag object `954c14a`, resolved via `gh api` on the repo); the
+clone's detached HEAD is `a70aedc6c1fc8bc2a48a8e9aa4e0becd5ddc5071`, the
+merge commit of PR #6 ("feat(release): TASK-0024 signed RPM set with
+gpgcheck=1 and SHA256 manifest (#6)"). `rpms/` holds exactly 64 RPM files plus
+`SHA256SUMS` (no `repodata/`), and `git status --porcelain` is empty. The host
+rpm keyring already held `gpg-pubkey-fda02785-6ab101f4` (`rpm -q
+"gpg-pubkey-fda02785*"`, rc=0), so `rpm --checksig` verified the full
+signature, not just digests: an unverifiable signature would read `digests OK`
+only, per the pinned `rpm -K` strings in `## Implementation` (line 526).
+
+**Checks run (fresh clone at the tag):**
+
+| Check | Command | Result |
+|---|---|---|
+| Clone at tag | `git clone --depth 1 --branch v1.0.0 ...` + `git rev-parse HEAD` | PASS, HEAD = `a70aedc` (the tag's target commit) |
+| Per-file sizes | `ls -l rpms/*.rpm` (rc=0) | 64 files, table below |
+| `rpm --checksig` over the set | `rpm --checksig rpms/*.rpm` (rc=0) | 64/64 `digests signatures OK`, 0 other lines |
+| Manifest | `cd rpms && sha256sum -c SHA256SUMS` (rc=0) | 64/64 `: OK` |
+
+**Per-file sizes (all 64 RPMs, from `ls -l rpms/*.rpm` in the fresh clone):**
+
+| File | Bytes |
+|---|---|
+| `cinnamon-6.7.4-3.el10.x86_64.rpm` | 2151821 |
+| `cinnamon-control-center-6.7.2-1.el10.x86_64.rpm` | 162970 |
+| `cinnamon-control-center-debuginfo-6.7.2-1.el10.x86_64.rpm` | 418538 |
+| `cinnamon-control-center-debugsource-6.7.2-1.el10.x86_64.rpm` | 147676 |
+| `cinnamon-control-center-devel-6.7.2-1.el10.x86_64.rpm` | 10803 |
+| `cinnamon-debuginfo-6.7.4-3.el10.x86_64.rpm` | 1134374 |
+| `cinnamon-debugsource-6.7.4-3.el10.x86_64.rpm` | 392101 |
+| `cinnamon-desktop-6.7.2-2.el10.x86_64.rpm` | 330746 |
+| `cinnamon-desktop-debuginfo-6.7.2-2.el10.x86_64.rpm` | 502680 |
+| `cinnamon-desktop-debugsource-6.7.2-2.el10.x86_64.rpm` | 160141 |
+| `cinnamon-desktop-devel-6.7.2-2.el10.x86_64.rpm` | 25594 |
+| `cinnamon-menus-6.7.0-1.el10.x86_64.rpm` | 56896 |
+| `cinnamon-menus-debuginfo-6.7.0-1.el10.x86_64.rpm` | 131428 |
+| `cinnamon-menus-debugsource-6.7.0-1.el10.x86_64.rpm` | 54385 |
+| `cinnamon-menus-devel-6.7.0-1.el10.x86_64.rpm` | 10488 |
+| `cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` | 15241 |
+| `cinnamon-session-6.7.3-1.el10.x86_64.rpm` | 132143 |
+| `cinnamon-session-debuginfo-6.7.3-1.el10.x86_64.rpm` | 361464 |
+| `cinnamon-session-debugsource-6.7.3-1.el10.x86_64.rpm` | 127809 |
+| `cinnamon-settings-daemon-6.7.2-2.el10.x86_64.rpm` | 357351 |
+| `cinnamon-settings-daemon-debuginfo-6.7.2-2.el10.x86_64.rpm` | 429458 |
+| `cinnamon-settings-daemon-debugsource-6.7.2-2.el10.x86_64.rpm` | 139673 |
+| `cjs-6.4.0-1.el10.x86_64.rpm` | 490561 |
+| `cjs-debuginfo-6.4.0-1.el10.x86_64.rpm` | 4817027 |
+| `cjs-debugsource-6.4.0-1.el10.x86_64.rpm` | 358393 |
+| `cjs-devel-6.4.0-1.el10.x86_64.rpm` | 11722 |
+| `gdk-pixbuf-parsers-2.42.12-2.el10.x86_64.rpm` | 46314 |
+| `gdk-pixbuf-parsers-debuginfo-2.42.12-2.el10.x86_64.rpm` | 75116 |
+| `gdk-pixbuf-parsers-debugsource-2.42.12-2.el10.x86_64.rpm` | 39152 |
+| `gnome-terminal-3.54.5-1.el10.x86_64.rpm` | 1061906 |
+| `gnome-terminal-debuginfo-3.54.5-1.el10.x86_64.rpm` | 650628 |
+| `gnome-terminal-debugsource-3.54.5-1.el10.x86_64.rpm` | 190084 |
+| `gtk-layer-shell-0.10.1-1.el10.x86_64.rpm` | 72053 |
+| `gtk-layer-shell-debuginfo-0.10.1-1.el10.x86_64.rpm` | 164382 |
+| `gtk-layer-shell-debugsource-0.10.1-1.el10.x86_64.rpm` | 79533 |
+| `gtk-layer-shell-devel-0.10.1-1.el10.x86_64.rpm` | 12359 |
+| `mozjs115-115.29.0-1.el10.x86_64.rpm` | 5001343 |
+| `mozjs115-debuginfo-115.29.0-1.el10.x86_64.rpm` | 88020635 |
+| `mozjs115-debugsource-115.29.0-1.el10.x86_64.rpm` | 5124389 |
+| `mozjs115-devel-115.29.0-1.el10.x86_64.rpm` | 5450566 |
+| `mozjs115-devel-debuginfo-115.29.0-1.el10.x86_64.rpm` | 89168050 |
+| `muffin-6.7.4-3.el10.x86_64.rpm` | 1328709 |
+| `muffin-clutter-6.7.4-3.el10.x86_64.rpm` | 734999 |
+| `muffin-clutter-debuginfo-6.7.4-3.el10.x86_64.rpm` | 1387863 |
+| `muffin-clutter-devel-6.7.4-3.el10.x86_64.rpm` | 104185 |
+| `muffin-cogl-6.7.4-3.el10.x86_64.rpm` | 331762 |
+| `muffin-cogl-debuginfo-6.7.4-3.el10.x86_64.rpm` | 897854 |
+| `muffin-cogl-devel-6.7.4-3.el10.x86_64.rpm` | 9636 |
+| `muffin-debuginfo-6.7.4-3.el10.x86_64.rpm` | 3072893 |
+| `muffin-debugsource-6.7.4-3.el10.x86_64.rpm` | 2005130 |
+| `muffin-devel-6.7.4-3.el10.x86_64.rpm` | 238409 |
+| `nemo-6.7.4-2.el10.x86_64.rpm` | 1124651 |
+| `nemo-debuginfo-6.7.4-2.el10.x86_64.rpm` | 4427324 |
+| `nemo-debugsource-6.7.4-2.el10.x86_64.rpm` | 819361 |
+| `nemo-devel-6.7.4-2.el10.x86_64.rpm` | 15237 |
+| `python3-pillow-12.3.0-2.el10.x86_64.rpm` | 939285 |
+| `python3-setproctitle-1.3.7-2.el10.x86_64.rpm` | 24451 |
+| `python3-tinycss2-1.5.1-2.el10.x86_64.rpm` | 67743 |
+| `python3-webencodings-0.5.1-2.el10.x86_64.rpm` | 31493 |
+| `python3-xapp-3.0.2-1.el10.x86_64.rpm` | 87080 |
+| `xapps-debugsource-3.3.3-1.el10.x86_64.rpm` | 95730 |
+| `xapps-devel-3.3.3-1.el10.x86_64.rpm` | 16416 |
+| `xapps-lib-3.3.3-1.el10.x86_64.rpm` | 185959 |
+| `xapps-lib-debuginfo-3.3.3-1.el10.x86_64.rpm` | 298354 |
+
+**`rpm --checksig` output, faithful summary.** The raw output is 64 lines, one
+per RPM, every line of the form `rpms/<name>.rpm: digests signatures OK`.
+Computed counts on the transcript: 64 lines total, 64 lines matching
+`digests signatures OK`, 0 other lines, rc=0. Recorded in summary form per
+this section's "verdicts, never raw log dumps" rule and the dispatch's
+summary option (the 64 lines are uniform); the full transcript is preserved
+host-local at `/tmp/opencode/task0024-release-verify/evidence-checksig.txt`
+(64 lines).
+
+**`sha256sum -c SHA256SUMS` result.** 64 lines, every line
+`<basename>.rpm: OK`, rc=0 (64/64). Transcript
+`/tmp/opencode/task0024-release-verify/evidence-sha256.txt`; the `ls -l`
+transcript is `evidence-ls-l.txt` in the same directory.
+
+**Verdict (release tag).** PASS. The tag-pinned bytes verify end to end on a
+clone that shares no state with the working tree: 64/64 `digests signatures
+OK` under the pinned key `fda02785` and 64/64 manifest match. This closes
+Omega's tracked condition 2: the per-file sizes above are the released
+values, and every checksig line ran against exactly these bytes and reports a
+valid signature. On the finding 4 anomaly itself, this record supplies what
+the fix specified (sizes + full-set checksig at the tag); the size identity
+stays explained as Omega's re-review left it, consistent with the signature
+landing in the header region reserved at build time (Tails' attribution,
+`## Implementation` line 604, attributed rather than introspected), and this
+run adds no new mechanism claim. The throwaway clone was deleted after
+evidence capture; the three transcripts remain host-local.
 
 ---
 
