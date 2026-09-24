@@ -1349,12 +1349,41 @@ project docs is an optional follow-up.
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** no. Two boxes remain open; this step proceeded anyway because it
+is a scoped, explicitly user-approved release (2026-09-24, wording reviewed and approved):
+publishing the out-of-band fingerprint anchor, which is Omega's tracked non-blocking condition
+that must land before the `v1.0.0` tag. What is missing:
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- [ ] `Vector`: docs on `main`. The update exists on the feature branch (`2466b70` "TASK-0024
+      item 10: docs polish pass on INSTALL.md and README.md"; `INSTALL.md:285` carries the
+      out-of-band metalinux.dev reference) but is not merged, so it is not on `main`.
+- [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` `main` via PR. Not done; the
+      feature branch is 1 commit ahead of its own remote (`2466b70` unpushed).
+
+These two boxes block the repo merge and the `v1.0.0` tag, not this anchor publish.
+
+- **Branch:** `main` of `metalllinux/metalllinux.github.io` (site default branch, verified via
+  `git remote -v` and `origin/HEAD`).
+- **Commits:** `075a3c9` "Add Cinnamon for Rocky Linux 10 GPG signing key verification page",
+  3 files changed, 77 insertions; unsigned (no `commit.gpgsign` in the site repo config).
+- **PR:** none. Direct commit and push to the site default branch per the explicit user
+  instruction for this step.
+- **Push:** `git push origin main` returned `453cb1d..075a3c9 main -> main`. Only `075a3c9`
+  transferred; the 6 commits the pre-push status reported as ahead were already on the remote
+  (stale local tracking ref, confirmed by `git fetch origin` plus post-push
+  `main...origin/main` in sync).
+- **Deploy:** GitHub Pages deploys on push; no workflow dispatch for a Pages site.
+- **Live:** confirmed. `curl https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`
+  returned HTTP 404 roughly 30s after the push (still deploying) and HTTP 200 about two minutes
+  later. The 200 response contains `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (one hit), title
+  `Cinnamon for Rocky Linux 10 GPG Signing Key - metalinux`, the PGP public key block, the
+  nav entry text, and the grammar-corrected compare sentence.
+- **Key block integrity:** the page's armored block is byte-identical to
+  `keys/cinnamon-rocky10-public.asc` in `cinnamon-for-rocky10` (`diff` exit 0 over the
+  BEGIN/END block); `gpg --show-keys` on that file reports fingerprint
+  `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, matching the page.
+- **Grammar fix:** one line in `_pages/cinnamon-rocky10-signing-key.md` (comma added after
+  "character by character"), user-approved; nothing else in that file changed.
 
 ---
 
