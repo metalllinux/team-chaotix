@@ -1235,13 +1235,113 @@ recorded above.
 
 *Owner: `Vector`.*
 
+Item 10 docs polish pass, branch `feature/TASK-0024-rpm-signing-gpgcheck`,
+commit `2466b70` (local, push state below). The pass covered Quick start,
+the Manual 6 steps, and "Verifying the release" in INSTALL.md, plus
+"Signing and release verification" in README.md.
+
 | File | Sections touched | What changed |
 |---|---|---|
-| `README.md` | | |
-| `CHANGELOG.md` | | |
+| `INSTALL.md` | "Verifying the release" (`INSTALL.md:254-258`) | Added `cd ..` at the end of the manifest code block. The block ends in `cd rpms` but the following signature block uses project-root-relative paths (`keys/...`, `rpms/*.rpm`), so sequential execution broke. |
+| `INSTALL.md` | "Prerequisites" (`INSTALL.md:304`) | Stale cross-reference. "the manual path enables it in step 4" changed to "step 5". The CRB enable is manual step 5 (`INSTALL.md:211-214`), renumbered when item 6 inserted the key-import step. |
+| `README.md` | "Signing and release verification" (`README.md:99,108`) | "the repository installs with `gpgcheck=1`" changed to "the repository is configured with `gpgcheck=1`" (the .repo file carries the setting). "the signature verifies the set against the key holder" changed to "against the key", aligning with INSTALL.md's "The signature verifies the origin". |
 
-**Checked and needed no change:** listing these saves the next person re-checking.
-**Could not verify:** what, and what would settle it.
+**Accuracy against the scripts (no factual mismatches found).** Every Quick
+start claim checked against `repo-setup/setup-repo.sh`. createrepo_c
+self-install at `setup-repo.sh:99-104`, metadata generation at `:109-115`,
+key import plus keyring assert at `:127-142`, the .repo write with
+`gpgcheck=1` and no `gpgkey=` at `:156-165`, CRB enable at `:176`,
+makecache validation at `:188`, the `=== Repository setup complete ===`
+marker at `:196`. The manual .repo template matches the script's printf
+output. The trailing slash on the manual template's baseurl is a valid
+file:// directory URL, not a divergence from the script. The 22-name set in
+Quick start matches `vm-test/install-set.txt` exactly. `rpms/SHA256SUMS` is
+exactly 64 lines and the basenames match the 64 published RPMs.
+
+**Consistency anchors (all agree in both files).** Fingerprint
+`1689676AF4D4F6FEC142B4429C0A8912FDA02785`, key path
+`keys/cinnamon-rocky10-public.asc`, `gpgcheck=1` with no `gpgkey=` line,
+manifest `rpms/SHA256SUMS`, and the out-of-band metalinux.dev fingerprint
+line in INSTALL.md only (README points to it).
+
+**House style (AGENTS.md section 10).** No em dashes, en dashes, or double
+hyphens in prose. No forbidden words. Every colon in the four surfaces is
+technical (URLs) or pre-existing outside them (INSTALL.md:386 and :393
+introduce troubleshooting lists, README.md:9-11 are key/value header
+lines). No style edits needed.
+
+**Checked and needed no change:**
+- `repo-setup/setup-repo.sh`, `repo-setup/cinnamon-rocky10.repo`,
+  `vm-test/install-set.txt`, `rpms/SHA256SUMS`,
+  `keys/cinnamon-rocky10-public.asc`. Read for verification only.
+- INSTALL.md sections outside the four surfaces (Minimal server, Direct RPM
+  install, Installed packages, GDM session configuration, Troubleshooting).
+  The "step N" cross-references at `INSTALL.md:93-95`, `:102`, `:115`,
+  `:207`, `:216-218`, `:270` all resolve against the current numbering.
+- README.md outside the signing section. Version table, test log, project
+  structure, and development sections are consistent.
+- `CHANGELOG.md`. Not present in this repository. Nothing to update.
+
+**Key-material check (pre-push).** `git grep` is not in this agent's
+permission set and the `rg` binary is not installed on the host, so the
+check ran as `git log -S`, which covers the whole branch history and is
+therefore stronger than a HEAD-tree grep. `git log -S "BEGIN PGP PRIVATE KEY
+BLOCK" --oneline HEAD` returned zero hits, so no commit ever introduced a
+private-key block and none can be in the HEAD tree. `git log -S "BEGIN PGP"
+--oneline HEAD` returned exactly one commit, `7d47a02` (item 1, the public
+key). The committed diff of `2466b70` is the four doc lines above (verified
+with `git diff` before committing) and contains no key material. The
+passphrase-absence claim rests on the Tails records (item 6 and the fix
+pass, where the 600-mode passphrase file was used only as a variable for
+diff greps). The passphrase file was not read here.
+
+**Push state (action needed).** Commit `2466b70` is local. `git push origin
+feature/TASK-0024-rpm-signing-gpgcheck` was denied by this agent's
+permission set, which allows only `git push origin main`. `git ls-remote
+origin` confirms the remote branch is still at `6bb500e` and main at
+`893b22a`. No bypass was attempted. The next agent or user with push rights
+on the feature branch pushes `2466b70`. Nothing else is pending on the docs
+side. The metalinux.dev fingerprint publication (the out-of-band line the
+docs now reference) was drafted below.
+
+### Out-of-band fingerprint anchor page (metalinux.dev)
+
+The out-of-band publication referenced by "Verifying the release" in
+INSTALL.md and "Signing and release verification" in README.md did not
+exist. Drafted it in the site repo `~/Linux/projects/github_pages`
+(Jekyll, theme minimal-mistakes, `url: https://metalinux.dev`).
+
+| File | Sections touched | What changed |
+|---|---|---|
+| `_pages/cinnamon-rocky10-signing-key.md` | New page | Anchor page draft. Front matter follows the existing non-article pages (`layout: single`, `permalink: /linux-journey/cinnamon-rocky10-signing-key/`, `author_profile: true`, `sidebar: nav: linux-journey`, metalinux-2.png overlay, toc). Body: purpose, fingerprint, key UID, full armored public key verbatim, one-paragraph verification procedure using `gpg --show-keys` (no keyring import). |
+| `_data/navigation.yml` | `linux-journey` nav, "Courses & Projects" | Added "Cinnamon for Rocky Linux 10 (Signing Key)" pointing at `/linux-journey/cinnamon-rocky10-signing-key/`. Required by the site AGENTS.md for every new page. |
+| `_pages/linux-journey.md` | "Courses & Projects" table | One row linking the new page. |
+
+`_pages/` rather than `_linux_journey/` because
+`scripts/process_linux_journey.py:460-462` removes and rebuilds
+`_linux_journey/` from `~/Documents/linux_journey/` on every run, which
+would delete a hand-written page there. `_pages/` is outside that process
+(`include: [_pages]`, `_config.yml:31-32`).
+
+Key provenance. The armored block in the page is a verbatim copy of
+`cinnamon-for-rocky10/keys/cinnamon-rocky10-public.asc` read from the
+working tree on branch `feature/TASK-0024-rpm-signing-gpgcheck` (HEAD
+`2466b70`). `git diff 6bb500e HEAD -- keys/cinnamon-rocky10-public.asc`
+is empty, so the file is identical at the briefed tip and at HEAD. A
+line-by-line comparison of the page block against the file matched all 30
+lines. The fingerprint on the page matches `EXPECTED_FINGERPRINT` at
+`repo-setup/sign-rpms.sh:66` (recorded at item 1 generation), the
+fingerprint-subpacket decode verified in `## Review` (line 856) and
+`## Security` (line 977), and the consistency anchors of the item 10
+pass above. The UID on the page is the ratified string.
+
+**Not committed and not pushed**, per the brief. The user reviews the
+wording before publication. Once published the URL is
+`https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`.
+INSTALL.md and README.md say only "published out-of-band on
+metalinux.dev" and carry no URL, so no project-repo doc change is
+required for the references to resolve. Adding the explicit URL to the
+project docs is an optional follow-up.
 
 ---
 
