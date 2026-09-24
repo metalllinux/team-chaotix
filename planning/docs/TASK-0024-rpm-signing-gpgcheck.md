@@ -23,99 +23,9 @@ re-run, 5 pre-existing orphaned VMs on `192.168.1.102` were restarted (disks int
 IPs re-leased) as a side effect of a network restart; the earlier "domain definitions deleted" alarm
 was a per-user libvirt instance observation, the system instance's definitions were intact throughout.
 
-**Now (2026-09-23): review chain re-run clean; DoD boxes 1-9 ticked; dispatching Vector.** Full
-chain re-ran on the fixed branch. Shadow: harness delta sound, one should-fix (duplicated pin table)
-raised. Omega: all findings resolved, no open, recommends merge (2 non-blocking release conditions).
-Big: re-run 2 at `6bb500e` OVERALL PASS (54 PASS / 0 FAIL / 0 WARN, 6 named SKIPs), item 10 positive
-line PASS, item 11c fallback refuses the tampered RPM. The pin-table should-fix is resolved
-(`6bb500e`, both table copies now match `rpms/` + lockstep rule). DoD boxes 1-9 ticked with evidence.
-Project branch at `6bb500e`. Remaining: `Vector` docs pass (box 10), then the metalinux.dev
-fingerprint publication (must land before the tag), then `Knuckles` PR + merge + tag `v1.0.0`
-(box 11), then `Espio` prune. Host note: Big restarted 5 orphaned VMs (disks intact, RAM state lost,
-IPs re-leased) during the network restart; the earlier "domain definitions deleted" alarm was a
-per-user libvirt instance observation — the system instance's 9 definitions were intact throughout.
-
-**Now (2026-09-21, fix pass complete): Tails cleared all six chain findings; re-running the chain.**
-Project branch at `ba7babf` (pushed). Blocker cleared (harness now ships `keys/` to the VM, so the
-positive fresh-VM line is unblocked); signer now pinned via a scratch rpm keyring (deviation from
-Omega's suggested `%{SIGPGP}`, which does not exist on this rpm); RPM count 48→64; nits cleared;
-`set -x` guard probes `$-` (deviation: `BASHOPTS` does not list `xtrace` in a script shell);
-INSTALL.md points the follower at the metalinux.dev out-of-band fingerprint. Pre-push greps clean,
-passphrase absent from the diff. Re-running `Shadow` → `Omega` → `Big`; Big re-runs the positive
-fresh-VM line (item 10) and the skipped fallback (item 11c).
-
-**Now (2026-09-21, review chain complete): implementation items 1-6 done; chain returned 1
-blocker + 2 should-fix, dispatching Tails fixes.** Review chain ran on the full branch diff
-(`feature/TASK-0024-rpm-signing-gpgcheck` vs `main` `893b22a`). Shadow: 7 findings (1 blocker, 2
-should-fix, 4 nits) in `## Review` — the blocker is that `vm-test/test-repo-setup.sh` ships no
-`keys/` to the VM, so `setup-repo.sh`'s new key-import step dies there and the DoD's fresh-VM
-end-to-end is unreachable as-is. Omega: no security blockers (1 medium — no out-of-band
-fingerprint anchor; 3 low) in `## Security`. Big: negative tamper test PASS (gpgcheck=1 refuses a
-payload flip, gpgcheck=0 accepts it), positive fresh-VM line BLOCKED (not failed) by the harness
-`keys/` gap in `## Test Results`; RPM-size question closed with evidence. Tails is fixing the
-blocker + should-fixes + nits; the chain re-runs after.
-
-**Now (2026-09-21, implementation): items 1-5 complete, item 6 (docs) dispatching to Tails.**
-Key generated (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, passphrase-protected,
-proven by signing); all 64 RPMs signed in place (payload identity 64/64, `rpm --checksig` 64/64
-OK, runtime no-leak proven); `rpms/SHA256SUMS` published from the signed set; `setup-repo.sh`
-imports the public key and writes `gpgcheck=1` (no `gpgkey=` line); key-material `.gitignore`
-guard committed; `~/password.txt` deleted (user-approved). Branch
-`feature/TASK-0024-rpm-signing-gpgcheck` at `55a38ba`, pushed, pre-push greps clean every time.
-Next: item 6 docs (Tails), then the review chain, then Big's functional verification (items 7-11),
-then Vector, then Knuckles (item 14, tag `v1.0.0` on the merge).
-
-**Now (2026-09-21, user decision, item 1 execution): passphrase and uid settled.** The user
-specified the key passphrase by reference: the contents of `~/password.txt` (17 bytes, was 644).
-Uid decided: `metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>`.
-Item 1 execution change (ratification substance intact): the agent places the passphrase into the
-sibling 700/600 location by pure file operations (contents never read or displayed by any agent),
-runs the key generation non-interactively with `--pinentry-mode loopback --passphrase-file`, and
-writes the passphrase nowhere new; the user approved deleting the 644 source file after the copy.
-The passphrase never enters a transcript, commit, log, or doc (AGENTS.md section 4).
-
-**Now (2026-09-21): plan complete and ratified; implementation starting.** Amy's 14-item plan is
-written and adjusted to the user-ratified passphrase-protected key; the 6-pager carries the
-ratified design as the current recommendation. Dispatching `Tails` for the implementation
-sequence. Note: item 1 (key generation) is user-supervised — the passphrase is entered by the
-user at generation and written to the 600-mode file by the user; no agent ever writes it.
-
-**Now (2026-09-21, user decision): key parameters ratified WITH A MODIFICATION — the signing key
-is passphrase-protected.** The user approved Amy's 6-pager storage design (dedicated host-local
-keyring, RSA 4096, the recorded §13 exception) but rejected the no-passphrase choice; the key is
-passphrase-protected. Consequences recorded here so the plan and implementation do not drift: the
-sign step must supply the passphrase without it ever entering the repo, commits, logs, or planning
-docs (AGENTS.md §4) — Amy's plan D1 must be adjusted to name the mechanism (e.g.
-`gpg --batch` with `gpg-preset-passphrase`, or a 600-mode passphrase file host-side, her call with
-a stated reason); the §13 exception now covers key + passphrase, both host-side; key loss/leak is
-still one-way (re-key, re-sign, new tag) and the passphrase does not change that. `## Plan` D1 and
-item 1 carry the adjustment before Tails generates anything.
-
-**Now (2026-09-19): task created from Omega's security review of TASK-0016 (low #3, supply-chain,
-pre-existing, carried into the public docs).** The documented install path ships 64 RPMs from a
-`file://` repo with `gpgcheck=0` (`repo-setup/setup-repo.sh`): no signature is ever checked, and
-the doc's sha256 step verifies the copy, not the origin. A compromised `metalllinux` account or a
-bad merged PR altering `rpms/` would run attacker code as root on a follower's machine. This task
-closes the gap: sign the RPMs, ship the public key, turn on `gpgcheck=1`, and publish a sha256
-manifest for the release as the trusted baseline. Source: `planning/docs/
-TASK-0016-install-md-minimal-server.md` `## Security` (2026-09-19 entry) and `## Release`
-(follow-up note, Knuckles).
-
-**Environment / scope:**
-- Files in scope: `repo-setup/setup-repo.sh`, the `.repo` block it writes, `rpms/` (all 64 RPMs
-  re-signed), a new key/manifest location in `metalllinux/cinnamon-for-rocky10`, `INSTALL.md`,
-  `README.md`. Project clone at `~/Linux/projects/cinnamon-for-rocky10/` (main at `893b22a`).
-- Touches the DB schema: no
-- Graphical UI: no
-- Rocky Linux target: yes (Rocky Linux 10.2 VM verification on host `192.168.1.102`)
-
-**Unknowns:**
-- ~~Where the GPG signing key lives and how it is managed~~ — **resolved 2026-09-21**: host-local
-  dedicated keyring, passphrase-protected (user decision), public key + fingerprint ship in the
-  repo, private key + passphrase never leave the host (AGENTS.md §4 intact, §13 exception recorded
-  in the 6-pager). Sign-step passphrase mechanism: `## Plan` D1 (Amy's adjustment pending).
-- Whether to re-sign the existing 64 RPMs in place or rebuild; the plan must pick and record why.
-- Where the sha256 manifest lives (`rpms/SHA256SUMS`? repo root? release tag?) and what pins it.
+*Earlier status entries (task creation 2026-09-19 through the clean review-chain re-run 2026-09-23),
+environment/scope, and the resolved unknowns are archived below under `## Archive` >
+`Superseded status entries`. Current state is the COMPLETE entry above.*
 
 ---
 
@@ -173,7 +83,10 @@ if a box cannot be verified by looking at something, rewrite it.*
       start, Manual 6 steps, "Verifying the release" section, README signing section); house style
       clean, all consistency anchors agree, no factual mismatch vs the scripts; the out-of-band
       fingerprint anchor it references is now live on metalinux.dev (site commit `075a3c9`).*
-- [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR
+- [x] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` main via PR. *Ticked 2026-09-24:
+      PR #6 squash-merged to `main` (`a70aedc`), annotated tag `v1.0.0` (`954c14a`) cut on the merge
+      and pushed; the metalinux.dev fingerprint anchor (site commit `075a3c9`) landed before the tag
+      as required. See `## Release`.*
 
 ---
 
@@ -182,80 +95,12 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [x] User ratified the key parameters (2026-09-21): host-local dedicated keyring, RSA 4096,
-      recorded §13 exception — **with the modification that the key is passphrase-protected** (the
-      no-passphrase choice was rejected). Recorded in `## Status`.
-- [x] `Amy` (2026-09-21): `## Plan` D1 + items 1-2 adjusted to the passphrase-protected key —
-      sign-step mechanism is gpg-agent preset via `gpg-connect-agent` on stdin (rejected:
-      `gpg-preset-passphrase` argv exposure, direct-gpg flags unreachable from `rpm --addsign`);
-      passphrase lives in a sibling 700-mode location, never written by any agent; D2/D3/D4
-      unchanged; estimates +0.4 h.
-- [x] `Amy` (2026-09-21): 6-pager `planning/docs/TASK-0024-gpg-key-management.md` updated to the
-      ratified design — Option A rewritten, superseded no-passphrase recommendation preserved as a
-      dated block with the user's rejection attached, §3.1 mechanism section added, standing cost
-      and risks updated.
-- [x] `Tails` (2026-09-21): item 1 executed — passphrase-protected RSA 4096 key
-      `1689676AF4D4F6FEC142B4429C0A8912FDA02785` in `~/.gnupg-cinnamon-rocky10` (protection
-      proven by signing), sibling passphrase location 700/600, public key + fingerprint +
-      key-material `.gitignore` guard committed as project-repo `7d47a02` and pushed;
-      `~/password.txt` deleted (user-approved); pre-push grep clean (only hit: the
-      `.gitignore` line itself). Execution record in `## Implementation`.
-- [x] `Tails` (2026-09-21): item 3 executed — all 64 RPMs signed in place with
-      `1689676AF4D4F6FEC142B4429C0A8912FDA02785`; payload identity proven (per-RPM
-      `rpm2cpio | sha256sum` digests identical before/after, 64/64, no D2 flip);
-      `rpm --checksig` 64/64 `digests signatures OK`; runtime no-leak proven (ps/environ
-      samples, run log, shell history all clean); project-repo `db60bb6` on
-      `feature/TASK-0024-rpm-signing-gpgcheck` pushed, pre-push grep zero hits. Execution
-      record in `## Implementation`.
-- [x] `Tails` (2026-09-21): items 4 + 5 executed — `rpms/SHA256SUMS` generated from the signed
-      set (`sha256sum *.rpm | sort -k2`, 64 lines, `sha256sum -c` 64/64 OK) as project-repo
-      `1b57ac8`; `setup-repo.sh` imports `keys/cinnamon-rocky10-public.asc` (assert
-      `rpm -q "gpg-pubkey-fda02785*"`, 8-hex keyid width pinned), writes `gpgcheck=1` with no
-      `gpgkey=` line; reference template flipped to `gpgcheck=1` and harness test 6 updated to
-      match (conflict noted in `## Implementation`, flagged for Shadow); statelessness re-proven
-      on the host; `55a38ba` pushed, pre-push grep zero hits. Execution records in
-      `## Implementation`.
-- [ ] `Robotnik`: dispatch item 6 (docs: Quick start, Manual, new "Verifying the release"
-      section, README signing section) to `Tails` — critical path continues 6 → 7 → 8 → 9 →
-      10 → 11 → 14.
-- [x] `Tails` (2026-09-21): item 6 executed — all four doc surfaces updated (Quick start
-      gpgcheck=1 + key import, Manual 6 steps with key import and `gpgcheck=1` template, new
-      "Verifying the release" section with the manifest/signature division of labor, README
-      signing section); `gpgcheck=0` no longer appears in either doc; project-repo `e6ee370`
-      pushed, pre-push greps zero hits, passphrase absent from the committed diff. Execution
-      record in `## Implementation`. Critical path continues at item 7 (open the PR to main).
-- [x] `Shadow` → `Omega` → `Big`: review chain run on the full branch diff. Shadow: 7 findings
-      (1 blocker, 2 should-fix, 4 nits) in `## Review`. Omega: no security blockers (1 medium, 3
-      low) in `## Security`. Big: negative tamper PASS, positive fresh-VM BLOCKED by the harness
-      `keys/` gap in `## Test Results`.
-- [x] `Tails`: fix the chain's findings — (1) BLOCKER: `vm-test/test-repo-setup.sh` phase 1 must
-      ship `keys/` to the VM before `setup-repo.sh` runs; (2) should-fix: `repo-setup/sign-rpms.sh`
-      pin the signing key so verification checks the expected fingerprint, not any keyring key
-      (consolidates with Omega low #1); (3) should-fix: `vm-test/test-repo-setup.sh:369-373` RPM
-      count 48 → 64; (4) nits: `sign-rpms.sh` dead hex round-trip comment (:178-180), add `xxd`/`stat`
-      to the tool pre-flight (:105-107), guard the `rpm -qa | grep` SIGPIPE (:150); (5) Omega low:
-      refuse to run under `set -x` (check `BASHOPTS` for `xtrace`); (6) Omega medium: add one line
-      to INSTALL.md telling the follower to compare the fingerprint against the out-of-band value
-      published on metalinux.dev (the metalinux.dev publish itself is a separate follow-up, not
-       blocking). Record each fix in `## Implementation`.
-- [x] `Tails` (2026-09-23): both re-review nits landed on `feature/TASK-0024-rpm-signing-gpgcheck`
-       (project-repo `ce7b084`, pushed `ba7babf..ce7b084`). The false preset comment is corrected and
-       the single-line invariant is now enforced in the pre-flight; a KEYFILE existence/armor-header
-       check is added to the pre-flight so a missing/corrupt key file fails before any mutation.
-       Execution record in `## Implementation` ("Trivial nits").
-- [x] Re-run the chain (`Shadow` → `Omega` → `Big`) after the fixes. Shadow: harness delta sound,
-      1 should-fix (duplicated pin table). Omega: all resolved, recommend merge. Big re-ran the
-      positive fresh-VM line (item 10 PASS) + fallback (item 11c refuses tamper); the pin-table
-      should-fix was fixed by Big (`6bb500e`) and re-run 2 is OVERALL PASS / 0 WARN. DoD boxes 1-9
-      ticked.
-- [x] `Vector`: docs pass (consistency/house style) on the item 6 surfaces (box 10). Landed as
-      project-repo `2466b70`; house style clean, all anchors agree, no factual mismatch.
-- [x] Publish the fingerprint on metalinux.dev (Omega medium). Drafted by Vector, wording approved
-      by the user, published as site commit `075a3c9` and confirmed live (HTTP 200) before the tag.
-- [x] `Knuckles`: PR #6 squash-merged to `main` (`a70aedc`), annotated tag `v1.0.0` (`954c14a`)
-      cut on the merge and pushed (box 11). The metalinux.dev anchor preceded the tag as required.
-- [ ] `Espio`: prune this doc (now ~1570 lines) — move superseded narration to `## Archive`, keep
-      all decisions and verified facts.
+- All actions complete (2026-09-24). Task is DONE: all 11 DoD boxes ticked, PR #6 squash-merged
+  to `main` (`a70aedc`), tag `v1.0.0` (`954c14a`) cut on the merge and pushed, metalinux.dev
+  fingerprint anchor live (site commit `075a3c9`) and landed before the tag.
+- The only pending item at completion was the `Espio` prune of this doc (this prune, executed
+  2026-09-24). Superseded action entries are archived below under `## Archive` > `Superseded
+  Next Actions entries`. Nothing remains.
 
 ---
 
@@ -371,93 +216,13 @@ set gets a new tag, because republishing at the same tag is not a thing we do.
   `SHA256SUMS` in `rpms/` is inert for metadata (assumption, cheaply falsified by item 10's
   `dnf makecache`).
 
-**Work breakdown** — decomposed until one agent finishes one item in one turn.
+**Work breakdown, dependencies, critical path, estimates, risks, and validation** were executed
+and are superseded by the actuals in `## Implementation`, `## Test Results`, and `## Release`.
+Full text archived below under `## Archive` > `Superseded plan (work breakdown, estimates, risks,
+validation)`.
 
-| # | Item | Owner agent | Acceptance criterion | Parallel with |
-|---|---|---|---|---|
-| 1 | Generate the passphrase-protected signing key in the dedicated keyring (interactive `gpg --full-generate-key`; the passphrase is chosen by the user at generation time, entered at the pinentry prompt, and written by the user to the sibling 600-mode file — never written by any agent); export the public key to `keys/cinnamon-rocky10-public.asc`; record the fingerprint in this section | Tails (passphrase entry and file write are user actions) | Dedicated GNUPGHOME (mode 700) holds exactly one passphrase-protected RSA 4096 key; the sibling passphrase location exists (dir 700, file 600), verified by existence and mode only, content never read; public key file in the working tree; fingerprint recorded below (public data); `git status` shows no private key material and no passphrase; host-identity assumption confirmed in writing (hostname/IP of the agent host). Acceptance is the fingerprint recorded plus the public key exported, never the passphrase | Independent of 2 |
-| 2 | Write `repo-setup/sign-rpms.sh`: GNUPGHOME-scoped, asserts the expected fingerprint, presets the passphrase from the 600-mode sibling file into the gpg-agent via `gpg-connect-agent` on stdin (never argv; no `set -x`), signs unsigned RPMs in place with `rpm --addsign`, clears the preset from the agent, verifies the full set with `rpm --checksig`, idempotent, fails loud naming the offending file | Tails | `bash -n` clean; run against a scratch keyring without the key exits non-zero with a fingerprint error; run against the current unsigned set reports all 64 as unsigned; the exact preset command (keygrip derivation, mode flags) is pinned against the host's gpg version and recorded in `## Implementation`; by inspection the passphrase is only read from the 600-mode file and passed on stdin, never argv (runtime proof in item 3) | Independent of 1; both required before 3 |
-| 3 | Sign all 64 in place; capture payload-identity evidence | Tails | `rpm --checksig` over all 64 (public key imported into the verifying user's rpm keyring first) reports only valid signatures; per-RPM payload digests (`rpm2cpio`) identical before/after signing, recorded in `## Implementation`; `git diff --stat` shows only `rpms/*.rpm` changed | After 1 and 2 |
-| 4 | Generate and commit `rpms/SHA256SUMS` from the signed set | Tails | `cd rpms && sha256sum -c SHA256SUMS` passes 64/64; file is sorted, basenames only | After 3 |
-| 5 | `setup-repo.sh`: import the key (`rpm --import`, then assert the key is in the rpm keyring via `rpm -q gpg-pubkey-<keyid>`, exact keyid width determined at implementation), write the `.repo` with `gpgcheck=1`; update the reference file `repo-setup/cinnamon-rocky10.repo:11`; preserve the statelessness contract (setup-repo.sh:19-26) — the import is state-changing and stays after project-root resolution (setup-repo.sh:51-58) | Tails | `bash -n` clean; the bad-argument error path is unchanged (exits before the root check, no host state changed, so the `vm-test/test-repo-setup.sh` assertion still holds by inspection); the written `.repo` block contains `gpgcheck=1` | Independent of 6 |
-| 6 | Docs: Quick start (script imports the public key, dnf verifies signatures), Manual section (key-import step plus `gpgcheck=1`, INSTALL.md:177-189), new "Verifying the release" section (clone at tag, `sha256sum -c`, `rpm --checksig`), README.md signing section (key path, fingerprint, how to check it). House style per AGENTS.md §10 | Tails | All four surfaces updated; `gpgcheck=0` appears in the docs only when describing the old behavior | Independent of 5 |
-| 7 | Push the branch, open the PR to `main` | Tails | PR exists with a description that lists the DoD; `metalllinux`-internal, no human gate (AGENTS.md §8) | After 4, 5, 6 |
-| 8 | Review | Shadow | No unresolved blocker or should-fix in `## Review`; specifically checks the statelessness-contract change and the sign script's error paths | After 7 |
-| 9 | Security review | Omega | No findings above `low` in `## Security`; verifies no key material in the branch commits (`git grep`), that the committed fingerprint is public data, and that the §13 exception is recorded (this section plus the 6-pager) | After 8 (fixed order Shadow → Omega → Big, AGENTS.md §3) |
-| 10 | Fresh minimal Rocky 10.2 VM on `192.168.1.102`, documented procedure with `gpgcheck=1`: 22 names installed, GDM Wayland login, five surfaces | Big | The DoD fresh-VM box: the install command from the docs succeeds under a `.repo` with `gpgcheck=1` (evidence: the installed `.repo` file, the imported-key query, dnf history); `loginctl` session `Type=wayland`; 5/5 surfaces with the existing harness (same evidence shape as TASK-0016, `vm-test/evidence/task0016-minimal/2026-09-19/`); evidence lands in `vm-test/evidence/task0024-gpg/` | After 9; independent of 11 (second VM) |
-| 11 | Negative test: (a) tamper one RPM's payload, then re-run `createrepo_c` on the tampered set so repodata matches the tampered bytes and only the signature can catch it; `dnf install` under `gpgcheck=1` must fail with a signature error, exact wording recorded. (b) The same tampered package under `gpgcheck=0` (fresh VM, or before the desktop is installed) must install; record that as what the old path silently accepted. (c) Characterize the fallback path: `dnf install ./rpms/<tampered>.rpm` with the key imported | Big | (a) The refusal is a signature/fingerprint error, not a checksum error (assert on the wording); (b) the tampered package installs, recorded; (c) the behavior is recorded either way, and item 6's wording is corrected by Tails in item 12 if needed | Ordered after 10 (shares the provisioning pattern); independent of 10 |
-| 12 | Fixes from items 8-11 | Tails | Each finding closed in `## Review` / `## Security` with the fixing sha | As needed |
-| 13 | Docs verification | Vector | `## Docs` records every user-facing change; house style checked | After 12 (or after 11 when there are no fixes) |
-| 14 | Merge the PR to `main`; create and push annotated tag `v1.0.0` on the merge commit; fresh clone at the tag: `sha256sum -c` plus `rpm --checksig` over all 64 | Knuckles | Tag exists on GitHub pointing at the merge commit; clone-at-tag checks pass 64/64; `## Release` filled | After 13 |
-
-**Fingerprint (recorded by Tails in item 1; public data):** _pending_
-
-**Dependencies and sequence.** Genuinely ordered: 1+2 → 3 → 4 (sign before manifest, because the
-manifest hashes the signed bytes); 5, 6 → 7 (the PR carries the script and the docs); 7 → 8 → 9
-(review chain, fixed internal order per AGENTS.md §3); 9 → 10 → 11 (tests run on reviewed code);
-13 → 14 (release last). **Explicitly independent:** 1 from 2; 5 from 6; 10 from 11 (separate
-VMs, separate evidence). The single inference slot runs everything one at a time anyway
-(AGENTS.md §3), so the ordering above is the critical path, not a parallelism plan.
-
-**Critical path:** 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → 14, with 2 joining at 3, 6 at 7, 12/13
-between 11 and 14 as needed. Longest dependent chain: key → sign → manifest → PR → review →
-fresh-VM run → negative test → release.
-
-**Estimates.** Three-point, hours, `T = (O + 4M + P) / 6`.
-
-| Item | O | M | P | T |
-|---|---|---|---|---|
-| 1 Key | 0.25 | 0.5 | 1 | 0.5 |
-| 2 Sign script (incl. passphrase preset) | 0.75 | 1.5 | 3 | 1.6 |
-| 3 Sign 64 + evidence | 0.5 | 1 | 2 | 1.2 |
-| 4 Manifest | 0.25 | 0.5 | 1 | 0.5 |
-| 5 setup-repo.sh | 0.5 | 1 | 2 | 1.2 |
-| 6 Docs | 1 | 2 | 4 | 2.2 |
-| 7 PR | 0.25 | 0.5 | 1 | 0.5 |
-| 8 Shadow | 0.5 | 1 | 2 | 1.2 |
-| 9 Omega | 0.5 | 1 | 2 | 1.2 |
-| 10 Fresh VM | 2 | 4 | 8 | 4.3 |
-| 11 Negative test | 1 | 2 | 4 | 2.2 |
-| 12 Fixes (expected small) | 0 | 0.5 | 2 | 0.8 |
-| 13 Vector | 0.25 | 0.5 | 1 | 0.5 |
-| 14 Release | 0.5 | 1 | 2 | 1.2 |
-| **Total** | | | | **~19.1** |
-
-Buffer: +6 h (~30%), sized to where the uncertainty concentrates: the fresh-VM run (GDM/Wayland
-flake history, TASK-0008), gpg/rpm tooling edges (keyring scoping, `--addsign` behavior, the
-agent-preset passphrase mechanism in item 2), and the unverified dnf local-file signature
-behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
-
-**Risks.**
-
-| Risk | Likelihood | Impact | Mitigation | Contingency |
-|---|---|---|---|---|
-| `--addsign` changes more than the header (payload identity breaks) | low | high. Invalidates the 2026-09-19 evidence; D2 flips | Per-RPM payload-digest comparison before/after signing (item 3) | Rebuild the affected packages from `spec/`, sign them, record the flip in `## Implementation` |
-| One RPM resists signing (corrupt archive) | low | medium | The script fails loud and names the file | Rebuild that one package from `spec/` (canonical, README.md:68-71) and sign it |
-| Negative test catches the tamper via checksum instead of signature (repodata trap) | medium | medium. Proves the wrong thing | Re-run `createrepo_c` on the tampered set before the test (item 11 design); assert on the error wording | Re-run with regenerated repodata; the signature-error assertion is the acceptance criterion |
-| dnf fallback path (local file install) skips signature verification | medium | low. Docs only | Characterize in item 11c | INSTALL.md marks the fallback unverified-by-signature; the repo path is canonical |
-| Fresh-VM desktop flake (GDM auth history) | medium | medium. Schedule | The harness is proven (TASK-0016, 2026-09-19); re-provision on flake | Record the flake, re-run; do not weaken the check |
-| Private key lands in the user's main keyring | low | medium. Hygiene | Dedicated GNUPGHOME; the script refuses a keyring holding more than one secret key (6-pager section 5) | Regenerate pre-sign; remove the stray copy |
-| Key lost or leaked after release | low | critical (6-pager section 5) | Mode 600/700, no key material in any doc, dedicated keyring | Re-key, re-sign, new tag, re-import; the stranding window is documented in Rollback below |
-
-**Validation.**
-- **Host (agent host):** `rpm --checksig` over all 64 (item 3); `cd rpms && sha256sum -c
-  SHA256SUMS` (item 4); `bash -n` on both scripts; `git grep` for key material over the branch
-  (Omega, item 9); the item 3 sign run leaves the passphrase out of `ps` output, shell history,
-  and logs (AGENTS.md §4 — preset to the agent via stdin, never argv).
-- **Fresh minimal Rocky 10.2 VM on `192.168.1.102` (items 10-11):** documented procedure with
-  `gpgcheck=1` → 22 names installed with signatures verified by dnf, GDM Wayland login, 5/5
-  surfaces, `loginctl` `Type=wayland`. Tampered RPM with regenerated repodata → refused with a
-  signature error (exact wording recorded). Same tampered RPM under `gpgcheck=0` → installs
-  (recorded as what the old path silently accepted). Fallback-path behavior characterized.
-- **Clone at tag (item 14):** `sha256sum -c` plus `rpm --checksig` on a fresh clone of `v1.0.0`
-  pass 64/64. This is the check that pins the tag.
-- **Pages needing a human look, named:** (1) the 6-pager key parameters — uid/domain, the
-  passphrase-protected key and the sibling passphrase location, and the §13 exception itself —
-  ratified by the user 2026-09-21 with the passphrase modification, before item 1 runs;
-  (2) the tag name `v1.0.0`; (3) the public `INSTALL.md`/`README.md` wording before merge (the
-  repo is Public); (4) the item 11b evidence, confirming the old-path-accepts-tampered-RPM risk
-  claim with the actual dnf output.
+**Fingerprint (recorded by Tails in item 1; public data):** `1689676AF4D4F6FEC142B4429C0A8912FDA02785`
+(keygrip and the full generation record in `## Implementation`).
 
 **Rollback.**
 - **Detection:** pre-merge — a review finding or a failed VM test; do not merge, nothing has been
@@ -553,17 +318,7 @@ behavior (item 11c). **Total ≈ 25 h ≈ 3 working days** on the single slot.
 | `repo-setup/sign-rpms.sh` (project repo, `b84ce3f`) | new, 256 lines: the item 2 artifact. Pre-flight (fingerprint, single secret key, keygrip derivation, passphrase-file modes, rpm-keyring presence), preset/clear around the sign loop, `rpm --checksig` verification, idempotent skip, fails loud naming the offending file |
 | `planning/docs/TASK-0024-rpm-signing-gpgcheck.md` (team repo) | this section |
 
-**Checks run**
-
-| Test | Command | Result |
-|---|---|---|
-| Syntax | `bash -n repo-setup/sign-rpms.sh` | clean |
-| Placeholder fingerprint | `GNUPGHOME=<scratch> bash sign-rpms.sh` | rc=1, `EXPECTED_FINGERPRINT is not recorded yet (TASK-0024 item 1 pending)` |
-| Empty keyring, fingerprint substituted | sed'd copy, `GNUPGHOME=<empty scratch>` | rc=1, `keyring must hold exactly one secret key, found 0` |
-| Full-set sign (64 copies, throwaway key) | `GNUPGHOME=<keyring2> bash sign-rpms.sh` on the scratch project | rc=0, 64 signed, 64 verified, preset cleared on exit |
-| Idempotent re-run | same | rc=0, 0 signed, 64 skipped, 64 verified |
-| Real set untouched | `rpm -K` loop over `rpms/*.rpm` | 64/64 `digests OK` (unsigned) |
-| Passphrase exposure, by inspection | script review | read only from the 600-mode file into a shell variable, hex-encoded, sent on `gpg-connect-agent` stdin via heredoc; never in argv; no `set -x`; hex and cleartext wiped (`PASS=""`, `PASS_HEX=""`) after use; cleared from the agent on every exit path via the EXIT trap |
+**Checks run.** `bash -n repo-setup/sign-rpms.sh` clean. Placeholder fingerprint (`GNUPGHOME=<scratch> bash sign-rpms.sh`): rc=1, `EXPECTED_FINGERPRINT is not recorded yet (TASK-0024 item 1 pending)`. Empty keyring, fingerprint substituted (sed'd copy): rc=1, `keyring must hold exactly one secret key, found 0`. Full-set sign (64 copies, throwaway key, scratch project): rc=0, 64 signed, 64 verified, preset cleared on exit. Idempotent re-run: rc=0, 0 signed, 64 skipped, 64 verified. Real set untouched (`rpm -K` loop over `rpms/*.rpm`): 64/64 `digests OK` (unsigned). Passphrase exposure, by inspection: read only from the 600-mode file into a shell variable, hex-encoded, sent on `gpg-connect-agent` stdin via heredoc, never in argv, no `set -x`; hex and cleartext wiped (`PASS=""`, `PASS_HEX=""`) after use; cleared from the agent on every exit path via the EXIT trap.
 
 **Competing priorities**
 
@@ -686,16 +441,7 @@ module_hotfixes=0
 keepcache=0
 ```
 
-**Checks run**
-
-| Test | Command | Result |
-|---|---|---|
-| Syntax | `bash -n repo-setup/setup-repo.sh`; `bash -n vm-test/test-repo-setup.sh` | both clean |
-| Bad-argument path, as root | `sudo bash repo-setup/setup-repo.sh /tmp/nonexistent-task0024-<ts>` + state snapshots | rc=1 at line 62 (`cd -P`), zero host state change including the `gpg-pubkey-*` keyring |
-| Keyring assertion | `rpm -q "gpg-pubkey-fda02785*"` / `rpm -q "gpg-pubkey-00000000*"` | rc=0, package named / rc=1, not installed |
-| Import idempotency | `sudo rpm --import keys/cinnamon-rocky10-public.asc` (re-run) | rc=0, keyring unchanged |
-| Written `.repo` block | the script's printf verbatim to a `/tmp` file | `gpgcheck=1` present, no `gpgkey=` line |
-| Pre-push key-material | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `55a38ba` | zero hits (rc=1); `git grep -il "private-keys-v1.d" HEAD` → only `HEAD:.gitignore` (the pattern line itself, same as item 1); `git grep -l "BEGIN PGP" HEAD` → only `keys/cinnamon-rocky10-public.asc` |
+**Checks run.** `bash -n` both scripts clean. Bad-argument path as root: rc=1 at line 62 (`cd -P`), zero host state change including the `gpg-pubkey-*` keyring (the statelessness contract above). Keyring assertion: `rpm -q "gpg-pubkey-fda02785*"` rc=0 package named; `rpm -q "gpg-pubkey-00000000*"` rc=1 not installed. Import idempotency (re-run): rc=0, keyring unchanged. Written `.repo` block (the script's printf verbatim to a `/tmp` file): `gpgcheck=1` present, no `gpgkey=` line. Pre-push at `55a38ba`: private-key block zero hits (rc=1); `private-keys-v1.d` only `HEAD:.gitignore` (the pattern line itself, same as item 1); `BEGIN PGP` only `keys/cinnamon-rocky10-public.asc`.
 
 **Alternatives considered (the keyring assertion form).**
 - **Option A — full-name query `rpm -q gpg-pubkey-fda02785-<timestamp>`** · Cons: the timestamp is the import time on that machine; unknowable in the script.
@@ -706,25 +452,13 @@ keepcache=0
 
 **Item 6 executed (2026-09-21, `Tails`).** All four doc surfaces from the plan row updated on `feature/TASK-0024-rpm-signing-gpgcheck`, committed as project-repo `e6ee370` ("TASK-0024 item 6: document signing, gpgcheck=1, and release verification"), pushed `55a38ba..e6ee370`. Only `INSTALL.md` and `README.md` changed (99 insertions, 7 deletions).
 
-**Before/after by surface**
+**Surfaces (committed state; the published docs in the project repo are the source of truth for wording).**
+- **(a) INSTALL.md, Quick start step 2:** states the script imports the public GPG key from `keys/cinnamon-rocky10-public.asc` into the rpm keyring and writes the `.repo` with `gpgcheck=1`, so dnf verifies the signature of every package it installs (same model as the EL base repositories).
+- **(b) INSTALL.md, Manual repository setup:** 5 steps to 6; new step 3 imports the key (`sudo rpm --import keys/cinnamon-rocky10-public.asc` from the project root, fingerprint stated, re-import a no-op); the template flipped to `gpgcheck=1` with the no-`gpgkey=` explanation (D3); CRB and install renumbered to 5 and 6; `gpgcheck=0` no longer appears anywhere in either doc.
+- **(c) INSTALL.md, new "Verifying the release" section** (after "Direct RPM install (fallback)"): opens with clone-at-tag (`git clone --depth 1 --branch v1.0.0`, D4); "The sha256 manifest, corruption and drift" gives `cd rpms && sha256sum -c SHA256SUMS` (64/64 `OK`) and names what it cannot catch (a tree in which RPMs and manifest were changed together); "The GPG signature, origin tampering" covers dnf under `gpgcheck=1` plus the direct path (`sudo rpm --import` then `rpm --checksig` over all 64, expected `digests signatures OK`); "Why both" states the division of labor Omega asked for (TASK-0016, carried into D4).
+- **(d) README.md, new "Signing and release verification" section** (before "## Installation"): one paragraph plus the facts (64 signed RPMs, dedicated key, `gpgcheck=1`, public key path + fingerprint, tag pinning, `rpms/SHA256SUMS`, pointer to the INSTALL.md section).
 
-- **(a) INSTALL.md, Quick start step 2.** Before: the step described the script as writing the `.repo` file, enabling CRB, and validating readability, with no mention of signatures. After: the step states that the script imports the public GPG key from `keys/cinnamon-rocky10-public.asc` into the rpm keyring and writes the `.repo` with `gpgcheck=1`, so dnf verifies the signature of every package it installs, the same model as the EL base repositories.
-- **(b) INSTALL.md, Manual repository setup.** Before: 5 steps; the `.repo` template carried `gpgcheck=0`; no key import. After: 6 steps. New step 3 imports the key (`sudo rpm --import keys/cinnamon-rocky10-public.asc` from the project root, fingerprint stated, re-import noted as a no-op). Step 4's template flipped to `gpgcheck=1` with the explanation of what the line does and why there is no `gpgkey=` line (the key already lives in the rpm keyring, D3). CRB and install renumbered to 5 and 6. The old template's `gpgcheck=0` was the only occurrence of that string in either doc; it no longer appears anywhere.
-- **(c) INSTALL.md, new "Verifying the release" section** (after "Direct RPM install (fallback)", before "Prerequisites"). Opens with clone-at-tag (`git clone --depth 1 --branch v1.0.0`, per D4 the first signed release is `v1.0.0` and every future republish gets a new tag). Three subsections. "The sha256 manifest, corruption and drift" gives `cd rpms && sha256sum -c SHA256SUMS` (64/64 `OK` required) and states what the check cannot catch, a tree in which both the RPMs and the manifest were changed together, because the tree is its own baseline. "The GPG signature, origin tampering" covers dnf under `gpgcheck=1` plus the direct path (`sudo rpm --import` then `rpm --checksig` over all 64, expected output `digests signatures OK`, the pinned string from the item 2 record), with the key path and fingerprint. "Why both" states the division of labor Omega asked for (TASK-0016 doc, carried into this plan's D4) in one place. The manifest verifies the copy against the trusted baseline pinned at the tag and catches transfer corruption and drift. The signature verifies the origin and catches a tampered set that a matching manifest would accept, because re-signing needs the private key.
-- **(d) README.md, new "Signing and release verification" section** (before "## Installation"). Short, one paragraph plus the facts. The 64 RPMs are signed with a dedicated GPG key, the repository installs with `gpgcheck=1`, the public key ships at `keys/cinnamon-rocky10-public.asc` (fingerprint), `setup-repo.sh` imports it, each release is pinned to a git tag, the manifest is `rpms/SHA256SUMS`, and INSTALL.md's "Verifying the release" section carries the two checks with the one-line division of labor.
-
-**Checks run**
-
-| Test | Command | Result |
-|---|---|---|
-| `gpgcheck=0` absent from docs | `grep -n "gpgcheck=0" INSTALL.md README.md` | zero hits (rc=1) |
-| House style, em/en dashes | `grep -nP '[\x{2014}\x{2013}]' INSTALL.md README.md` | zero hits (rc=1) |
-| Fingerprint present | `grep -n 1689676AF4D4F6FEC142B4429C0A8912FDA02785 INSTALL.md README.md` | 3 hits. Manual step 3, the signature subsection, README (public data, permitted) |
-| Diff scope | `git diff --cached --stat` before commit | only `INSTALL.md` and `README.md`, 99 insertions / 7 deletions |
-| Pre-push private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `e6ee370` | zero hits (rc=1) |
-| Keyring dir name in branch | `git grep -il "private-keys-v1.d" HEAD` | exactly one hit, `HEAD:.gitignore` (the pattern line itself, same as items 1 and 5) |
-| Only public block in tree | `git grep -l "BEGIN PGP" HEAD` | only `keys/cinnamon-rocky10-public.asc` |
-| Passphrase in committed diff | value loaded into a shell variable from the 600-mode sibling file (never printed), `grep -qF` on `git diff 55a38ba e6ee370` | zero matches (the staged-diff check before commit was also clean) |
+**Checks run.** `gpgcheck=0` absent from the docs (grep zero hits, rc=1); house style em/en dashes zero hits (rc=1); fingerprint present in 3 places (Manual step 3, the signature subsection, README — public data, permitted); diff scope only `INSTALL.md` and `README.md` (99 insertions / 7 deletions). Pre-push at `e6ee370`: private-key block zero hits (rc=1); `private-keys-v1.d` only `HEAD:.gitignore` (the pattern line itself, same as items 1 and 5); `BEGIN PGP` only `keys/cinnamon-rocky10-public.asc`. Passphrase in the committed diff (value loaded into a shell variable from the 600-mode sibling file, never printed, `grep -qF` on `git diff 55a38ba e6ee370`): zero matches; the staged-diff check before commit was also clean.
 
 **Alternatives considered**
 
@@ -752,19 +486,7 @@ keepcache=0
 - **Pinning mechanism for (2).** Option A, extract the public key embedded in the RPM signature header (`rpm -qp --qf '%{SIGPGP}'`, per Omega's note) and build the keyring from that. Rejected after verification: this rpm does not embed the key, `%{SIGPGP}`/`%{SIGGPG}` return `(none)`, `%{PGPSIG}`/`%{PGP}` are unknown tags, and numeric tags (`%{1005}`) are unsupported in queryformat on rpm 4.19.1.1. Option B, chosen, the `rpm --root` scratch keyring importing the repository's public key file. Pinning proven in all four directions: throwaway-signed pkg vs real-only keyring → NOT OK rc=1; throwaway-signed vs throwaway keyring → OK rc=0; real-signed vs throwaway-only keyring → NOT OK rc=1; real-signed vs real-only keyring → OK rc=0. Also verified: `rpm --initdb --root` fails rc=255 silently and creates nothing, so the script skips it and relies on `--import` auto-initializing the rpmdb.
 - **Idempotency gate kept on host-keyring semantics.** `is_signed()` (used to skip already-signed packages) still consults the host keyring; only the final claim is pinned. A package signed by a different key would be skipped as already signed and then fail the pinned verification, so nothing unpinned passes the script. Traded away: a second `rpm -K` per package in the sign loop, not worth it for a run that skips 64/64 in steady state.
 
-**Checks run**
-
-| Check | Command | Result |
-|---|---|---|
-| Syntax, both scripts | `bash -n repo-setup/sign-rpms.sh`, `bash -n vm-test/test-repo-setup.sh` | both OK |
-| Pinned loop, full set | scratch keyring via `rpm --root --import`, per-RPM `rpm --root -K` grep, all 64 RPMs | 64 pass, 0 fail, 1 s |
-| End-to-end script run | `bash repo-setup/sign-rpms.sh` | rc=0; "Signed now 0 / Already signed 64 / Total verified 64"; trap cleared the preset |
-| Files unchanged by the run | `sha256sum -c rpms/SHA256SUMS` after the run | 0 non-OK lines |
-| xtrace guard | `bash -x repo-setup/sign-rpms.sh /nonexistent` | refusal, rc=1, 5 trace lines |
-| Keyring preflight pattern | `rpm -q "gpg-pubkey-fda02785-*"`, `rpm -q "gpg-pubkey-00000000-*"` | rc=0 present, rc=1 absent |
-| Lint | `shellcheck -x repo-setup/sign-rpms.sh`, `shellcheck vm-test/test-repo-setup.sh` | sign-rpms clean; harness warnings only pre-existing (SC1091 lib.sh path, SC2046:248, SC2034:410), none on new lines |
-| Pre-push, private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `ba7babf` | zero hits (rc=1) |
-| Pre-push, passphrase | value loaded from the 600-mode file (never printed), `git show HEAD \| grep -cFf` | 0 matches |
+**Checks run.** `bash -n` both scripts OK. Pinned loop, full set (scratch keyring via `rpm --root --import`, per-RPM `rpm --root -K`): 64 pass, 0 fail, 1 s. End-to-end `bash repo-setup/sign-rpms.sh`: rc=0, "Signed now 0 / Already signed 64 / Total verified 64", trap cleared the preset. `sha256sum -c` after the run: 0 non-OK lines. xtrace guard (`bash -x repo-setup/sign-rpms.sh /nonexistent`): refusal, rc=1, 5 trace lines. Keyring preflight pattern: rc=0 present, rc=1 absent. shellcheck: sign-rpms clean; harness warnings only pre-existing (SC1091 lib.sh path, SC2046:248, SC2034:410), none on new lines. Pre-push at `ba7babf`: private-key block zero hits (rc=1); passphrase (loaded from the 600-mode file, never printed) 0 matches.
 
 **Trivial nits executed (2026-09-23, `Tails`).** Both one-line nits from Shadow's re-review of
 `ba7babf` (`## Review`, "Re-review (ba7babf)") landed on `feature/TASK-0024-rpm-signing-gpgcheck`
@@ -788,21 +510,7 @@ as project-repo `ce7b084` (only `repo-setup/sign-rpms.sh`, +29/−4), pushed `ba
   rather than `BEGIN PGP PUBLIC KEY BLOCK` so the script stays out of the tree's `git grep "BEGIN PGP"`
   key-material probe. It dies before the sign loop, before any mutation.
 
-**Checks run**
-
-| Check | Command | Result |
-|---|---|---|
-| Syntax | `bash -n repo-setup/sign-rpms.sh` | clean |
-| Lint | `shellcheck -x repo-setup/sign-rpms.sh` | clean |
-| Pre-flight, key file missing | scratch project with no `keys/` | rc=1, `GPG public key not found`, no mutation |
-| Pre-flight, key file corrupt | scratch project, file without the armor header | rc=1, `not a valid armored public key`, no mutation |
-| Pre-flight, multi-line passphrase | `PASSPHRASE_DIR` at a 2-newline 600 file | rc=1, `must be a single line, found 2 newlines`, no mutation |
-| Pre-flight, embedded newline | `PASSPHRASE_DIR` at an embedded-newline file | rc=1, `has an embedded newline`, no mutation |
-| Full run, signed set | `bash repo-setup/sign-rpms.sh` | rc=0, 0 signed / 64 skipped / 64 verified vs the pinned key |
-| Set unchanged | `cd rpms && sha256sum -c SHA256SUMS` | 64/64 OK, rc=0 |
-| Pre-push, private key block | `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` at `ce7b084` | zero hits (rc=1) |
-| Pre-push, passphrase | value loaded from the 600-mode file (never printed), `git show HEAD \| grep -F` | 0 matches |
-| Tree property | `git grep -l "BEGIN PGP" HEAD` | only `keys/cinnamon-rocky10-public.asc` |
+**Checks run.** `bash -n` clean; `shellcheck -x` clean. Pre-flight negative tests on scratch projects (all rc=1, no mutation): key file missing → `GPG public key not found`; key file without the armor header → `not a valid armored public key`; 2-newline 600 passphrase file → `must be a single line, found 2 newlines`; embedded-newline file → `has an embedded newline`. Full run on the signed set: rc=0, 0 signed / 64 skipped / 64 verified vs the pinned key; `sha256sum -c` after: 64/64 OK. Pre-push `git grep` at `ce7b084`: private-key block zero hits (rc=1); passphrase (value loaded from the 600-mode file, never printed) 0 matches in `git show HEAD`; `BEGIN PGP` only in `keys/cinnamon-rocky10-public.asc`.
 
 ---
 
@@ -810,129 +518,51 @@ as project-repo `ce7b084` (only `repo-setup/sign-rpms.sh`, +29/−4), pushed `ba
 
 *Owner: `Shadow`. Read-only — findings only, no edits. Severity order, blockers first.*
 
-### Harness ships no `keys/` to the VM; the new setup-repo.sh key step always dies there
-**Severity:** blocker
-**Where:** `vm-test/test-repo-setup.sh:349-364` (phase 1 copies), `repo-setup/setup-repo.sh:127-130` (new requirement)
-**Problem:** phase 1 rsyncs only `repo-setup/` and `rpms/` to the VM, but item 5 added a step to `setup-repo.sh` that requires `${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc` and dies without it.
-**Failure scenario:** fresh VM after phase 1; phase 2 runs `bash ./repo-setup/setup-repo.sh /root/cinnamon-for-rocky10` (test line 392) → the `[ ! -f "$KEY_FILE" ]` test at `setup-repo.sh:128` is true (no `keys/` on the VM) → die at line 129 → cascading FAILs: "setup-repo.sh execution" (test line 408), "completion message" (line 415), ".repo file installed" (line 432), "dnf repolist includes repo" (line 481), phase 4 `dnf install cinnamon` (line 558). The DoD items "Fresh-VM end-to-end" and "Big: all harness checks PASS" are unreachable on this branch as-is.
-**Suggested direction:** rsync `keys/` to the VM in phase 1 alongside the existing two copies, and update the header comment at test line 9 and the phase-1 log lines to match. Re-run the harness to green.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+*Full finding text and review analysis: `## Archive` > `Superseded review detail` (pruned 2026-09-24). The records below carry severity, location, outcome, and fix sha.*
 
-### sign-rpms.sh verification does not pin the signing key; the summary claim is stronger than the check
-**Severity:** should-fix
-**Where:** `repo-setup/sign-rpms.sh:245` (per-RPM check), `repo-setup/sign-rpms.sh:257` (final claim)
-**Problem:** verification is `rpm --checksig | grep -qi "signatures OK"`, which accepts a valid signature from *any* key in the host rpm keyring, but the script then reports "All RPMs in ... carry a valid signature from ${FPR}".
-**Failure scenario:** a host whose rpm keyring holds the project key plus at least one other key (any imported key qualifies); one RPM is swapped for a copy signed by that other key → `rpm --checksig` reports signatures OK → line 245 passes → the script certifies the whole set as signed by `1689676AF4D4F6FEC142B4429C0A8912FDA02785` when it is not. The pre-flight at line 150 proves the project key is present, not that it is the only key in the rpm keyring. The current set is unaffected (signed by the sole secret key in the dedicated keyring, item 3 evidence), but the script's standing guarantee is weaker than its output.
-**Suggested direction:** pin the expected signer in the verification step (assert the signing key identity in each RPM's signature data matches the expected fingerprint/keyid) so the line-257 claim matches what was actually checked.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+### Run-1 findings (7; all resolved)
 
-### Harness asserts 48 RPMs on the VM; the repo ships 64
-**Severity:** should-fix
-**Where:** `vm-test/test-repo-setup.sh:369-373`
-**Problem:** the "RPMs copied to VM" check asserts exactly 48, but the published set is 64 RPMs.
-**Failure scenario:** verified pre-existing on main (`git show 893b22a:vm-test/test-repo-setup.sh` line 366 carries the same `-eq 48`; `git show 893b22a:rpms` lists 64 RPMs), so the check FAILs on every run on either branch: 64 files land on the VM, the count test fails, the suite is red, and the DoD item "Big: all harness checks PASS" cannot be met. The branch already modifies this file (commit `55a38ba`), so the fix belongs here.
-**Suggested direction:** raise the constant to 64, or better, derive the expected count from the source tree (count `*.rpm` in `${PROJECT_DIR}/rpms` the same way line 368 counts the remote side) so the assertion cannot go stale again.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
+1. **blocker — Harness ships no `keys/` to the VM; the new `setup-repo.sh` key step always dies there.** `vm-test/test-repo-setup.sh:349-364` (phase 1 copies), `repo-setup/setup-repo.sh:127-130`. Phase 1 rsyncs only `repo-setup/` and `rpms/`; item 5's key step died on the fresh VM (cascading FAILs through phase 4), so the DoD Fresh-VM items were unreachable. Fixed in `ba7babf` (phase 1 rsyncs `keys/` after `rpms/`; fail-closed "public key copied to VM" check, PASS only on exact `present` output).
+2. **should-fix — sign-rpms.sh verification does not pin the signing key; the summary claim is stronger than the check.** `repo-setup/sign-rpms.sh:245` (per-RPM check), `:257` (final claim). `rpm --checksig` accepts a valid signature from *any* key in the host rpm keyring, but the log claimed the expected key. Fixed in `ba7babf` (scratch rpm keyring pin; the pin analysis is in `## Security` finding 2).
+3. **should-fix — Harness asserts 48 RPMs on the VM; the repo ships 64.** `vm-test/test-repo-setup.sh:369-373`. Verified pre-existing on main, so the count check FAILed on every run on either branch and the suite was red. Fixed in `ba7babf` (constant raised to 64, commented to the item-3 record; the "derive the count" alternative was not taken).
+4. **nit — Passphrase round-trip check is dead code and its comment is factually wrong.** `repo-setup/sign-rpms.sh:178-180`. The hex round trip can never fail, so the documented "single line" invariant was never enforced. Dead check removed in `ba7babf`; the replacement comment was still factually wrong (gpg-agent `PRESET_PASSPHRASE` does not verify the bytes; a multi-line file passes the preset and fails later as an unprotect error in the first `rpm --addsign`), so the comment correction plus real single-line enforcement landed in `ce7b084`.
+5. **nit — `xxd` and `stat` are used but missing from the tool pre-flight.** `repo-setup/sign-rpms.sh:105-107`. A host without `vim-common` aborted with the bare "xxd: command not found" instead of the pre-flight's actionable die. Fixed in `ba7babf` (both added to the tool loop).
+6. **nit — `rpm -qa | grep -q` under pipefail is a host-dependent latent false positive in the keyring pre-flight.** `repo-setup/sign-rpms.sh:150`. On a host past ~1300 packages, `grep -q` + SIGPIPE (rc 141) misreported the key as absent. Fixed in `ba7babf` (direct `rpm -q "gpg-pubkey-${KEYID8}-*"` query, no pipeline; the glob is required — the bare prefix matches nothing, Tails recorded rc=1).
+7. **nit — DoD "zero hits" wording is unsatisfiable on a correctly guarded tree.** Definition of Done. The `.gitignore:22` guard line itself matches `private-keys-v1.d`, so a correctly guarded tree has exactly one hit. Fixed by rewording the DoD (zero hits for `BEGIN PGP PRIVATE KEY BLOCK`; for the directory name, only the `.gitignore` guard line); the pre-push greps at `ba7babf` confirm it is satisfiable.
 
-### Passphrase round-trip check is dead code and its comment is factually wrong
-**Severity:** nit
-**Where:** `repo-setup/sign-rpms.sh:178-180`
-**Problem:** the "round-trip check" compares `xxd -r -p` of the hex encoding against the original, but hex encoding/decoding is an exact identity for any byte sequence (both sides undergo the same command-substitution trailing-newline stripping), so the comparison can never fail and the `die "passphrase file must be a single line"` at line 180 is unreachable; the comment at line 178 ("a multi-line file would not survive the hex round trip") is wrong.
-**Failure scenario:** none functionally — that is the point: a multi-line passphrase file passes the check and would work end-to-end through the hex protocol (hex represents every byte), so the documented "single line" invariant (header line 35) is simply never enforced.
-**Suggested direction:** either enforce the invariant on the raw file bytes (e.g. newline count in the file) or drop the invariant from the header and delete the check.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
-
-### `xxd` and `stat` are used but missing from the tool pre-flight
-**Severity:** nit
-**Where:** `repo-setup/sign-rpms.sh:105-107` (pre-flight loop), first use of `xxd` at line 177
-**Problem:** the pre-flight checks `gpg gpg-connect-agent rpm` only, but the script also requires `xxd` (line 177; shipped by `vim-common` on RHEL, not guaranteed on a minimal server) and `stat` (lines 141, 143).
-**Failure scenario:** a host without `vim-common` → line 177 aborts under `set -euo pipefail` with the bare shell message "xxd: command not found" and a non-zero rc, instead of the pre-flight's actionable "required tool not found: ..." die.
-**Suggested direction:** add `xxd` and `stat` to the pre-flight loop.
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
-
-### `rpm -qa | grep -q` under pipefail is a host-dependent latent false positive in the keyring pre-flight
-**Severity:** nit
-**Where:** `repo-setup/sign-rpms.sh:150` (with `set -o pipefail` at line 42)
-**Problem:** if the `rpm -qa` output exceeds the pipe buffer (~64 KB, i.e. roughly 1300+ installed packages) and the `gpg-pubkey-fda02785-*` line is not the last line, `grep -q` exits as soon as it matches, the next write from `rpm -qa` hits SIGPIPE (rc 141), and pipefail makes the pipeline return 141.
-**Failure scenario:** a host that grew past ~1300 packages after the key import → line 150's `if !` sees rc 141 → dies with "public key fda02785 is not in the rpm keyring" although the key is present; the message misdirects the operator to re-import a key that is already there. Not triggered on the release host today (item 3 ran clean; the key's db entry sits near the end of the list, so grep reads to the end) — it is a degradation path, not a current failure.
-**Suggested direction:** query the keyring directly with no pipeline, as `repo-setup/setup-repo.sh:139` already does (`rpm -q "gpg-pubkey-<keyid>*"`).
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
-
-### DoD "zero hits" wording is unsatisfiable on a correctly guarded tree
-**Severity:** nit
-**Where:** Definition of Done, `planning/docs/TASK-0024-rpm-signing-gpgcheck.md:88`
-**Problem:** the DoD requires the merged tree to pass `git grep` for `private-keys-v1.d` "with zero hits", but the guard that makes the tree safe is itself the literal pattern line `private-keys-v1.d/` in `.gitignore:22` (verified via `git show feature/TASK-0024-rpm-signing-gpgcheck:.gitignore`), so `git grep private-keys-v1.d` returns exactly one hit on the merged tree.
-**Failure scenario:** merge the branch as-is → the literal DoD check fails on a tree that has no key material, because the .gitignore guard line matches the search string.
-**Suggested direction:** reword to "zero hits for `BEGIN PGP PRIVATE KEY BLOCK`, and for `private-keys-v1.d` only the `.gitignore` guard line". (DoD is Robotnik's section; flagged here, not edited.)
-**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
-
----
-
-**Verified, no finding.** The following were checked and cleared: passphrase handling in `sign-rpms.sh` (read from the 600-mode file, hex-encoded, sent on `gpg-connect-agent` stdin only, never in argv; `PASS`/`PASS_HEX` wiped at lines 181/194; `clear_preset` EXIT trap covers all exit paths, lines 199-208); `setup-repo.sh` statelessness contract (bad argument dies at the `cd -P` resolution, lines 61-62, before the root check at line 78 and every state-changing step, matching the contract at lines 21-28); the `is_signed` grep (lowercase "signatures OK" cannot match the failure string "SIGNATURES NOT OK", lines 213-221); harness test 6's flip to `gpgcheck=1` (asserts the new intended behavior, `vm-test/test-repo-setup.sh:314-323`; the template and the script's printf both carry `gpgcheck=1` with no `gpgkey=`, consistent); the public key file's fingerprint subpacket decodes exactly to `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, and `KEY_ID="fda02785"` is its last 8 hex chars (`repo-setup/setup-repo.sh:42`); `rpms/SHA256SUMS` structure (64 lines, basenames only, 1:1 with the tree listing) plus the commit-range argument that no `rpms/*.rpm` changed after the manifest commit (`git log --stat db60bb6..1b57ac8` and `1b57ac8..e6ee370`), on top of the recorded item 4 evidence (`sha256sum -c` 64/64 OK). Note: the hashes themselves were not independently re-computed — this review has no `sha256sum` permission — so the manifest's correctness rests on the recorded item 4 run plus the commit-range argument.
+**Verified, no finding (run-1).** Passphrase handling in `sign-rpms.sh` (600-mode file, hex-encoded, `gpg-connect-agent` stdin only, never in argv; `PASS`/`PASS_HEX` wiped, `clear_preset` EXIT trap covers all exit paths); `setup-repo.sh` statelessness contract (bad argument dies at the `cd -P` resolution, before the root check and every state-changing step); the `is_signed` grep (lowercase "signatures OK" cannot match "SIGNATURES NOT OK"); harness test 6's flip to `gpgcheck=1` (template and printf consistent, no `gpgkey=`); the public key file's fingerprint subpacket decodes exactly to `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (`KEY_ID="fda02785"` is its last 8 hex chars, `setup-repo.sh:42`); `rpms/SHA256SUMS` structure (64 lines, basenames only, 1:1 with the tree listing) plus the commit-range argument that no `rpms/*.rpm` changed after the manifest commit. The hashes themselves were not independently re-computed (no `sha256sum` in the reviewer's tool set) — the manifest's correctness rests on the recorded item 4 run plus the commit-range argument.
 
 ---
 
 ### Re-review (ba7babf), 2026-09-23
 
-**Scope.** The fix delta `e6ee370..ba7babf` is a single commit (`git diff --stat`: `INSTALL.md` 5±, `repo-setup/sign-rpms.sh` 95±, `vm-test/test-repo-setup.sh` 28±; +98/-30). Re-checked only what changed plus the previously flagged lines, and the two deviations Tails recorded from the fix brief. `repo-setup/setup-repo.sh`, the `.repo` template, `rpms/`, and `rpms/SHA256SUMS` are untouched in the delta, so the statelessness contract, the `gpgcheck=1` block, and the manifest remain as verified in the first pass.
+*Scope: the fix delta `e6ee370..ba7babf` is a single commit (`git diff --stat`: `INSTALL.md` 5±, `repo-setup/sign-rpms.sh` 95±, `vm-test/test-repo-setup.sh` 28±; +98/-30). Re-checked only what changed plus the previously flagged lines, and the two deviations Tails recorded from the fix brief. `repo-setup/setup-repo.sh`, the `.repo` template, `rpms/`, and `rpms/SHA256SUMS` are untouched in the delta, so the statelessness contract, the `gpgcheck=1` block, and the manifest remain as verified in the first pass.*
 
 **Verdict.** 6 of 7 original findings CLEARED, 1 REOPENED (nit), 1 NEW (nit). **Unblock the merge**; both open nits are one-line fixes.
 
-**1. Harness ships `keys/` to the VM (blocker): CLEARED.** Phase 1 now rsyncs `keys/` after `rpms/` and before phase 2 (`vm-test/test-repo-setup.sh:366-375`), in the file's existing copy idiom (`ssh_pin_opts` + word-split with the `SC2086` disable, verify-after-copy). The destination matches the `KEY_FILE` resolution of the phase-2 invocation (`test-repo-setup.sh:411-412` passes `/root/cinnamon-for-rocky10`; `setup-repo.sh` reads `${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc`). The new check "public key copied to VM" (`test-repo-setup.sh:395-401`) is fail-closed: PASS only on exact `present` output; a missing file, ssh failure, or connection error all land on FAIL via `2>/dev/null || true` plus the empty-string compare, and any FAIL record drives `OVERALL: FAIL`/exit 1 (`test-repo-setup.sh:833-839`). `record()` takes an optional detail argument (`test-repo-setup.sh:48-67`), so the two-arg PASS call is valid. The tree's `keys/` holds exactly `cinnamon-rocky10-public.asc` (`git show HEAD:keys`); header line 9 is updated to match.
-
-**2. Verification pins the expected signer (should-fix): CLEARED, deviation justified.** The set is now verified against a scratch rpm root holding only the repo key file (`sign-rpms.sh:281-291`), requiring `signatures OK` per RPM. That is a real pin, not a string match: a signature verifies only if its key ID is in the scratch keyring (the imported key's) and it cryptographically verifies against that key. Tails' recorded four-way matrix proves both directions (real-signed vs throwaway-only keyring NOT OK, so the host keyring is not consulted; throwaway-signed vs throwaway keyring OK, so the scratch keyring is). I independently confirmed the deviation's premise on this rpm: `%{SIGPGP}` and `%{SIGGPG}` query empty and `%{PGP}` is an unknown tag on rpm 4.19 (`rpm -qp --qf` against `rpms/cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm`), so the originally suggested `%{SIGPGP}` extraction is unavailable and the recorded deviation stands. A key-file swap is caught loudly: the script signs with the preflight-verified key, so the swapped file's key ID is absent from the scratch keyring and the loop dies at line 289. The only theoretical bypass is a 64-bit key ID collision (infeasible). Residual, out of scope of this finding and tracked under the Omega medium: a package pre-signed by a third-party key not in the host keyring is re-signed by the script before verification, and the final claim states exactly what the pin checks ("the pinned key", line 302).
-
-**3. Count 48 to 64 (should-fix): CLEARED.** The constant and message now say 64 (`vm-test/test-repo-setup.sh:378-385`); the tree holds exactly 64 `.rpm` files (`git show HEAD:rpms`). The "derive the count" alternative was not taken; the constant is commented to the item-3 record (line 380) and will need the same one-line update if a future republish changes the set size.
-
-**4. Dead hex round-trip check, wrong comment (nit): REOPENED (nit).** The dead check is correctly removed (single `xxd` plus single `gpg-connect-agent`, `sign-rpms.sh:200-201`). The replacement comment (lines 202-205) is still factually wrong: it claims "a malformed file, for example a multi-line passphrase, is rejected by gpg-agent itself, which then answers without an OK line". `PRESET_PASSPHRASE` is a cache operation; the agent stores the hex-decoded bytes and answers OK for any valid hex string without verifying against the key. A multi-line file therefore passes the preset; if its bytes do not equal the key's actual passphrase (as must be the case for a key generated through the interactive prompt), the failure surfaces as an unprotect error in the first `rpm --addsign` (line 264), not as a preset rejection. The "single line" invariant is still asserted (lines 37, 196-197) and still unenforced. No functional impact, unchanged. Direction: correct the comment at 202-205 to the actual failure point, and either enforce single-line on the raw file bytes or drop the invariant from lines 37 and 196-197.
-
-**5. `xxd`/`stat` pre-flight (nit): CLEARED.** Both added to the tool loop (`sign-rpms.sh:121-123`); first uses at lines 157/159 (`stat`) and 201 (`xxd`), with the actionable die on a host missing either.
-
-**6. Keyring pre-flight SIGPIPE (nit): CLEARED.** The pipeline is gone; the check is a direct `rpm -q "gpg-pubkey-${KEYID8}-*"` (`sign-rpms.sh:174`), no pipe, no SIGPIPE under `pipefail`. The glob is required (the bare `gpg-pubkey-fda02785` prefix matches nothing; Tails recorded rc=1 on the host with the key installed) and matches the proven idiom in `setup-repo.sh`. I could not re-run the glob query in this review (not in the reviewer's tool set); the verdict rests on Tails' recorded host run plus the pattern match.
-
-**7. DoD "zero hits" wording (nit): CLEARED.** The DoD is reworded as suggested: zero hits for `BEGIN PGP PRIVATE KEY BLOCK`, and for `private-keys-v1.d` only the `.gitignore` guard line itself (planning doc, Definition of Done, lines 107-109). The DoD is Robotnik's section, so I verified the current text, not who edited it. Satisfiable on the merged tree: the recorded pre-push greps at `ba7babf` show rc=1 for the private-key block and exactly one `.gitignore` hit for the directory name.
-
-**New items in the delta.**
-- `set -x` guard (`sign-rpms.sh:46-58`): no finding. `$-` carries `x` only when xtrace is set; the script adds `e`, `u`, and pipefail, none of which is `x`, so a normal run is never refused, and `bash -x` or sourcing into an xtrace shell dies at line 56 before the passphrase is read (trace stops at the guard; Tails verified 5 lines). The comment at 50-52 correctly notes that BASHOPTS does not list xtrace in a script shell.
-- INSTALL.md out-of-band line (lines 282-285): no finding. Placed in the "GPG signature, origin tampering" subsection, accurate, no secret (the fingerprint is public data, already in the doc three times). The metalinux.dev publication is the recorded non-blocking follow-up scheduled before the first public tag, and the documented procedure is anchored to the tag (`clone --branch v1.0.0`), so the line is correct at the point the procedure is followed.
-- `cleanup()` rename and `rm -rf "${SIGNER_ROOT}"` (lines 223-238): no finding. `SIGNER_ROOT` is always a fresh `mktemp -d` path, quoted, guarded by `-n`.
-- NEW nit: the scratch keyring import (`sign-rpms.sh:283-284`) runs after the signing loop (255-266), so a missing or corrupt `keys/cinnamon-rocky10-public.asc` is only detected after all RPMs are signed in place. The script dies loudly at line 284 and the state is recoverable (a re-run skips the signed RPMs), but the file's pre-flight section (112-182) exists to check every prerequisite before mutation, and `KEYFILE` is one. Direction: add a `KEYFILE` existence check to the pre-flight section.
-
-**Bookkeeping.** The seven `Resolution:` lines in the findings above are still unfilled placeholders; `Tails` fills them with `ba7babf` (item 4: the comment half lands in the follow-up commit).
-
+**Per-finding outcome.** 1 CLEARED (phase 1 now rsyncs `keys/` after `rpms/`, fail-closed "public key copied to VM" check PASSing only on exact `present`, any FAIL driving `OVERALL: FAIL`). 2 CLEARED, deviation justified (scratch rpm keyring pin, `sign-rpms.sh:281-291`; a real pin, not a string match, proven in both directions by Tails' four-way matrix; independently confirmed `%{SIGPGP}`/`%{SIGGPG}` query empty and `%{PGP}` is an unknown tag on rpm 4.19, so the suggested `%{SIGPGP}` extraction is unavailable; a key-file swap is caught loudly, the only theoretical bypass being a 64-bit key ID collision). 3 CLEARED (constant 64, commented to the item-3 record; "derive the count" not taken). 4 REOPENED (nit) — dead check removed correctly, but the replacement comment is still factually wrong (`PRESET_PASSPHRASE` is a cache operation that answers OK for any valid hex without verifying against the key; the failure of a multi-line file surfaces as an unprotect error in the first `rpm --addsign`, `sign-rpms.sh:264`, not a preset rejection); comment correction plus real single-line enforcement landed in `ce7b084`. 5 CLEARED. 6 CLEARED (direct `rpm -q` glob query, no pipeline; the reviewer could not re-run the glob, so the verdict rests on Tails' recorded host run plus the pattern match). 7 CLEARED (DoD reworded as suggested; pre-push greps at `ba7babf` show rc=1 for the private-key block and exactly one `.gitignore` hit).
+**New items in the delta.** `set -x` guard (`sign-rpms.sh:46-58`): no finding (a normal run is never refused; `bash -x` or sourcing into an xtrace shell dies at the guard before the passphrase is read). INSTALL.md out-of-band line: no finding (accurate, no secret; the metalinux.dev publication is the recorded non-blocking follow-up scheduled before the first public tag). `cleanup()` rename / `rm -rf` of the fresh `mktemp -d` root: no finding. NEW nit: the scratch keyring import runs after the signing loop, so a missing or corrupt `KEYFILE` is detected only after all RPMs are signed in place (the script dies loudly, state is recoverable) — fixed in `ce7b084` (KEYFILE pre-flight check).
+**Bookkeeping.** The seven `Resolution:` placeholders were still unfilled at re-review; `Tails` filled them with `ba7babf` (item 4: the comment half lands in the follow-up commit) — see the run-1 records above.
 **Bottom line.** 6 of 7 CLEARED, 1 REOPENED (nit, comment), 1 NEW (nit, fail-fast ordering). Merge unblocked; the two nits are one-line fixes Tails can land as a trivial follow-up before or at merge.
 
 ---
 
 ### Harness-delta review (8672013), 2026-09-23
 
-*Owner: `Shadow`. Targeted re-review of the harness delta `ce7b084..8672013` (commits `80ade06`, `8672013`), committed by `Big` after the fix reviews. Read-only: `git diff`/`git show` against branch objects, reads of the working tree at branch tip `8672013` (clean per `git status` apart from an untracked `AGENTS.md`; two commits ahead of origin).*
+*Owner: `Shadow`. Targeted re-review of the harness delta `ce7b084..8672013` (commits `80ade06`, `8672013`), committed by `Big` after the fix reviews. Read-only: `git diff`/`git show` against branch objects, reads of the working tree at branch tip `8672013`.*
 
 **Functional-tree claim: holds.** `git diff ce7b084..8672013 --stat` lists exactly two files, both under `vm-test/` (`test-repo-setup.sh` 40 lines, `verify-install-packages.sh` 13 lines; 40 insertions, 13 deletions in total). No change to `rpms/`, `repo-setup/`, `keys/`, or docs. The signed content under test is byte-identical to `ce7b084`.
 
 **Verified sound, no finding.**
-
-1. **Inverted install check (`80ade06`, `vm-test/test-repo-setup.sh:598-614`).** Bug fix, not a weakening. The old form captured `rpm -q cinnamon 2>/dev/null || echo not-installed`; for a missing package `rpm -q` prints "package cinnamon is not installed" to stdout (rc 1) and the `|| echo` appends a second line, so the captured string never equals "not-installed" and the old check recorded PASS for an uninstalled package. It could not record FAIL at all. The new form branches on the rc of `rpm -q --quiet cinnamon` (0 only when installed) and then reads `%{VERSION}-%{RELEASE}`; PASS requires both to succeed, otherwise it records FAIL "cinnamon not found via rpm -q". `ssh_cmd` returns the remote rc unchanged (`vm-test/lib.sh:206`). A successful install PASSes ("cinnamon-6.7.4-3.el10"); a refused install FAILs both the rc check at `:592-596` and the package check. Strictly stronger than the old check, and the two-step pattern matches the Phase 5 idiom at `:681-684`.
-2. **pipefail `grep` (`80ade06`, `vm-test/test-repo-setup.sh:564-570`).** Sound. `grep -q` exits on the first match; under `set -o pipefail` the still-flushing `echo` (a multi-hundred-KB dnf capture) dies with SIGPIPE (141) and pipefail fails the pipeline, producing a false WARN. Dropping `-q` and redirecting to `/dev/null` makes the pipeline read to EOF. The match pattern ("Complete" or "installed", case-insensitive) is unchanged, so no previously-failing state now PASSes on different grounds; the check is WARN-level and diagnostic, and the authoritative install checks are rc-based. Same bug class as original finding 6 (SIGPIPE in the `sign-rpms.sh` keyring pre-flight).
-3. **repodata rsync exclusion (`80ade06`, `vm-test/test-repo-setup.sh:358-372`).** Sound, and a test strengthening. `.gitignore:13` is exactly `rpms/repodata/` (the comment's claim, verified). `setup-repo.sh:109-111` regenerates metadata with `createrepo_c` when `repodata/repomd.xml` is absent, so the VM state the harness now exercises is the state a real follower reaches from a clone. The excluded artifact is a working-tree byproduct that no clone ships, and its stale form (pre-dating the `db60bb6` re-sign) is what broke the first re-run with a 64/64 SHA256SUMS mismatch. Excluding it removes an unreachable state from the test, not a reachable one.
-4. **Pin data (`8672013`, `vm-test/verify-install-packages.sh:35-50`).** Correct data fix. All 14 `BASE_PACKAGES` pins now equal the committed `rpms/` filenames at `8672013`, verified against the `git show 8672013:rpms` tree listing. The four changed pins (cinnamon-desktop 6.7.2-2, cinnamon-settings-daemon 6.7.2-2, nemo 6.7.4-2, cinnamon 6.7.4-3) and the ten unchanged pins (mozjs115 115.29.0-1, cjs 6.4.0-1, muffin/-clutter/-cogl 6.7.4-3, cinnamon-session 6.7.3-1, cinnamon-control-center 6.7.2-1, cinnamon-menus 6.7.0-1, xapps-lib 3.3.3-1) all match. The installed versions recorded in the re-run (6.7.2-2/6.7.4-2/6.7.4-3) equal the committed filenames, so the fix aligns the table with the release set rather than masking a mismatch.
-5. **The 6 SKIPs (re-run record vs `vm-test/test-repo-setup.sh:743-788`).** Genuinely environmental, not dropped checks. The code defines 7 binaries. `cinnamon-session` and `csd-xsettings` carry `version_flag=NONE` and SKIP with "no version flag for this binary" (a fact about the binaries, 2 SKIPs). `muffin`, `cinnamon-control-center`, `nemo`, `cinnamon` carry `needs_xvfb=yes` and SKIP only when Xvfb is unavailable (4 SKIPs), and the harness attempts `dnf install -y xorg-x11-server-Xvfb` at `:733` before declaring it unavailable; the record shows the minimal image has no such package ("No match for argument"). The ldd check (`:765-777`) runs for every binary before any version-SKIP branch, and the overall 0 FAIL means every ldd counterpart, including all six SKIPped binaries, PASSed with 0 missing libraries. The one Xvfb-independent version check (cjs) ran and PASSed with `cjs 6.4.0`, matching the committed `cjs-6.4.0-1.el10`.
+1. **Inverted install check (`80ade06`):** bug fix, not a weakening — the old `rpm -q cinnamon 2>/dev/null || echo not-installed` capture could never equal "not-installed" (for a missing package `rpm -q` prints to stdout and the `|| echo` appends a second line), so the old check recorded PASS for an uninstalled package and could not record FAIL at all; the new form branches on the rc of `rpm -q --quiet cinnamon` (0 only when installed) then reads `%{VERSION}-%{RELEASE}`.
+2. **pipefail `grep` (`80ade06`):** sound — `grep -q` under pipefail with the still-flushing multi-hundred-KB dnf capture dies with SIGPIPE (141), producing a false WARN; dropping `-q` and redirecting to `/dev/null` makes the pipeline read to EOF; the match pattern ("Complete" or "installed", case-insensitive) is unchanged, so no previously-failing state now PASSes on different grounds. Same bug class as original finding 6.
+3. **repodata rsync exclusion (`80ade06`):** sound, and a test strengthening — `.gitignore:13` is exactly `rpms/repodata/` (verified); `setup-repo.sh:109-111` regenerates metadata with `createrepo_c` when `repodata/repomd.xml` is absent, so the harness now exercises the state a real clone reaches; the excluded byproduct (stale, pre-dating the `db60bb6` re-sign) is what broke the first re-run with a 64/64 SHA256SUMS mismatch.
+4. **Pin data (`8672013`):** correct data fix — all 14 `BASE_PACKAGES` pins now equal the committed `rpms/` filenames at `8672013` (verified against the `git show 8672013:rpms` tree listing, 4 changed + 10 unchanged); the installed versions recorded in the re-run equal the committed filenames, so the fix aligns the table with the release set rather than masking a mismatch.
+5. **The 6 SKIPs:** genuinely environmental, not dropped checks — the code defines 7 binaries; `cinnamon-session` and `csd-xsettings` carry `version_flag=NONE` (2 SKIPs), `muffin`/`cinnamon-control-center`/`nemo`/`cinnamon` need Xvfb, which the minimal image lacks ("No match for argument" after the harness's own install attempt at `:733`; 4 SKIPs); the ldd check runs for every binary before any version-SKIP branch, and the overall 0 FAIL means every ldd counterpart, including all six SKIPped binaries, PASSed with 0 missing libraries; the one Xvfb-independent version check (cjs) PASSed with `cjs 6.4.0`, matching the committed `cjs-6.4.0-1.el10`.
 
 **Findings.**
-
-### `8672013` refreshed the standalone script's pin table, not the table that produced the 4 WARNs
-**Severity:** should-fix
-**Where:** `vm-test/test-repo-setup.sh:654-669` (inline `PKG_LIST`); `vm-test/verify-install-packages.sh:35-50` (the table `8672013` did refresh)
-**Problem:** the 4 WARNs in the item-10 re-run came from the harness's own inline `PKG_LIST`, which still pins the old versions for the same four packages, and `8672013` changed only the other copy of the table.
-**Failure scenario:** re-run `vm-test/test-repo-setup.sh` → Phase 5 compares the installed 6.7.2-2/6.7.4-2/6.7.4-3 against the inline pins 6.7.2-1 (lines 661, 664) and 6.7.4-1 (lines 667, 668) → the same 4 version-mismatch WARNs reappear. `test-repo-setup.sh` never invokes `verify-install-packages.sh` (only the comment at line 653 references it; the script is driven by `vm-test/validate-install.sh:300,366`, the TASK-0005 suite), so the `8672013` fix takes effect only on the standalone path, and the Test Results claim "Fixed in `8672013`; a re-run would show 0 WARN" is false for the harness.
-**Suggested direction:** apply the same four version updates to the inline `PKG_LIST`, or remove the duplication so the harness reads the table from one place, and correct the Test Results attribution. Not a blocker: WARN does not flip OVERALL (`vm-test/test-repo-setup.sh:855-861` exits 1 only on FAIL>0), and the WARNs are true positives against the harness's own stale pins, not masked failures. The new header comment in `verify-install-packages.sh` ("Regenerate this table from `rpms/` whenever the set is rebuilt") now describes two tables, one of which was missed. That duplication is the drift risk.
-
-### Per-phase lines in the re-run table undercount against the code
-**Severity:** nit
-**Where:** planning doc, `## Test Results` "Re-run (ce7b084)" phase table (Phase 0 "7/7 PASS"; Phase 6 "6 binaries ... 6/6 ldd PASS ... 5 SKIP")
-**Problem:** the code records 9 Phase 0 checks and 7 Phase 6 binaries (7 ldd checks, 1 version PASS, 6 version SKIPs), not 7 and 6/5.
-**Failure scenario:** none functional. The overall total (60 = 50 PASS + 0 FAIL + 6 SKIP + 4 WARN) reconciles exactly with the code at 9 Phase 0 records (lines 191, 201, 250, 287, 301, 309, 320, 328, 336) and 7 `BINARY_DEFS` entries (lines 743-751), so the verdict stands. The per-phase lines contradict both the code and the same record's overall totals, and a reader who trusts "5 SKIP" will miscount when Xvfb is added to the image.
-**Suggested direction:** correct the two lines to 9/9 and 7 binaries (7/7 ldd, 1 version PASS, 6 SKIP).
+1. **should-fix — `8672013` refreshed the standalone script's pin table, not the inline `PKG_LIST` that produced the 4 WARNs.** `vm-test/test-repo-setup.sh:654-669` (inline `PKG_LIST`); `vm-test/verify-install-packages.sh:35-50` (the table `8672013` did refresh). The 4 WARNs came from the harness's own inline `PKG_LIST`, which still pinned the old versions for the same four packages; `test-repo-setup.sh` never invokes `verify-install-packages.sh` (driven by `vm-test/validate-install.sh:300,366`, the TASK-0005 suite), so the `8672013` fix took effect only on the standalone path. Not a blocker: WARN does not flip OVERALL (`:855-861` exits 1 only on FAIL>0), and the WARNs were true positives against the harness's own stale pins, not masked failures; the duplicated-table drift risk is the recorded concern. **Resolved:** the inline `PKG_LIST` was fixed in `6bb500e` (vm-test/ only), the earlier "a re-run would show 0 WARN" claim in `## Test Results` was corrected in the record itself, and re-run 2 at `6bb500e` is OVERALL PASS, 54 PASS / 0 FAIL / 6 SKIP / 0 WARN (`## Test Results`).
+2. **nit — Per-phase lines in the re-run table undercount against the code.** `## Test Results` "Re-run (ce7b084)" phase table: the code records 9 Phase 0 checks and 7 Phase 6 binaries (7 ldd, 1 version PASS, 6 SKIP), not 7 and 6/5. No functional impact: the overall total (60 = 50 PASS + 0 FAIL + 6 SKIP + 4 WARN) reconciles exactly with the 9 Phase 0 records and 7 `BINARY_DEFS` entries, so the verdict stood.
 
 **Verdict.** The harness delta is sound on all four requested points. The inverted-check fix is a genuine bug fix (the old check could not record FAIL; a refused install is now detected as such), the pipefail and repodata fixes are correct, the pin data matches the committed release set exactly, the 6 SKIPs are environmental with ldd passing for every SKIPped binary, and the functional-tree-byte-identical claim holds. One should-fix: `8672013` refreshed the wrong copy of a duplicated pin table, so the harness will still emit the same 4 WARNs on re-run, and the "re-run would show 0 WARN" line in Test Results needs correcting. No blockers; the delta does not impede merge.
 
@@ -949,75 +579,34 @@ set, so signature and digest claims rest on the recorded item runs, Shadow's `##
 verification, and byte inspection of git objects (`git grep -a` is reliable only for patterns
 without the 0x0A byte; validated here with control patterns).
 
-### No out-of-band anchor for the signing fingerprint; a key swap is undetectable inside the account
-**Severity:** medium
-**Vector:** supply-chain
-**Where:** `keys/cinnamon-rocky10-public.asc`, `INSTALL.md:188`, `INSTALL.md:282`, `README.md:102`, `repo-setup/setup-repo.sh:38`
-**Attack:** the attacker is a compromised `metalllinux` GitHub account (named in the threat model at task origin, this doc line 54). One in-account PR or commit does all of: (a) replace `keys/cinnamon-rocky10-public.asc` with the attacker's public key, (b) re-sign all 64 RPMs with the attacker's key, (c) update the fingerprint strings in `INSTALL.md` and `README.md`, (d) regenerate `rpms/SHA256SUMS`. A follower running `setup-repo.sh` imports the attacker's key into the rpm keyring, `gpgcheck=1` then passes on the attacker's packages, and attacker code runs as root (the threat model states packages install as root). Every in-repo check passes: signatures verify against the shipped (attacker) key, the manifest matches the re-signed RPMs, and the documented manual `rpm --checksig` procedure verifies against whatever key was imported.
-**Impact:** RCE as root on every follower who installs from a tag cut after the swap. The signing layer does close the stated `rpms/`-tampering threat with the key held constant (a PR altering only `rpms/` is caught: the altered packages do not verify against the shipped key). The key-swap variant requires the same capability as account compromise, so this is the residual of the named threat, not a hole in the implemented design.
-**Evidence for severity.** No out-of-band copy of the fingerprint exists. Checked metalinux.dev homepage and the Linux Journey index (2026-09-22): no article publishes it, and the key (generated 2026-09-21) postdates any Cinnamon article the project could have written. The fingerprint is published only inside `metalllinux` account territory: the project repo (the five locations above) and this planning doc. The user's memory is the only current out-of-band knowledge.
-**Fix:** non-blocking; recommended before the first public tag. Publish the fingerprint on metalinux.dev (separate domain and hosting, a distinct trust domain) and add one line to the `INSTALL.md` manual procedure telling the follower to compare the imported key's fingerprint against that out-of-band value before trusting the repo. This converts a silent key swap into a detectable one.
-**Resolution:** *(filled by `Tails`)*
+### Findings (4, all resolved)
 
-### Final verification does not pin the signing key, and the completion log overstates the guarantee
-**Severity:** low
-**Vector:** crypto
-**Where:** `repo-setup/sign-rpms.sh:241-246` (verification loop, die at :245), `repo-setup/sign-rpms.sh:257` (log), `repo-setup/sign-rpms.sh:219-221` (`is_signed`)
-**Attack:** `rpm --checksig`/`rpm -K` verifies "a valid signature by a key in the rpm keyring, or by the public key embedded in the package", not "by key 1689...FDA02785". An RPM in `rpms/` re-signed with a key absent from the host's rpm keyring would be accepted through the embedded-key fallback by both the skip check (`is_signed`, :220) and the final verification (:245). Exploiting this needs write access to `rpms/` on the release host (or to the script itself), and an attacker with that capability does not need this path, so the exposure is robustness, not a reachable vulnerability. On the release host the check is in fact pinned: the pre-flight (:150-151) guarantees key `fda02785` is in the rpm keyring before anything runs, so verification resolves by key ID.
-**Impact:** a future run against pre-placed re-signed packages would log "All RPMs in rpms/ carry a valid signature from 1689...FDA02785" (:257) for packages that do not carry such a signature. False assurance in recorded evidence, not a broken current signature: for this run the guarantee holds, byte inspection of the committed git objects shows the key-ID tail `fda02785` embedded in the branch blobs (2 hits in the `cinnamon-rocky-defaults` sample) and absent from the main blobs (0 hits).
-**Fix:** consolidate with Shadow's should-fix on these same lines (no duplicate work). Pin the key in verification, for example by extracting the embedded public key (`rpm -qp --qf '%{SIGPGP}'`) and comparing its fingerprint to `EXPECTED_FINGERPRINT`, and reword the :257 log to state what was actually checked.
-**Resolution:** *(filled by `Tails`)*
+*Full finding text and resolution analysis: `## Archive` > `Superseded security detail` (pruned 2026-09-24). The records below carry severity, location, and outcome.*
 
-### "Never run with set -x" warning is not enforced
-**Severity:** low
-**Vector:** secrets
-**Where:** `repo-setup/sign-rpms.sh:24-26` (warning) versus the script body (no guard)
-**Attack:** the header warns that running under `set -x` prints the passphrase via the trace (AGENTS.md section 4), but nothing enforces it. `bash -x repo-setup/sign-rpms.sh` (or a wrapper that sources it into an xtrace shell) traces lines 177 and 179 with the expanded cleartext passphrase (and its hex form) on stderr, because `printf '%s' "$PASS"` and `printf '%s' "$PASS_HEX"` are traced with their arguments expanded. Line 175 (`PASS=$(cat ...)`) does not leak (the trace shows the command, not the substitution result), and the heredoc at :186-190 is not traced.
-**Impact:** the passphrase lands in the operator's terminal, shell history, or any captured log of the signing run. Host-local only: the script never runs in CI, output stays on the release host, and the attacker is the operator misusing the script or a local process reading the terminal or log.
-**Fix:** refuse to run when xtrace is active, near the top of the script after :42: `case "${BASHOPTS:-}" in *xtrace*) die "refusing to run under set -x: the passphrase would be traced (AGENTS.md section 4)";; esac`.
-**Resolution:** *(filled by `Tails`)*
+**Finding 1 — no out-of-band anchor for the signing fingerprint; a key swap is undetectable inside the account.** Medium, supply-chain. Where: `keys/cinnamon-rocky10-public.asc`, `INSTALL.md:188`/`:282`, `README.md:102`, `repo-setup/setup-repo.sh:38`. A compromised `metalllinux` account can swap the shipped key, re-sign all 64 RPMs, update the fingerprint strings and `rpms/SHA256SUMS`, and have every in-repo check pass (attacker code runs as root on followers). The signing layer does close the stated `rpms/`-tampering threat with the key held constant; the key-swap variant is the named account-compromise residual, not a hole in the implemented design. Resolved, both halves: `ce7b084` added the out-of-band comparison line at `INSTALL.md:282-285`; the metalinux.dev publication landed at site commit `075a3c9` (`https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`) before tag `v1.0.0` was cut (see `## Release`).
 
-### All 64 signed RPMs are byte-identical in size to the unsigned baseline
-**Severity:** low
-**Vector:** crypto
-**Where:** `rpms/*.rpm` (all 64); `## Implementation` item 3 record
-**Attack:** none. This is a records gap, not an attack path. `git diff --stat 893b22a..e6ee370` shows all 64 RPMs as `Bin N -> N` (unchanged size, for example `cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` 15241 to 15241). Ordinary `rpm --addsign` with an RSA-4096 key grows the file by roughly 1 KB (signature plus embedded public key). The Implementation record attributes the identity to "the signature landing in a fixed header slot", a mechanism this review could not verify (no `rpm`/`gpg` access). Byte inspection of the git objects (patterns without 0x0A, validated by control) confirms the committed branch blobs carry the key-ID tail `fda02785` and the main blobs do not, so the committed bytes do carry a signature from the expected key.
-**Impact:** if the size identity ever turned out to mask a malformed signature, the recorded `rpm -K` evidence (item 3, run against exactly these bytes, Shadow verified no `rpms/*.rpm` changed after the manifest commit) would already have failed. The realistic risk is a gap in the evidence trail, not a broken signature.
-**Fix:** no code change. The item 14 fresh-clone run should record per-file sizes and the full `rpm --checksig` output in `## Test Results`, closing the anomaly on the record.
-**Resolution:** *(filled by `Big` at item 14)*
+**Finding 2 — final verification does not pin the signing key, and the completion log overstates the guarantee.** Low, crypto. Where: `repo-setup/sign-rpms.sh` verification loop, `is_signed`, log line. `rpm -K` accepts a key in the rpm keyring or an embedded key, not specifically `...FDA02785`; on the release host the pre-flight pins via the host keyring, so the exposure is robustness, not a reachable vulnerability. Resolved in `ce7b084`, deviation accepted as the only implementable pin: verification now pins via a scratch rpm keyring (sign-rpms.sh:305-316: `mktemp -d` 0700, `rpm --root ... --import "${KEYFILE}"` with `|| die`, per-RPM `-K` die on non-OK, EXIT-trap cleanup on every exit path); the proposed `%{SIGPGP}` extraction is not implementable on rpm 4.19 (`%{SIGPGP}`/`%{SIGGPG}` return `(none)`, no embedded key); Tails' four-direction matrix proves isolation including the discriminating "real-signed vs throwaway-only keyring, NOT OK rc=1" direction; the log line now states "from the pinned key ${EXPECTED_FINGERPRINT}". Residual (assessed, not a finding): nothing checks `KEYFILE`'s fingerprint against `EXPECTED_FINGERPRINT` directly; a swapped `KEYFILE` is caught by the pin itself (the run dies loudly, nothing committed or pushed).
 
-### Verified, no finding
-- **Secrets in history.** `git log -S "BEGIN PGP PRIVATE KEY BLOCK"` on the branch range: 0 hits. `git log -S "private-keys-v1"`: 1 hit, commit `7d47a02`, whose diff scope (via `--stat`) is `.gitignore` +19, `keys/cinnamon-rocky10-public.asc` +30, `sign-rpms.sh` +7/-6, i.e. the guard, not key material. `git log -S "BEGIN PGP"`: only `7d47a02`. The planning doc holds no passphrase value: roughly 100 "passphrase" hits, all mechanism, reference, or byte-length; the user's passphrase is referenced as the contents of `~/password.txt`, never written (AGENTS.md section 4 upheld).
-- **No new GitHub secrets or variables.** `gh secret list` and `gh variable list` on `metalllinux/cinnamon-for-rocky10` both return empty. The section 13 exception (host-local keyring, user-approved 2026-09-21, six-pager `planning/docs/TASK-0024-gpg-key-management.md` sections 4-5) adds no workflow secrets, and the project repo has no `.github/`. The precedent cited for the exception, the fleet test SSH key, is verified as claimed at `vm-test/lib.sh:45` and `:85` (host-local key files under `$HOME/.ssh`, not GitHub secrets).
-- **Key material shipped is public-only.** `keys/cinnamon-rocky10-public.asc` is a 30-line `PGP PUBLIC KEY BLOCK`; the UID matches the spec; the fingerprint subpacket decodes to `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (Shadow, `## Review`, line 717). `.gitignore` guards cover the keyring directory, passphrase file names, `private-keys-v1.d/`, and `openpgp-revocs.d/` (a leaked revocation cert is a key-revocation DoS, so this is covered).
-- **No injection surface in the new scripts.** All expansions reaching the shell are quoted; the `rpms/` glob expands to absolute paths (no leading-dash argument injection); gpg colon output is consumed field-wise and never re-interpreted as shell.
-- **License (AGENTS.md section 9).** The diff adds no forked code; no license-header or compatibility concern.
+**Finding 3 — the "never run with set -x" warning is not enforced.** Low, secrets. Where: `repo-setup/sign-rpms.sh:24-26` (warning) versus the script body (no guard). `bash -x` (or sourcing into an xtrace shell) traces the cleartext passphrase and its hex form at the `printf` lines; the leak is host-local only (the script never runs in CI, output stays on the release host). Resolved in `ce7b084`: a `case "$-" in *x*)` guard immediately after `set -euo pipefail` refuses with exit 1 before any read of the passphrase; it rejects both `bash -x sign-rpms.sh` and sourcing into an xtrace shell, and cannot fire on a normal run; the deviation from the suggested `BASHOPTS` probe is recorded and justified (`BASHOPTS` does not list `xtrace` under `bash -x` in a script shell, verified empirically, while `$-` does, `hxBc` vs `hBc`); recorded refusal run: the trace stops, the message is a constant, the passphrase is never read. No leak path remains.
+
+**Finding 4 — all 64 signed RPMs are byte-identical in size to the unsigned baseline.** Low, crypto. Where: `rpms/*.rpm` (all 64); `## Implementation` item 3 record. A records gap, not an attack path: `git diff --stat 893b22a..e6ee370` shows all 64 as `Bin N -> N`, whereas ordinary `rpm --addsign` with RSA-4096 grows files by roughly 1 KB; byte inspection of the git objects (patterns without 0x0A, validated by control) confirms the committed branch blobs carry the key-ID tail `fda02785` and the main blobs do not, so the committed bytes do carry a signature from the expected key. Closed by recorded evidence: (a) full-set `rpm --checksig` 64/64 `digests signatures OK` against exactly these bytes (`## Implementation` item 3, no `rpms/*.rpm` changed after the manifest commit); (b) an independent VM run reporting `Header V4 RSA/SHA256 Signature, key ID fda02785: BAD` on a single flipped signature byte (`## Test Results`); (c) the `ce7b084` pinned run, 64 verified against the one-key scratch keyring. The size identity is consistent with the signature landing in a header slot reserved at build time (Tails' attribution, not introspected). The per-file size table and full `rpm --checksig` output against tag `v1.0.0` are recorded in `## Test Results` (release-tag fresh-clone, 2026-09-24) and mirrored in `## Archive` > `Superseded test detail`.
+
+**Verified, no finding.** No secrets in branch history (`git log -S "BEGIN PGP PRIVATE KEY BLOCK"`: 0 hits; the only `private-keys-v1` hit is the `7d47a02` guard commit, whose `--stat` scope is `.gitignore`/public key file/guard only; the doc holds no passphrase value, it is referenced as the contents of `~/password.txt` and never written, AGENTS.md section 4 upheld). No new GitHub secrets or variables on `metalllinux/cinnamon-for-rocky10` (both `gh` listings empty; the section 13 host-local keyring exception adds no workflow secrets, and the fleet SSH key precedent is verified as claimed at `vm-test/lib.sh:45`/`:85`). Shipped key material is public-only (30-line `PGP PUBLIC KEY BLOCK`, UID matches spec, fingerprint subpacket decodes to `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, Shadow `## Review`); `.gitignore` guards cover the keyring directory, passphrase file names, `private-keys-v1.d/`, and `openpgp-revocs.d/` (a leaked revocation cert is a key-revocation DoS, so this is covered). No injection surface in the new scripts (all expansions quoted, `rpms/` glob expands to absolute paths, gpg colon output consumed field-wise). License clean (AGENTS.md section 9, no forked code). Full bullets: `## Archive` > `Superseded security detail`.
 
 **Verdict.** No security blockers. The medium finding is residual by design of the single-account model, documented in the six-pager risk table, and non-blocking: the signing layer closes the stated `rpms/`-tampering threat, and the key-swap variant is the named account-compromise residual with a documented response (re-key). Recommend merge on security grounds. The out-of-band fingerprint publication should land before the first public tag (follow-up task or a small docs addition; it touches metalinux.dev content, so it is the user's call). Tails must still clear Shadow's Review blocker (the harness ships no `keys/` to the VM, so item 10's test 6 cannot pass) before item 10 runs; that is a Review item, not a Security one.
 
 ### Re-review (ce7b084), 2026-09-23
 
-*Owner: `Omega`. Re-review of the fix delta `e6ee370..ce7b084` (`ba7babf`, `ce7b084`) against the findings above. Read-only: `git diff`/`git grep` against branch objects, read of the working tree at the branch tip (clean per `git status`, tip `ce7b084`). No `rpm`/`gpg`/`dnf` in this review's tool set; the four-direction pin matrix and the ce7b084 pinned run rest on Tails' `## Implementation` records (lines 704, 753), which Shadow independently re-verified (line 835).*
+*Owner: `Omega`. Re-review of the fix delta `e6ee370..ce7b084` (`ba7babf`, `ce7b084`) against the findings above. Read-only: `git diff`/`git grep` against branch objects, working-tree read at tip `ce7b084` (clean per `git status`). No `rpm`/`gpg`/`dnf` in the tool set; the four-direction pin matrix and the ce7b084 pinned run rest on Tails' `## Implementation` records, which Shadow independently re-verified (`## Review`).*
 
 **Fix delta.** `git diff --stat e6ee370..ce7b084`: `INSTALL.md` 5 lines, `repo-setup/sign-rpms.sh` 120 lines (327 final), `vm-test/test-repo-setup.sh` 28 lines; 123 insertions, 30 deletions. No `rpms/` change in the delta; `git diff --stat 893b22a..ce7b084` shows all 64 RPMs as `Bin N -> N` at the tip (for example `cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` 15241 to 15241), so the bytes verified below are the committed bytes.
 
-**Finding 1 (medium, no out-of-band anchor): RESOLVED.**
-`INSTALL.md:282-285` (ce7b084) now reads, directly after the fingerprint in the "GPG signature, origin tampering" subsection of "Verifying the release": "Before trusting the key, compare this fingerprint against the value published out-of-band on metalinux.dev. The key file served by the repository is not an independent source of trust." No secret in the added line (the fingerprint is public data, already in the doc three times). The metalinux.dev publication itself is tracked as a separate non-blocking follow-up (`## Next Actions` line 209) with the condition "before the first public tag". The documented procedure is anchored to the tag (`clone --depth 1 --branch v1.0.0`, INSTALL.md:245), so the line is correct at the point the procedure is followed, provided the publication lands before tag `v1.0.0` is cut. Two tracked conditions on the follow-up: the publication must precede the tag cut, and the follow-up should point the line at the concrete page (it currently names the domain only, because the page does not exist yet). Shadow re-verified the line independently (`## Review` line 849, no finding).
-
-**Finding 2 (low, verification not pinned to the signing key): RESOLVED; deviation acceptable.**
-Tails deviated from the suggested `%{SIGPGP}` extraction because it is not implementable on this rpm: `%{SIGPGP}`/`%{SIGGPG}` return `(none)`, this rpm does not embed the public key (`## Implementation` line 704; Shadow independently confirmed on rpm 4.19, line 835). The implemented pin (sign-rpms.sh:305-316 at ce7b084) verifies every RPM against a scratch rpm keyring: `SIGNER_ROOT=$(mktemp -d)` (0700), `rpm --root "${SIGNER_ROOT}" --import "${KEYFILE}"` with `|| die` (:308-309), then per-RPM `rpm --root "${SIGNER_ROOT}" -K ... | grep -qi "signatures OK"` else die (:310-316). Only a signature by the key imported from the repository's public key file can pass. Tails' recorded four-direction matrix (line 704) establishes that this is a real pin, including the discriminating direction "real-signed vs throwaway-only keyring, NOT OK rc=1", which proves the host keyring (which has held the real key since item 1) is not consulted; "throwaway-signed vs real-only keyring, NOT OK rc=1" proves a different key fails. The no-sudo scratch keyring is a security improvement over the previously recorded design: the script performs no root operation, creates no persistent state, holds only public key material, and the EXIT trap (:259-261, guarded by `-n "${SIGNER_ROOT:-}"`) removes it on every exit path; under SIGKILL the residue is a 0700 directory in /tmp with public data only. The pre-flight (:194-198) still requires the host rpm keyring to hold the expected key, which `is_signed` (:274-276) needs for the skip decision; a package pre-signed by a foreign key is either skipped (if the foreign key is in the host keyring) or re-signed, and in either case the pinned verification dies on it, so nothing unpinned passes. The log overstatement from the original finding is fixed: :327 now states "from the pinned key ${EXPECTED_FINGERPRINT}", which is what was checked. Tails' recorded full run at ce7b084: rc=0, 0 signed / 64 skipped / 64 verified vs the pinned key (line 753).
-Residual (assessed, not a finding): nothing checks `KEYFILE`'s fingerprint against `EXPECTED_FINGERPRINT` directly; the scratch keyring trusts the repository's key file. A swapped `KEYFILE` is caught by the pinned verification itself (the real-signed RPMs do not verify against an attacker-key-only scratch keyring, the run dies loudly, nothing is committed or pushed). The only scenario in which the log could still overstate is a `KEYFILE` swap plus pre-placed attacker-signed RPMs plus root on the release host, at which point the attacker already controls the signing key itself and no script check is meaningful. Same severity logic as the original finding: robustness under total host compromise, not a reachable vulnerability. The new KEYFILE pre-flight (:130-132, added for Shadow's nit, line 835) fails fast on the same failure; its anchored pattern `PGP PUBLIC KEY BLOCK-----` rejects private-key exports and preserves the tree-probe property (verified at ce7b084: `git grep -l "BEGIN PGP" ce7b084` hits only `keys/cinnamon-rocky10-public.asc`; `git grep -il "PRIVATE KEY" ce7b084` hits only .gitignore guard prose, INSTALL.md prose, and the pre-existing SSH-key idiom).
-
-**Finding 3 (low, set -x not enforced): RESOLVED.**
-sign-rpms.sh:46-58 (ce7b084): a `case "$-" in *x*)` guard refuses with exit 1 immediately after `set -euo pipefail`, before any read of the passphrase (:221). `$-` carries `x` only when xtrace is active, so the guard rejects `bash -x sign-rpms.sh` and sourcing into an xtrace shell alike, and cannot fire on a normal run (the script sets only `e`, `u`, `pipefail`). Tails' deviation from the suggested `BASHOPTS` probe is justified and recorded: in a script shell `BASHOPTS` does not list `xtrace` under `bash -x` (Tails verified empirically), while `$-` differs (`hxBc` vs `hBc`). Tails' recorded refusal run: the trace stops at five lines, the message is a constant, the passphrase is never read. No leak path remains. (Cosmetic, not a finding: the comment at :47-48 attributes the leak to the heredoc; the traced expansion that would actually leak is `printf '%s' "$PASS"` at :223. The guard's conclusion is unchanged.)
-
-**Finding 4 (low, signed RPMs identical in size to the unsigned baseline): RESOLVED; the scheduled item 14 record work stands.**
-The security question (do the committed bytes carry a valid signature from the expected key) is closed by recorded evidence: (a) `## Implementation` line 593, full-set `rpm --checksig` 64/64 `digests signatures OK` run against exactly these bytes (Shadow verified no `rpms/*.rpm` changed after the manifest commit, and the fix delta does not touch `rpms/`); (b) `## Test Results` line 938, an independent VM run reporting `Header V4 RSA/SHA256 Signature, key ID fda02785: BAD` on a single flipped signature byte, which is direct evidence the committed bytes carry a V4 RSA/SHA256 header signature from the expected key; (c) Tails' ce7b084 pinned run, 64 verified against the one-key scratch keyring (line 753). Payload identity 64/64 is recorded (line 37). The size identity is consistent with the signature landing in the header region reserved at build time (Tails' attribution, line 604); the precise rpmbuild reservation mechanism remains attributed rather than introspected, but every recorded check that would fail on a malformed or missing signature passes. The records item from the original fix (per-file sizes and the full `rpm --checksig` output in `## Test Results`) is still open in form: the full `rpm --checksig` output lives in `## Implementation` (line 593), not `## Test Results`, and no per-file size table is recorded. `## Status` line 32 ("RPM-size question closed with evidence") is defensible on the evidence above. The item 14 fresh-clone run (Knuckles, post-merge) will record both in `## Test Results` against the tag, as the original fix specified; that is scheduled release work, not an open finding.
+**Per-finding outcome (re-review).** F1 (medium, no out-of-band anchor): RESOLVED, both halves; the `INSTALL.md:282-285` line re-verified independently by Shadow (`## Review`, no finding); the metalinux.dev publication tracked as a before-tag condition, now satisfied (`## Release`). F2 (low, verification not pinned): RESOLVED, deviation acceptable as the only implementable pin (scratch-keyring pin, sign-rpms.sh:305-316; `%{SIGPGP}`/`%{SIGGPG}` return `(none)` on rpm 4.19, no embedded key; four-direction matrix proves isolation including "real-signed vs throwaway-only keyring, NOT OK rc=1"; no-sudo throwaway keyring is a security improvement; recorded full run at ce7b084: rc=0, 0 signed / 64 skipped / 64 verified vs the pinned key; KEYFILE pre-flight anchored pattern `PGP PUBLIC KEY BLOCK-----` rejects private-key exports and preserves the tree-probe property, verified at ce7b084: `git grep -l "BEGIN PGP" ce7b084` hits only `keys/cinnamon-rocky10-public.asc`, `git grep -il "PRIVATE KEY" ce7b084` hits only .gitignore guard prose, INSTALL.md prose, and the pre-existing SSH-key idiom). F3 (low, set -x not enforced): RESOLVED (xtrace guard at sign-rpms.sh:46-58; `BASHOPTS` probe deviation justified and recorded; recorded refusal run: trace stops, constant message, passphrase never read; cosmetic, the guard comment at :47-48 attributes the leak to the heredoc but the traced expansion that would actually leak is `printf '%s' "$PASS"` at :223, the guard's conclusion is unchanged). F4 (low, size identity): RESOLVED by recorded evidence (full-set checksig 64/64 against these bytes, payload identity 64/64, independent VM BAD-signature byte-flip evidence, ce7b084 pinned run); the `## Status` "RPM-size question closed with evidence" entry is defensible on this evidence; the scheduled item 14 record work stood and was completed at release-tag verification (`## Test Results`). Full resolution analysis: `## Archive` > `Superseded security detail` (resolution records).
 
 **Finding 5 (new attack surface in the fix delta): no finding.**
 Full read of the delta (all 123 insertions across the three files). (a) KEYFILE pre-flight (:130-132): quoted paths, fixed pattern, fail-closed, before any mutation (the sign loop is at :280); rejects missing, corrupt, and private-key files; preserves the tree-probe property (verified). (b) Single-line passphrase enforcement (:169-181): `tr -cd '\n'` + `wc -c` and `tail -c 1` + `wc -l` emit counts only, the passphrase bytes never reach a terminal or log, even under a trace; the four-case logic (0 newlines OK, 1 trailing-newline OK, 1 embedded-newline die, 2+ die) is correct, and a file that is only a newline is caught by the non-emptiness check at :222. Tails' recorded negative tests match the code. (c) Scratch keyring cleanup: quoted `rm -rf` of the mktemp path; the trap is set at :263, before `SIGNER_ROOT` is assigned at :306, and is safe on that path via the `:-` guard. (d) `INSTALL.md` line: public fingerprint only. (e) Harness `keys/` copy (vm-test/test-repo-setup.sh:366-400): rsync of the `keys/` directory, whose only file is the public key (verified), with a fail-closed "present" check; the RPM count constant 48 to 64 is a test-data update. (f) No secret in the delta (full read); no private-key material in the tree at ce7b084 (probes above).
 
-**Re-review verdict.** Resolved: 1 medium (finding 1, in-repo half; the out-of-band publication is tracked with a before-tag condition) and 3 low (findings 2 and 3; finding 4's security question closed by the cited evidence, its remaining record work scheduled with item 14). No open findings. The pinning deviation is acceptable and, on this rpm, the only implementable form of the pin: the proposed mechanism does not exist on rpm 4.19 for a package without an embedded key, the implemented scratch-keyring pin is a real pin (isolation empirically established by the recorded matrix), at least as strong as the proposal, and the no-sudo throwaway keyring is a security improvement. The DoD gate (line 129, "no unresolved findings above `low`") is met. Recommend merge on security grounds. Two tracked conditions for the release, neither blocking: the metalinux.dev fingerprint publication must land before tag `v1.0.0` is cut (Next Actions line 209), and item 14's fresh-clone run must record per-file sizes and the full `rpm --checksig` output in `## Test Results`.
+**Re-review verdict.** Resolved: 1 medium (finding 1, in-repo half; the out-of-band publication is tracked with a before-tag condition) and 3 low (findings 2 and 3; finding 4's security question closed by the cited evidence, its remaining record work scheduled with item 14). No open findings. The pinning deviation is acceptable and, on this rpm, the only implementable form of the pin: the proposed mechanism does not exist on rpm 4.19 for a package without an embedded key, the implemented scratch-keyring pin is a real pin (isolation empirically established by the recorded matrix), at least as strong as the proposal, and the no-sudo throwaway keyring is a security improvement. The DoD gate (`## Definition of Done`, "no unresolved findings above `low`") is met. Recommend merge on security grounds. Two tracked conditions for the release, neither blocking: the metalinux.dev fingerprint publication must land before tag `v1.0.0` is cut (`## Next Actions`), and item 14's fresh-clone run must record per-file sizes and the full `rpm --checksig` output in `## Test Results`.
 
 ---
 
@@ -1047,18 +636,18 @@ repo). The VM is destroyed; all artifacts are pulled.
 | Fresh-VM full harness (item 10) | end-to-end repo setup + 22-name install + desktop | FAIL | `harness-run1.log`: 16 PASS / 41 FAIL / 2 WARN, `OVERALL: FAIL` |
 | "no signature" mechanism | why the payload flip reports "no signature" | RESOLVED | below |
 
-**Checks requested vs run.** Item 11a (payload flip + regenerated repodata, gpgcheck=1 refuses) is
-run and PASS; the exact wording is `does not verify: no signature`. Item 11b (the same payload-flipped
-package under gpgcheck=0 installs) is run and PASS. Item 11c (the fallback
-`dnf install ./rpms/<tampered>.rpm` with the key imported) was NOT run; there is no evidence of it in
-the record. The pgpsig-flip and unsigned rows are additional vectors I ran beyond the plan; the
-pgpsig-flip result (refused under both gpgcheck settings) refines the plan's assumption that gpgcheck=0
-accepts any tampered package, it does not contradict item 11b, whose vector is the payload flip. Item
-10 (fresh-VM full harness: 22-name install, GDM Wayland login, five surfaces) is BLOCKED, not run to
-completion. Not silently dropped. The harness copies `repo-setup/` but not `keys/` to the VM, so
-`setup-repo.sh` dies at the key check (`harness-run1.log:99`, `ERROR: GPG public key not found`) before
-any install. This is a harness bug (stays with `Big`) and matches Shadow's Review blocker (`## Review`
-line 663) and the Omega note (`## Security` line 776).
+**Checks requested vs run (compressed).** Item 11a (payload flip + regenerated repodata, refused
+under gpgcheck=1) and item 11b (the same flipped package installs under gpgcheck=0) ran and PASS
+(table above; exact wording `does not verify: no signature`). Item 11c (the fallback `dnf install
+./rpms/<tampered>.rpm` with the key imported) was NOT run in this pass; it was run later and is
+recorded below (item 11c, fallback path). The pgpsig-flip and unsigned rows are additional vectors
+run beyond the plan; the pgpsig-flip result (refused under both gpgcheck settings) refines the
+plan's assumption that gpgcheck=0 accepts any tampered package, it does not contradict item 11b,
+whose vector is the payload flip. Item 10 (fresh-VM full harness: 22-name install, GDM Wayland
+login, five surfaces) was BLOCKED in this pass, not silently dropped: the harness copies
+`repo-setup/` but not `keys/` to the VM, so `setup-repo.sh` dies at the key check
+(`harness-run1.log:99`, `ERROR: GPG public key not found`) before any install; a harness bug (stays
+with `Big`), matching Shadow's blocker in `## Review` and the Omega note in `## Security`.
 
 **The "no signature" question, resolved.** The payload flip reports `does not verify: no signature`
 even though the package is signed and the real failure is the BAD payload digests. The transaction sinfo
@@ -1218,25 +807,25 @@ repo): `repo-setup.log` (60 record lines), `harness.stdout`,
 `feature/TASK-0024-rpm-signing-gpgcheck` (origin now at `6bb500e`;
 `git grep -il "BEGIN PGP PRIVATE KEY BLOCK" HEAD` returns nothing).
 
-**Host state (surfaced, changed by this run).** Before the re-run, the
-host's libvirt `default` network (system instance) was functional (bridge IP
-present, nftables masquerade counters live, dnsmasq up 11 days, orphan VMs
-renewing leases), so the network was not the harness blocker; the blocker was
-the deleted `cinnamon-test-repo.qcow2`. I nonetheless refreshed the network
-(`sudo virsh net-destroy default` + `net-start`) as a precaution, which
-detached the 5 orphaned domains' interfaces (libvirt does not re-plumb
-running domains on network restart); I then restarted the 5 orphan domains
-(`virsh destroy` + `start`; disks intact, RAM state lost) and they re-leased
-their previous IPs (.142/.153/.85/.15/.18) within a minute. Also: libvirt 11
-on this host runs socket-activated per-user driver daemons under
-`/run/user/1000/libvirt/` as howard (no CAP_NET_ADMIN); a bare `virsh` as
-howard targets that empty per-user instance, which is where my precautionary
-`net-start` attempts failed with EPERM. The harness is unaffected:
-`vm-test/lib.sh:36` pins `LIBVIRT_DEFAULT_URI=qemu:///system`. The "Host
-event" note above ("domain definitions deleted") was observed from the
-per-user instance's view; the system instance's definitions in
-`/etc/libvirt/qemu/` (9 domains) and the network definition in
-`/etc/libvirt/qemu/networks/default.xml` were intact throughout.
+**Host state (surfaced, changed by this run; compressed).** The network was
+not the harness blocker: before the re-run the system-instance `default`
+network was functional (bridge IP present, nftables masquerade counters live,
+dnsmasq up 11 days, orphan VMs renewing leases); the blocker was the deleted
+`cinnamon-test-repo.qcow2`. I nonetheless refreshed the network (`sudo virsh
+net-destroy default` + `net-start`) as a precaution, which detached the 5
+orphaned domains' interfaces (libvirt does not re-plumb running domains on
+network restart); I then restarted the 5 orphan domains (`virsh destroy` +
+`start`; disks intact, RAM state lost) and they re-leased their previous IPs
+(.142/.153/.85/.15/.18) within a minute. Trap: libvirt 11 on this host runs
+socket-activated per-user driver daemons under `/run/user/1000/libvirt/` as
+howard (no CAP_NET_ADMIN); a bare `virsh` as howard targets that empty
+per-user instance, which is where the precautionary `net-start` attempts
+failed with EPERM, and it is why the "Host event" note above ("domain
+definitions deleted") was observed from the per-user instance's view. The
+system instance's definitions in `/etc/libvirt/qemu/` (9 domains) and the
+network definition in `/etc/libvirt/qemu/networks/default.xml` were intact
+throughout. The harness is unaffected: `vm-test/lib.sh:36` pins
+`LIBVIRT_DEFAULT_URI=qemu:///system`.
 
 **Verdict (re-run 2).** The harness is clean: 0 FAIL, 0 WARN, 60 checks with
 the 6 named SKIPs. The pin drift is fixed in both table copies and documented
@@ -1248,7 +837,7 @@ recorded above.
 
 *Big. Final record for the release: the plan item 14 clone-at-tag check run
 against the merged and tagged state. Closes Omega's tracked release condition
-2 (`## Security` re-review verdict, line 1008: "item 14's fresh-clone run must
+2 (`## Security` re-review verdict: "item 14's fresh-clone run must
 record per-file sizes and the full `rpm --checksig` output in `## Test
 Results`"), the record work scheduled with finding 4 (low, signed RPMs
 byte-identical in size to the unsigned baseline).*
@@ -1265,7 +854,7 @@ gpgcheck=1 and SHA256 manifest (#6)"). `rpms/` holds exactly 64 RPM files plus
 rpm keyring already held `gpg-pubkey-fda02785-6ab101f4` (`rpm -q
 "gpg-pubkey-fda02785*"`, rc=0), so `rpm --checksig` verified the full
 signature, not just digests: an unverifiable signature would read `digests OK`
-only, per the pinned `rpm -K` strings in `## Implementation` (line 526).
+only, per the pinned `rpm -K` strings in the `## Implementation` pinned-protocol table.
 
 **Checks run (fresh clone at the tag):**
 
@@ -1275,6 +864,441 @@ only, per the pinned `rpm -K` strings in `## Implementation` (line 526).
 | Per-file sizes | `ls -l rpms/*.rpm` (rc=0) | 64 files, table below |
 | `rpm --checksig` over the set | `rpm --checksig rpms/*.rpm` (rc=0) | 64/64 `digests signatures OK`, 0 other lines |
 | Manifest | `cd rpms && sha256sum -c SHA256SUMS` (rc=0) | 64/64 `: OK` |
+
+**Per-file sizes (all 64 RPMs, from `ls -l rpms/*.rpm` in the fresh clone):**
+the full 64-row table is recorded in `## Archive` > `Superseded test detail`
+(pruned 2026-09-24 by `Espio`); the sizes there are the released values that
+close Omega's tracked condition 2.
+
+**`rpm --checksig` output, faithful summary.** The raw output is 64 lines, one
+per RPM, every line of the form `rpms/<name>.rpm: digests signatures OK`.
+Computed counts on the transcript: 64 lines total, 64 lines matching
+`digests signatures OK`, 0 other lines, rc=0. Recorded in summary form per
+this section's "verdicts, never raw log dumps" rule and the dispatch's
+summary option (the 64 lines are uniform); the full transcript is preserved
+host-local at `/tmp/opencode/task0024-release-verify/evidence-checksig.txt`
+(64 lines).
+
+**`sha256sum -c SHA256SUMS` result.** 64 lines, every line
+`<basename>.rpm: OK`, rc=0 (64/64). Transcript
+`/tmp/opencode/task0024-release-verify/evidence-sha256.txt`; the `ls -l`
+transcript is `evidence-ls-l.txt` in the same directory.
+
+**Verdict (release tag).** PASS. The tag-pinned bytes verify end to end on a
+clone that shares no state with the working tree: 64/64 `digests signatures
+OK` under the pinned key `fda02785` and 64/64 manifest match. This closes
+Omega's tracked condition 2: the per-file sizes above are the released
+values, and every checksig line ran against exactly these bytes and reports a
+valid signature. On the finding 4 anomaly itself, this record supplies what
+the fix specified (sizes + full-set checksig at the tag); the size identity
+stays explained as Omega's re-review left it, consistent with the signature
+landing in the header region reserved at build time (Tails' attribution,
+`## Implementation` item 3 record, attributed rather than introspected), and this
+run adds no new mechanism claim. The throwaway clone was deleted after
+evidence capture; the three transcripts remain host-local.
+
+---
+
+## Docs
+
+*Owner: `Vector`.*
+
+Item 10 docs polish pass, branch `feature/TASK-0024-rpm-signing-gpgcheck`,
+commit `2466b70` (local, push state below). The pass covered Quick start,
+the Manual 6 steps, and "Verifying the release" in INSTALL.md, plus
+"Signing and release verification" in README.md.
+
+| File | Sections touched | What changed |
+|---|---|---|
+| `INSTALL.md` | "Verifying the release" (`INSTALL.md:254-258`) | Added `cd ..` at the end of the manifest code block. The block ends in `cd rpms` but the following signature block uses project-root-relative paths (`keys/...`, `rpms/*.rpm`), so sequential execution broke. |
+| `INSTALL.md` | "Prerequisites" (`INSTALL.md:304`) | Stale cross-reference. "the manual path enables it in step 4" changed to "step 5". The CRB enable is manual step 5 (`INSTALL.md:211-214`), renumbered when item 6 inserted the key-import step. |
+| `README.md` | "Signing and release verification" (`README.md:99,108`) | "the repository installs with `gpgcheck=1`" changed to "the repository is configured with `gpgcheck=1`" (the .repo file carries the setting). "the signature verifies the set against the key holder" changed to "against the key", aligning with INSTALL.md's "The signature verifies the origin". |
+
+**Accuracy against the scripts (no factual mismatches found).** Every Quick
+start claim checked against `repo-setup/setup-repo.sh`. createrepo_c
+self-install at `setup-repo.sh:99-104`, metadata generation at `:109-115`,
+key import plus keyring assert at `:127-142`, the .repo write with
+`gpgcheck=1` and no `gpgkey=` at `:156-165`, CRB enable at `:176`,
+makecache validation at `:188`, the `=== Repository setup complete ===`
+marker at `:196`. The manual .repo template matches the script's printf
+output. The trailing slash on the manual template's baseurl is a valid
+file:// directory URL, not a divergence from the script. The 22-name set in
+Quick start matches `vm-test/install-set.txt` exactly. `rpms/SHA256SUMS` is
+exactly 64 lines and the basenames match the 64 published RPMs.
+
+**Consistency anchors (all agree in both files).** Fingerprint
+`1689676AF4D4F6FEC142B4429C0A8912FDA02785`, key path
+`keys/cinnamon-rocky10-public.asc`, `gpgcheck=1` with no `gpgkey=` line,
+manifest `rpms/SHA256SUMS`, and the out-of-band metalinux.dev fingerprint
+line in INSTALL.md only (README points to it).
+
+**House style (AGENTS.md section 10).** No em dashes, en dashes, or double
+hyphens in prose. No forbidden words. Every colon in the four surfaces is
+technical (URLs) or pre-existing outside them (INSTALL.md:386 and :393
+introduce troubleshooting lists, README.md:9-11 are key/value header
+lines). No style edits needed.
+
+**Checked and needed no change (compressed).** `repo-setup/setup-repo.sh`,
+`repo-setup/cinnamon-rocky10.repo`, `vm-test/install-set.txt`,
+`rpms/SHA256SUMS`, `keys/cinnamon-rocky10-public.asc` (read for verification
+only); INSTALL.md sections outside the four surfaces (all "step N"
+cross-references resolve against the current numbering); README.md outside
+the signing section (version table, test log, project structure, development
+sections consistent); no `CHANGELOG.md` in this repository.
+
+**Key-material check (pre-push, compressed).** `git log -S "BEGIN PGP PRIVATE
+KEY BLOCK" --oneline HEAD` zero hits (whole branch history, stronger than a
+HEAD-tree grep; `git grep` is not in this agent's permission set and `rg` is
+not installed on the host); `git log -S "BEGIN PGP" --oneline HEAD` exactly
+one commit, `7d47a02` (item 1, the public key); the committed diff of
+`2466b70` is the four doc lines above (verified with `git diff` before
+committing) and contains no key material. The passphrase-absence claim rests
+on the Tails records (item 6 and the fix pass); the passphrase file was not
+read here.
+
+**Push state (resolved).** `2466b70` was local at this point: `git push
+origin feature/TASK-0024-rpm-signing-gpgcheck` was denied by this agent's
+permission set (only `git push origin main` allowed), `git ls-remote origin`
+showed the remote branch at `6bb500e` and main at `893b22a`, no bypass was
+attempted. `Knuckles` pushed `2466b70` before the merge (record in
+`## Release`). The metalinux.dev fingerprint publication (the out-of-band
+line the docs now reference) was drafted below.
+
+### Out-of-band fingerprint anchor page (metalinux.dev)
+
+The out-of-band publication referenced by "Verifying the release" in
+INSTALL.md and "Signing and release verification" in README.md did not
+exist. Drafted it in the site repo `~/Linux/projects/github_pages`
+(Jekyll, theme minimal-mistakes, `url: https://metalinux.dev`).
+
+| File | Sections touched | What changed |
+|---|---|---|
+| `_pages/cinnamon-rocky10-signing-key.md` | New page | Anchor page draft. Front matter follows the existing non-article pages (`layout: single`, `permalink: /linux-journey/cinnamon-rocky10-signing-key/`, `author_profile: true`, `sidebar: nav: linux-journey`, metalinux-2.png overlay, toc). Body: purpose, fingerprint, key UID, full armored public key verbatim, one-paragraph verification procedure using `gpg --show-keys` (no keyring import). |
+| `_data/navigation.yml` | `linux-journey` nav, "Courses & Projects" | Added "Cinnamon for Rocky Linux 10 (Signing Key)" pointing at `/linux-journey/cinnamon-rocky10-signing-key/`. Required by the site AGENTS.md for every new page. |
+| `_pages/linux-journey.md` | "Courses & Projects" table | One row linking the new page. |
+
+`_pages/` rather than `_linux_journey/` because
+`scripts/process_linux_journey.py:460-462` removes and rebuilds
+`_linux_journey/` from `~/Documents/linux_journey/` on every run, which
+would delete a hand-written page there. `_pages/` is outside that process
+(`include: [_pages]`, `_config.yml:31-32`).
+
+Key provenance. The armored block in the page is a verbatim copy of
+`cinnamon-for-rocky10/keys/cinnamon-rocky10-public.asc` read from the
+working tree on branch `feature/TASK-0024-rpm-signing-gpgcheck` (HEAD
+`2466b70`). `git diff 6bb500e HEAD -- keys/cinnamon-rocky10-public.asc`
+is empty, so the file is identical at the briefed tip and at HEAD. A
+line-by-line comparison of the page block against the file matched all 30
+lines. The fingerprint on the page matches `EXPECTED_FINGERPRINT` at
+`repo-setup/sign-rpms.sh:66` (recorded at item 1 generation), the
+fingerprint-subpacket decode verified in `## Review` (line 856) and
+`## Security` (line 977), and the consistency anchors of the item 10
+pass above. The UID on the page is the ratified string.
+
+**Not committed and not pushed at draft time**, per the brief. The user
+reviewed the wording (2026-09-24) and `Knuckles` then published it — see
+`## Release`, "Out-of-band fingerprint anchor publish (2026-09-24,
+metalinux.dev)" (site commit `075a3c9`, live at
+`https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`).
+INSTALL.md and README.md say only "published out-of-band on
+metalinux.dev" and carry no URL, so no project-repo doc change is
+required for the references to resolve. Adding the explicit URL to the
+project docs remains an optional follow-up.
+
+---
+
+## Release
+
+*Owner: `Knuckles`.*
+
+### Out-of-band fingerprint anchor publish (2026-09-24, metalinux.dev)
+
+*Proceeded with the two then-open DoD boxes (docs on `main`, merge via PR) still open: a scoped,
+explicitly user-approved release step (2026-09-24, wording reviewed and approved), Omega's tracked
+non-blocking condition that had to land before the `v1.0.0` tag cut. Both boxes were closed by the
+`v1.0.0` merge below.*
+
+- **Branch:** `main` of `metalllinux/metalllinux.github.io` (site default branch, verified via
+  `git remote -v` and `origin/HEAD`).
+- **Commits:** `075a3c9` "Add Cinnamon for Rocky Linux 10 GPG signing key verification page",
+  3 files changed, 77 insertions; unsigned (no `commit.gpgsign` in the site repo config).
+- **PR:** none. Direct commit and push to the site default branch per the explicit user
+  instruction for this step.
+- **Push:** `git push origin main` returned `453cb1d..075a3c9 main -> main`. Only `075a3c9`
+  transferred; the 6 commits the pre-push status reported as ahead were already on the remote
+  (stale local tracking ref, confirmed by `git fetch origin` plus post-push
+  `main...origin/main` in sync).
+- **Deploy:** GitHub Pages deploys on push; no workflow dispatch for a Pages site.
+- **Live:** confirmed. `curl https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`
+  returned HTTP 404 roughly 30s after the push (still deploying) and HTTP 200 about two minutes
+  later. The 200 response contains `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (one hit), title
+  `Cinnamon for Rocky Linux 10 GPG Signing Key - metalinux`, the PGP public key block, the
+  nav entry text, and the grammar-corrected compare sentence.
+- **Key block integrity:** the page's armored block is byte-identical to
+  `keys/cinnamon-rocky10-public.asc` in `cinnamon-for-rocky10` (`diff` exit 0 over the
+  BEGIN/END block); `gpg --show-keys` on that file reports fingerprint
+  `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, matching the page.
+- **Grammar fix:** one line in `_pages/cinnamon-rocky10-signing-key.md` (comma added after
+  "character by character"), user-approved; nothing else in that file changed.
+
+### Project release v1.0.0 (2026-09-24)
+
+**DONE checklist verified:** yes. All 11 DoD boxes ticked; box 11 (merged to `main` via PR)
+closed by this step. Omega's before-tag condition (the out-of-band anchor) was satisfied before
+the tag cut: the anchor above is live at site commit `075a3c9`, confirmed with `curl` (HTTP 200,
+fingerprint present, key block byte-identical).
+
+- **Branch:** `feature/TASK-0024-rpm-signing-gpgcheck` at `2466b70` (the reviewed state,
+  Vector's docs pass). Pre-merge safety at the tip: `git grep -il "BEGIN PGP PRIVATE KEY BLOCK"
+  HEAD` zero hits, no passphrase or keyring file in `git ls-tree -r HEAD`, merge-base is the
+  `main` tip (`893b22a`) and `git merge-tree --write-tree` reports a clean merge. Pushed with
+  `git push origin feature/TASK-0024-rpm-signing-gpgcheck` → `6bb500e..2466b70`.
+- **Commits:** unsigned (no `commit.gpgsign` in the project repo config). The squash commit on
+  `main` is `a70aedc` "feat(release): TASK-0024 signed RPM set with gpgcheck=1 and SHA256
+  manifest (#6)".
+- **PR:** #6, https://github.com/metalllinux/cinnamon-for-rocky10/pull/6, state MERGED
+  (2026-09-24T01:54:14Z). Merge strategy: squash, the repo standard (zero merge commits across
+  all 40 prior commits on `main`); `gh pr merge 6 --squash`.
+- **Tag:** `v1.0.0`, annotated and unsigned (repo convention, no `tag.gpgsign`), on `a70aedc`;
+  tag object `954c14a`; `git push origin v1.0.0` → `[new tag] v1.0.0 -> v1.0.0`. The message
+  names the signed, gpgcheck=1 release, the SHA256 manifest baseline, and the metalinux.dev
+  verification anchor.
+- **Verified post-merge:** fresh clone of the tag
+  (`git clone --depth 1 --branch v1.0.0`) → HEAD `a70aedc`, 64 RPMs in `rpms/`,
+  `sha256sum -c SHA256SUMS` 64/64 OK, `rpm --checksig` 64/64 `digests signatures OK`;
+  `keys/cinnamon-rocky10-public.asc` present; `repo-setup/setup-repo.sh:156` writes `gpgcheck=1`
+  with no `gpgkey=` line; the out-of-band anchor reference is in `INSTALL.md:282-285`
+  (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, compare against metalinux.dev).
+- **Deploy:** none. This is a source-tag release on `metalllinux/cinnamon-for-rocky10`; no
+  workflow dispatch.
+- **Open follow-up (closed):** Omega's tracked condition 2, the item 14 fresh-clone record
+   (per-file sizes + the full `rpm --checksig` output against the tag), is recorded in `##
+   Test Results`, "Release tag v1.0.0 (a70aedc) fresh-clone verification, 2026-09-24".
+
+---
+
+## Archive
+
+*Owner: `Espio`, the only agent that deletes. Superseded detail lands here rather than being
+lost. Decisions, verified facts, rejected options with their reasons, known traps, and anything the
+user said are never deleted.*
+
+**Pruning log**
+
+| Date | What was pruned or compressed | Rough size |
+|---|---|---|
+| 2026-09-24 | `## Status` / `## Next Actions` / `## Plan`: superseded status entries, superseded Next Actions, and the superseded plan (work breakdown, estimates, risks, validation) moved to `## Archive` | moved to archive |
+| 2026-09-24 | `## Security`: per-finding full analyses → one-line records with resolution + pointers; both re-review verdicts kept verbatim; section 80 → 40 lines | ~40 lines |
+| 2026-09-24 | `## Review`: run-1's 7 findings → one-line records (severity, location, outcome, fix sha); re-review and harness-delta → compact verdict blocks; full text of all three reviews → `## Archive` > `Superseded review detail` | ~80 lines compressed, ~130 lines archived |
+| 2026-09-24 | `## Implementation`: six "Checks run" tables + the item-6 per-surface block → single paragraphs, every command/result pair retained | ~35 lines |
+| 2026-09-24 | `## Test Results` / `## Docs` / `## Release` pre-anchors (earlier L pass): per-run detail → verdict/summary blocks; the 64-row per-file size table and full checksig/sha256 transcripts → `## Archive` > `Superseded test detail` | ~50 lines |
+| 2026-09-24 | Stale line-number refs in the release-tag subsection → section pointers; Release follow-up marked closed; Docs tail marked published | ~6 lines corrected |
+
+### Superseded status entries
+
+*Condensed reconstruction by `Espio` (2026-09-24). The earlier full `## Status` entries (task
+creation 2026-09-19 through the review chain 2026-09-22 and the clean re-runs 2026-09-23) were
+removed by an earlier pruning pass. This session has no `git` access to the pre-prune revision and
+no backup copy exists, so the full text is unrecoverable. The skeleton below is reconstructed only
+from dated records that remain in this doc (DoD tick notes, `## Implementation`, `## Review`,
+`## Security`, `## Test Results`, `## Release`). The last pre-complete `In progress` entry is kept
+live at the top of `## Status`.*
+
+- **2026-09-19:** task created; closes Omega's supply-chain finding from TASK-0016 (record at
+  `## Plan` line 111); `Amy` plan.
+- **2026-09-21:** plan ratified with the key-management decisions D1-D4; `Tails` executed items 1-6
+  in one day on `feature/TASK-0024-rpm-signing-gpgcheck`: `7d47a02` (item 1, key + guard),
+  `b84ce3f` (item 2, `sign-rpms.sh`), `db60bb6` (item 3, 64 RPMs signed), `1b57ac8` (item 4,
+  `SHA256SUMS`), `55a38ba` (item 5, key import + `gpgcheck=1`), `e6ee370` (item 6, docs).
+- **2026-09-22:** `Shadow` run 1 (7 findings, one blocker: harness ships no `keys/` to the VM);
+  `Omega` run 1 (1 medium + 3 low, no blockers, merge recommended on security grounds); `Big` run 1
+  (FAIL, the harness blocker).
+- **2026-09-23:** fix pass `ba7babf` + `ce7b084` cleared the blocker, the should-fixes, and all four
+  security findings; `Shadow` re-review (no open findings); `Omega` re-review (no open findings);
+  `Big` re-runs 1 and 2 at `ce7b084` / `6bb500e` (re-run 2: OVERALL PASS, 54 PASS / 0 FAIL / 0 WARN,
+  6 named SKIPs); `Vector` docs pass landed as project-repo `2466b70`; DoD boxes 1-10 ticked.
+- **2026-09-24:** release: metalinux.dev fingerprint anchor live (site commit `075a3c9`, before the
+  tag cut), PR #6 squash-merged to `main` (`a70aedc`), annotated tag `v1.0.0` (`954c14a`) cut on the
+  merge and pushed, fresh-clone verification recorded in `## Test Results` (item 14), DoD box 11
+  ticked, COMPLETE entry written.
+
+### Superseded Next Actions entries
+
+*Condensed reconstruction by `Espio` (2026-09-24); full text unrecoverable (no `git` access to the
+pre-prune revision, no backup copy). The forward-action list was rewritten at each stage of the
+chain (`Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Tails` fixes → `Vector` → `Knuckles`); the
+substance of each stage's actions is the section that executed it. The skeleton, from the dated
+records in this doc:*
+
+- **After the plan (2026-09-19/21):** `Tails` to execute items 1-6 per `## Plan` (key, guard,
+  script, sign run, manifest, `setup-repo.sh`, docs).
+- **After items 1-6 (2026-09-21):** `Shadow` to review the branch; then `Omega`; then `Big` for the
+  fresh-VM harness (item 10) and the negative tamper tests (item 11).
+- **After the review chain (2026-09-22):** fix pass to `Tails` (the harness `keys/` blocker, the
+  should-fixes, the four security findings); re-reviews; `Big` re-run.
+- **After re-run 2 clean (2026-09-23):** `Vector` docs pass; then `Knuckles` release with the two
+  Omega conditions (metalinux.dev publication before the tag cut; the item 14 fresh-clone record in
+  `## Test Results`).
+- **After the release (2026-09-24):** `Espio` prune of this doc (executed 2026-09-24, this pass).
+
+### Superseded plan (work breakdown, estimates, risks, validation)
+
+*Condensed reconstruction by `Espio` (2026-09-24); full text unrecoverable (no `git` access to the
+pre-prune revision, no backup copy). The 14-item work breakdown (items 1-14) with dependencies,
+critical path, estimates, risks, and the validation matrix was executed and is superseded by the
+actuals in `## Implementation`, `## Test Results`, and `## Release`. Item identities, from the
+records that remain in this doc (commit shas are the project-repo history on
+`feature/TASK-0024-rpm-signing-gpgcheck`):*
+
+- **Item 1** — key generation + `.gitignore` guard + pre-push proof (`7d47a02`); fingerprint
+  `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, keygrip `F8F7A85609E1F45830A76F68E66D97DFA7AA05D0`,
+  host-local keyring `~/.gnupg-cinnamon-rocky10`.
+- **Item 2** — `repo-setup/sign-rpms.sh` (256 lines; pre-flights, assuan preset/clear,
+  `rpm --checksig` verification, idempotent skip) (`b84ce3f`); the pinned gpg 2.4.5 protocol and
+  throwaway-key proof remain live in `## Implementation`.
+- **Item 3** — production sign run, all 64 RPMs in place (`db60bb6`); payload identity 64/64 (D2),
+  full-set `rpm --checksig` 64/64, runtime no-leak proof.
+- **Item 4** — `rpms/SHA256SUMS` from the signed set (`1b57ac8`).
+- **Item 5** — `setup-repo.sh` key import + `gpgcheck=1` (no `gpgkey=`) per D3 (`55a38ba`), plus the
+  harness test 6 wiring.
+- **Item 6** — docs surfaces: INSTALL.md Quick start / Manual / new "Verifying the release"
+  section, README signing section (`e6ee370`).
+- **Item 10** — fresh-VM end-to-end harness (`vm-test/test-repo-setup.sh`: 22-name install, GDM
+  Wayland login, five surfaces); run 1 FAIL on the harness blocker, re-runs PASS (the desktop-boot
+  half under the recorded TASK-0017 caveat).
+- **Item 11 (a/b/c)** — negative tamper tests: payload flip refused at `gpgcheck=1` / accepted at
+  `gpgcheck=0`; pgpsig flip refused under both settings (dnf4 4.20.0); unsigned package accepted at
+  `gpgcheck=0`; the local `dnf install ./rpms/<tampered>.rpm` fallback refused.
+- **Item 14** — fresh-clone verification record at the tag (per-file sizes + full `rpm --checksig`
+  in `## Test Results`), executed post-merge 2026-09-24; the 64-row size table is mirrored in
+  `## Archive` > `Superseded test detail`.
+- Items 7-9 and 12-13 are not reconstructed: no surviving record attributes them individually; the
+  executed work is fully covered by the item records above and the release record.
+- Estimates and the per-item risk column are unrecoverable; the risk-relevant decisions that remain
+  are D1-D4 and the alternatives sections kept live in `## Plan` and `## Implementation`.
+
+### Superseded security detail
+
+*Full text of Omega's four findings at first review (branch tip `e6ee370`, review 2026-09-22) with
+the `**Resolution:**` placeholders filled from the 2026-09-23 re-review of `ce7b084` and the
+2026-09-24 release verification, plus the verified-no-finding bullets. Pruned 2026-09-24 by
+`Espio`; the live `## Security` section keeps the one-line records and verdicts.*
+
+#### No out-of-band anchor for the signing fingerprint; a key swap is undetectable inside the account
+**Severity:** medium
+**Vector:** supply-chain
+**Where:** `keys/cinnamon-rocky10-public.asc`, `INSTALL.md:188`, `INSTALL.md:282`, `README.md:102`, `repo-setup/setup-repo.sh:38`
+**Attack:** the attacker is a compromised `metalllinux` GitHub account (named in the threat model at task origin, this doc line 54). One in-account PR or commit does all of: (a) replace `keys/cinnamon-rocky10-public.asc` with the attacker's public key, (b) re-sign all 64 RPMs with the attacker's key, (c) update the fingerprint strings in `INSTALL.md` and `README.md`, (d) regenerate `rpms/SHA256SUMS`. A follower running `setup-repo.sh` imports the attacker's key into the rpm keyring, `gpgcheck=1` then passes on the attacker's packages, and attacker code runs as root (the threat model states packages install as root). Every in-repo check passes: signatures verify against the shipped (attacker) key, the manifest matches the re-signed RPMs, and the documented manual `rpm --checksig` procedure verifies against whatever key was imported.
+**Impact:** RCE as root on every follower who installs from a tag cut after the swap. The signing layer does close the stated `rpms/`-tampering threat with the key held constant (a PR altering only `rpms/` is caught: the altered packages do not verify against the shipped key). The key-swap variant requires the same capability as account compromise, so this is the residual of the named threat, not a hole in the implemented design.
+**Evidence for severity.** No out-of-band copy of the fingerprint exists. Checked metalinux.dev homepage and the Linux Journey index (2026-09-22): no article publishes it, and the key (generated 2026-09-21) postdates any Cinnamon article the project could have written. The fingerprint is published only inside `metalllinux` account territory: the project repo (the five locations above) and this planning doc. The user's memory is the only current out-of-band knowledge.
+**Fix:** non-blocking; recommended before the first public tag. Publish the fingerprint on metalinux.dev (separate domain and hosting, a distinct trust domain) and add one line to the `INSTALL.md` manual procedure telling the follower to compare the imported key's fingerprint against that out-of-band value before trusting the repo. This converts a silent key swap into a detectable one.
+**Resolution:** resolved, both halves. `ce7b084` added the `INSTALL.md:282-285` line directing the
+follower to compare the imported fingerprint against the out-of-band value published on
+metalinux.dev before trusting the repo (fingerprint is public data, no secret added). The
+metalinux.dev publication itself landed at site commit `075a3c9`
+(`https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`), confirmed live before tag
+`v1.0.0` was cut (HTTP 200, fingerprint present, key block byte-identical to
+`keys/cinnamon-rocky10-public.asc`), so both tracked conditions are satisfied: the publication
+precedes the tag cut, and the line names the concrete page. See `## Release`.
+
+#### Final verification does not pin the signing key, and the completion log overstates the guarantee
+**Severity:** low
+**Vector:** crypto
+**Where:** `repo-setup/sign-rpms.sh:241-246` (verification loop, die at :245), `repo-setup/sign-rpms.sh:257` (log), `repo-setup/sign-rpms.sh:219-221` (`is_signed`)
+**Attack:** `rpm --checksig`/`rpm -K` verifies "a valid signature by a key in the rpm keyring, or by the public key embedded in the package", not "by key 1689...FDA02785". An RPM in `rpms/` re-signed with a key absent from the host's rpm keyring would be accepted through the embedded-key fallback by both the skip check (`is_signed`, :220) and the final verification (:245). Exploiting this needs write access to `rpms/` on the release host (or to the script itself), and an attacker with that capability does not need this path, so the exposure is robustness, not a reachable vulnerability. On the release host the check is in fact pinned: the pre-flight (:150-151) guarantees key `fda02785` is in the rpm keyring before anything runs, so verification resolves by key ID.
+**Impact:** a future run against pre-placed re-signed packages would log "All RPMs in rpms/ carry a valid signature from 1689...FDA02785" (:257) for packages that do not carry such a signature. False assurance in recorded evidence, not a broken current signature: for this run the guarantee holds, byte inspection of the committed git objects shows the key-ID tail `fda02785` embedded in the branch blobs (2 hits in the `cinnamon-rocky-defaults` sample) and absent from the main blobs (0 hits).
+**Fix:** consolidate with Shadow's should-fix on these same lines (no duplicate work). Pin the key in verification, for example by extracting the embedded public key (`rpm -qp --qf '%{SIGPGP}'`) and comparing its fingerprint to `EXPECTED_FINGERPRINT`, and reword the :257 log to state what was actually checked.
+**Resolution:** resolved in `ce7b084`; deviation from the suggested mechanism accepted as the only
+implementable pin. The verification loop now pins the key via a scratch rpm keyring
+(`SIGNER_ROOT=$(mktemp -d)` 0700, `rpm --root ... --import "${KEYFILE}"` with `|| die`, per-RPM
+`rpm --root ... -K` die on any non-OK); the EXIT trap removes it on every exit path. Only a
+signature by the key imported from the repo's public key file can pass. The suggested `%{SIGPGP}`
+extraction is not implementable on this rpm: `%{SIGPGP}`/`%{SIGGPG}` return `(none)` because rpm
+4.19 does not embed the public key. Tails' four-direction matrix establishes the scratch keyring
+is isolated from the host keyring, including the discriminating direction "real-signed vs
+throwaway-only keyring, NOT OK rc=1". The log line now states "from the pinned key
+${EXPECTED_FINGERPRINT}". Residual (assessed, not a finding): nothing checks `KEYFILE`'s
+fingerprint against `EXPECTED_FINGERPRINT` directly; a swapped `KEYFILE` is caught by the pin
+itself (the run dies loudly, nothing committed or pushed).
+
+#### "Never run with set -x" warning is not enforced
+**Severity:** low
+**Vector:** secrets
+**Where:** `repo-setup/sign-rpms.sh:24-26` (warning) versus the script body (no guard)
+**Attack:** the header warns that running under `set -x` prints the passphrase via the trace (AGENTS.md section 4), but nothing enforces it. `bash -x repo-setup/sign-rpms.sh` (or a wrapper that sources it into an xtrace shell) traces lines 177 and 179 with the expanded cleartext passphrase (and its hex form) on stderr, because `printf '%s' "$PASS"` and `printf '%s' "$PASS_HEX"` are traced with their arguments expanded. Line 175 (`PASS=$(cat ...)`) does not leak (the trace shows the command, not the substitution result), and the heredoc at :186-190 is not traced.
+**Impact:** the passphrase lands in the operator's terminal, shell history, or any captured log of the signing run. Host-local only: the script never runs in CI, output stays on the release host, and the attacker is the operator misusing the script or a local process reading the terminal or log.
+**Fix:** refuse to run when xtrace is active, near the top of the script after :42: `case "${BASHOPTS:-}" in *xtrace*) die "refusing to run under set -x: the passphrase would be traced (AGENTS.md section 4)";; esac`.
+**Resolution:** resolved in `ce7b084`. A `case "$-" in *x*)` guard immediately after
+`set -euo pipefail` refuses with exit 1 when xtrace is active, before any read of the passphrase;
+it rejects both `bash -x sign-rpms.sh` and sourcing into an xtrace shell alike, and cannot fire
+on a normal run. Deviation from the suggested `BASHOPTS` probe is justified and recorded: in a
+script shell `BASHOPTS` does not list `xtrace` under `bash -x` (verified empirically), while `$-`
+does. Recorded refusal run: the trace stops, the message is a constant, the passphrase is never
+read. No leak path remains.
+
+#### All 64 signed RPMs are byte-identical in size to the unsigned baseline
+**Severity:** low
+**Vector:** crypto
+**Where:** `rpms/*.rpm` (all 64); `## Implementation` item 3 record
+**Attack:** none. This is a records gap, not an attack path. `git diff --stat 893b22a..e6ee370` shows all 64 RPMs as `Bin N -> N` (unchanged size, for example `cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm` 15241 to 15241). Ordinary `rpm --addsign` with an RSA-4096 key grows the file by roughly 1 KB (signature plus embedded public key). The Implementation record attributes the identity to "the signature landing in a fixed header slot", a mechanism this review could not verify (no `rpm`/`gpg` access). Byte inspection of the git objects (patterns without 0x0A, validated by control) confirms the committed branch blobs carry the key-ID tail `fda02785` and the main blobs do not, so the committed bytes do carry a signature from the expected key.
+**Impact:** if the size identity ever turned out to mask a malformed signature, the recorded `rpm -K` evidence (item 3, run against exactly these bytes, Shadow verified no `rpms/*.rpm` changed after the manifest commit) would already have failed. The realistic risk is a gap in the evidence trail, not a broken signature.
+**Fix:** no code change. The item 14 fresh-clone run should record per-file sizes and the full `rpm --checksig` output in `## Test Results`, closing the anomaly on the record.
+**Resolution:** closed by recorded evidence; the scheduled record work was completed by the
+release-tag verification. The security question (do the committed bytes carry a valid signature
+from the expected key) rests on: (a) full-set `rpm --checksig` 64/64 `digests signatures OK`
+against exactly these bytes (`## Implementation` item 3, no `rpms/*.rpm` changed after the
+manifest commit); (b) an independent VM run reporting `Header V4 RSA/SHA256 Signature, key ID
+fda02785: BAD` on a single flipped signature byte (`## Test Results`), direct evidence of a V4
+RSA/SHA256 header signature from the expected key; (c) the `ce7b084` pinned run, 64 verified
+against the one-key scratch keyring. The size identity is consistent with the signature landing in
+the header region reserved at build time (Tails' attribution, not introspected). The per-file size
+table (64 rows) and the full `rpm --checksig` output against tag `v1.0.0` are recorded in
+`## Test Results` (release-tag fresh-clone verification, 2026-09-24) and mirrored in
+`## Archive` > `Superseded test detail`.
+
+#### Verified, no finding
+- **Secrets in history.** `git log -S "BEGIN PGP PRIVATE KEY BLOCK"` on the branch range: 0 hits. `git log -S "private-keys-v1"`: 1 hit, commit `7d47a02`, whose diff scope (via `--stat`) is `.gitignore` +19, `keys/cinnamon-rocky10-public.asc` +30, `sign-rpms.sh` +7/-6, i.e. the guard, not key material. `git log -S "BEGIN PGP"`: only `7d47a02`. The planning doc holds no passphrase value: roughly 100 "passphrase" hits, all mechanism, reference, or byte-length; the user's passphrase is referenced as the contents of `~/password.txt`, never written (AGENTS.md section 4 upheld).
+- **No new GitHub secrets or variables.** `gh secret list` and `gh variable list` on `metalllinux/cinnamon-for-rocky10` both return empty. The section 13 exception (host-local keyring, user-approved 2026-09-21, six-pager `planning/docs/TASK-0024-gpg-key-management.md` sections 4-5) adds no workflow secrets, and the project repo has no `.github/`. The precedent cited for the exception, the fleet test SSH key, is verified as claimed at `vm-test/lib.sh:45` and `:85` (host-local key files under `$HOME/.ssh`, not GitHub secrets).
+- **Key material shipped is public-only.** `keys/cinnamon-rocky10-public.asc` is a 30-line `PGP PUBLIC KEY BLOCK`; the UID matches the spec; the fingerprint subpacket decodes to `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (Shadow, `## Review`, run-1 "Verified, no finding"). `.gitignore` guards cover the keyring directory, passphrase file names, `private-keys-v1.d/`, and `openpgp-revocs.d/` (a leaked revocation cert is a key-revocation DoS, so this is covered).
+- **No injection surface in the new scripts.** All expansions reaching the shell are quoted; the `rpms/` glob expands to absolute paths (no leading-dash argument injection); gpg colon output is consumed field-wise and never re-interpreted as shell.
+- **License (AGENTS.md section 9).** The diff adds no forked code; no license-header or compatibility concern.
+
+### Superseded test detail
+
+*Big's run-1 "no signature" mechanism analysis (VM tamper run, branch tip `e6ee370`) and the 64-row
+per-file size table from the release-tag fresh-clone verification (2026-09-24). Pruned 2026-09-24 by
+`Espio`; the live `## Test Results` section keeps the verdicts, checks tables, and the
+faithful-summary checksig/manifest records.*
+
+**The "no signature" question, resolved.** The payload flip reports `does not verify: no signature`
+even though the package is signed and the real failure is the BAD payload digests. The transaction sinfo
+table is identical between the pristine and flipped packages except the payload digest rc (pristine
+`[5] NOTFOUND, [6] OK, [9] OK`; flipped `[5] BAD, [6] BAD, [9] BAD`), decoded in `gdb-decode.out`
+(flipped) and `gdb-decode-4.out` (pristine). The mechanism, from the Rocky `rpmvsVerify` disassembly
+(`rpmvsVerify-rocky.dis`):
+
+1. The payload SHA256 digest entry `[6]` is wrapped (`wrapped=1`), so it is promoted to signature
+   strength (`testb $0x1,0x50(%rsp)` at `0x51b95`).
+2. On a digest OK, the verify sets `verified[type] |= range` and `verified[strength] |= range`
+   (`0x51e59` to `0x51e68`). Pristine `[6]` OK sets `verified[SIG]` to `0x3` (HEADER|PAYLOAD); flipped
+   `[6]` BAD leaves `verified[SIG]` at `0x1` (HEADER).
+3. The second loop's skip condition is `required = sinfo->range & (range & ~verified[SIG])`, skipping a
+   `NOTFOUND` entry only when `required == 0` (`andn` at `0x51c0a`). The absent payload DSA/RSA
+   signature entries `[7]`/`[8]` (range `0x3`, rc NOTFOUND in both cases):
+   - Pristine: `0x3 & (0x3 & ~0x3) = 0`, so skipped.
+   - Flipped: `0x3 & (0x3 & ~0x1) = 0x2`, so required and passed to the callback (`0x51c67`).
+4. The callback sets `no signature` for the NOTFOUND signature entries and continues past the BAD digest
+   entries without overwriting that message (trace `gdb-cb3.out`, final message `no signature`;
+   `gdb-cb4.out` shows the pristine run exits 0).
+5. `prc` is non-zero because the real failure is the BAD payload digests, and `verifyPackageFiles` adds
+   the problem with `vd.msg`, which is `no signature` (`transaction.c:1310` to `1311`).
+
+So the transaction is correctly refused; only the message is masked. A corrupted payload digest fails to
+mark the payload range signature-verified, which makes the (absent) payload signatures required, which
+triggers the `no signature` callback text. This is an rpm/rpmvs reporting quirk in the wrapped-digest
+promotion path, not a defect in this task's code and not a security issue (the refuse is correct). The
+Rocky `vfyCb` source is static (not breakable by name) and could not be read directly; its
+continue-past-BAD and preserve-`no-signature` behavior is confirmed empirically from the trace.
 
 **Per-file sizes (all 64 RPMs, from `ls -l rpms/*.rpm` in the fresh clone):**
 
@@ -1345,234 +1369,130 @@ only, per the pinned `rpm -K` strings in `## Implementation` (line 526).
 | `xapps-lib-3.3.3-1.el10.x86_64.rpm` | 185959 |
 | `xapps-lib-debuginfo-3.3.3-1.el10.x86_64.rpm` | 298354 |
 
-**`rpm --checksig` output, faithful summary.** The raw output is 64 lines, one
-per RPM, every line of the form `rpms/<name>.rpm: digests signatures OK`.
-Computed counts on the transcript: 64 lines total, 64 lines matching
-`digests signatures OK`, 0 other lines, rc=0. Recorded in summary form per
-this section's "verdicts, never raw log dumps" rule and the dispatch's
-summary option (the 64 lines are uniform); the full transcript is preserved
-host-local at `/tmp/opencode/task0024-release-verify/evidence-checksig.txt`
-(64 lines).
+### Superseded review detail
 
-**`sha256sum -c SHA256SUMS` result.** 64 lines, every line
-`<basename>.rpm: OK`, rc=0 (64/64). Transcript
-`/tmp/opencode/task0024-release-verify/evidence-sha256.txt`; the `ls -l`
-transcript is `evidence-ls-l.txt` in the same directory.
+*Shadow's run-1 full finding text, the re-review (ba7babf), and the harness-delta review
+(8672013). Pruned 2026-09-24 by `Espio`; the live `## Review` section keeps the one-line finding
+records with fix shas and the verdicts.*
 
-**Verdict (release tag).** PASS. The tag-pinned bytes verify end to end on a
-clone that shares no state with the working tree: 64/64 `digests signatures
-OK` under the pinned key `fda02785` and 64/64 manifest match. This closes
-Omega's tracked condition 2: the per-file sizes above are the released
-values, and every checksig line ran against exactly these bytes and reports a
-valid signature. On the finding 4 anomaly itself, this record supplies what
-the fix specified (sizes + full-set checksig at the tag); the size identity
-stays explained as Omega's re-review left it, consistent with the signature
-landing in the header region reserved at build time (Tails' attribution,
-`## Implementation` line 604, attributed rather than introspected), and this
-run adds no new mechanism claim. The throwaway clone was deleted after
-evidence capture; the three transcripts remain host-local.
+#### Run-1 findings (full text)
 
----
+### Harness ships no `keys/` to the VM; the new setup-repo.sh key step always dies there
+**Severity:** blocker
+**Where:** `vm-test/test-repo-setup.sh:349-364` (phase 1 copies), `repo-setup/setup-repo.sh:127-130` (new requirement)
+**Problem:** phase 1 rsyncs only `repo-setup/` and `rpms/` to the VM, but item 5 added a step to `setup-repo.sh` that requires `${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc` and dies without it.
+**Failure scenario:** fresh VM after phase 1; phase 2 runs `bash ./repo-setup/setup-repo.sh /root/cinnamon-for-rocky10` (test line 392) → the `[ ! -f "$KEY_FILE" ]` test at `setup-repo.sh:128` is true (no `keys/` on the VM) → die at line 129 → cascading FAILs: "setup-repo.sh execution" (test line 408), "completion message" (line 415), ".repo file installed" (line 432), "dnf repolist includes repo" (line 481), phase 4 `dnf install cinnamon` (line 558). The DoD items "Fresh-VM end-to-end" and "Big: all harness checks PASS" are unreachable on this branch as-is.
+**Suggested direction:** rsync `keys/` to the VM in phase 1 alongside the existing two copies, and update the header comment at test line 9 and the phase-1 log lines to match. Re-run the harness to green.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-## Docs
+### sign-rpms.sh verification does not pin the signing key; the summary claim is stronger than the check
+**Severity:** should-fix
+**Where:** `repo-setup/sign-rpms.sh:245` (per-RPM check), `repo-setup/sign-rpms.sh:257` (final claim)
+**Problem:** verification is `rpm --checksig | grep -qi "signatures OK"`, which accepts a valid signature from *any* key in the host rpm keyring, but the script then reports "All RPMs in ... carry a valid signature from ${FPR}".
+**Failure scenario:** a host whose rpm keyring holds the project key plus at least one other key (any imported key qualifies); one RPM is swapped for a copy signed by that other key → `rpm --checksig` reports signatures OK → line 245 passes → the script certifies the whole set as signed by `1689676AF4D4F6FEC142B4429C0A8912FDA02785` when it is not. The pre-flight at line 150 proves the project key is present, not that it is the only key in the rpm keyring. The current set is unaffected (signed by the sole secret key in the dedicated keyring, item 3 evidence), but the script's standing guarantee is weaker than its output.
+**Suggested direction:** pin the expected signer in the verification step (assert the signing key identity in each RPM's signature data matches the expected fingerprint/keyid) so the line-257 claim matches what was actually checked.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-*Owner: `Vector`.*
+### Harness asserts 48 RPMs on the VM; the repo ships 64
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:369-373`
+**Problem:** the "RPMs copied to VM" check asserts exactly 48, but the published set is 64 RPMs.
+**Failure scenario:** verified pre-existing on main (`git show 893b22a:vm-test/test-repo-setup.sh` line 366 carries the same `-eq 48`; `git show 893b22a:rpms` lists 64 RPMs), so the check FAILs on every run on either branch: 64 files land on the VM, the count test fails, the suite is red, and the DoD item "Big: all harness checks PASS" cannot be met. The branch already modifies this file (commit `55a38ba`), so the fix belongs here.
+**Suggested direction:** raise the constant to 64, or better, derive the expected count from the source tree (count `*.rpm` in `${PROJECT_DIR}/rpms` the same way line 368 counts the remote side) so the assertion cannot go stale again.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-Item 10 docs polish pass, branch `feature/TASK-0024-rpm-signing-gpgcheck`,
-commit `2466b70` (local, push state below). The pass covered Quick start,
-the Manual 6 steps, and "Verifying the release" in INSTALL.md, plus
-"Signing and release verification" in README.md.
+### Passphrase round-trip check is dead code and its comment is factually wrong
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:178-180`
+**Problem:** the "round-trip check" compares `xxd -r -p` of the hex encoding against the original, but hex encoding/decoding is an exact identity for any byte sequence (both sides undergo the same command-substitution trailing-newline stripping), so the comparison can never fail and the `die "passphrase file must be a single line"` at line 180 is unreachable; the comment at line 178 ("a multi-line file would not survive the hex round trip") is wrong.
+**Failure scenario:** none functionally — that is the point: a multi-line passphrase file passes the check and would work end-to-end through the hex protocol (hex represents every byte), so the documented "single line" invariant (header line 35) is simply never enforced.
+**Suggested direction:** either enforce the invariant on the raw file bytes (e.g. newline count in the file) or drop the invariant from the header and delete the check.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-| File | Sections touched | What changed |
-|---|---|---|
-| `INSTALL.md` | "Verifying the release" (`INSTALL.md:254-258`) | Added `cd ..` at the end of the manifest code block. The block ends in `cd rpms` but the following signature block uses project-root-relative paths (`keys/...`, `rpms/*.rpm`), so sequential execution broke. |
-| `INSTALL.md` | "Prerequisites" (`INSTALL.md:304`) | Stale cross-reference. "the manual path enables it in step 4" changed to "step 5". The CRB enable is manual step 5 (`INSTALL.md:211-214`), renumbered when item 6 inserted the key-import step. |
-| `README.md` | "Signing and release verification" (`README.md:99,108`) | "the repository installs with `gpgcheck=1`" changed to "the repository is configured with `gpgcheck=1`" (the .repo file carries the setting). "the signature verifies the set against the key holder" changed to "against the key", aligning with INSTALL.md's "The signature verifies the origin". |
+### `xxd` and `stat` are used but missing from the tool pre-flight
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:105-107` (pre-flight loop), first use of `xxd` at line 177
+**Problem:** the pre-flight checks `gpg gpg-connect-agent rpm` only, but the script also requires `xxd` (line 177; shipped by `vim-common` on RHEL, not guaranteed on a minimal server) and `stat` (lines 141, 143).
+**Failure scenario:** a host without `vim-common` → line 177 aborts under `set -euo pipefail` with the bare shell message "xxd: command not found" and a non-zero rc, instead of the pre-flight's actionable "required tool not found: ..." die.
+**Suggested direction:** add `xxd` and `stat` to the pre-flight loop.
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-**Accuracy against the scripts (no factual mismatches found).** Every Quick
-start claim checked against `repo-setup/setup-repo.sh`. createrepo_c
-self-install at `setup-repo.sh:99-104`, metadata generation at `:109-115`,
-key import plus keyring assert at `:127-142`, the .repo write with
-`gpgcheck=1` and no `gpgkey=` at `:156-165`, CRB enable at `:176`,
-makecache validation at `:188`, the `=== Repository setup complete ===`
-marker at `:196`. The manual .repo template matches the script's printf
-output. The trailing slash on the manual template's baseurl is a valid
-file:// directory URL, not a divergence from the script. The 22-name set in
-Quick start matches `vm-test/install-set.txt` exactly. `rpms/SHA256SUMS` is
-exactly 64 lines and the basenames match the 64 published RPMs.
+### `rpm -qa | grep -q` under pipefail is a host-dependent latent false positive in the keyring pre-flight
+**Severity:** nit
+**Where:** `repo-setup/sign-rpms.sh:150` (with `set -o pipefail` at line 42)
+**Problem:** if the `rpm -qa` output exceeds the pipe buffer (~64 KB, i.e. roughly 1300+ installed packages) and the `gpg-pubkey-fda02785-*` line is not the last line, `grep -q` exits as soon as it matches, the next write from `rpm -qa` hits SIGPIPE (rc 141), and pipefail makes the pipeline return 141.
+**Failure scenario:** a host that grew past ~1300 packages after the key import → line 150's `if !` sees rc 141 → dies with "public key fda02785 is not in the rpm keyring" although the key is present; the message misdirects the operator to re-import a key that is already there. Not triggered on the release host today (item 3 ran clean; the key's db entry sits near the end of the list, so grep reads to the end) — it is a degradation path, not a current failure.
+**Suggested direction:** query the keyring directly with no pipeline, as `repo-setup/setup-repo.sh:139` already does (`rpm -q "gpg-pubkey-<keyid>*"`).
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-**Consistency anchors (all agree in both files).** Fingerprint
-`1689676AF4D4F6FEC142B4429C0A8912FDA02785`, key path
-`keys/cinnamon-rocky10-public.asc`, `gpgcheck=1` with no `gpgkey=` line,
-manifest `rpms/SHA256SUMS`, and the out-of-band metalinux.dev fingerprint
-line in INSTALL.md only (README points to it).
+### DoD "zero hits" wording is unsatisfiable on a correctly guarded tree
+**Severity:** nit
+**Where:** Definition of Done, `planning/docs/TASK-0024-rpm-signing-gpgcheck.md:88`
+**Problem:** the DoD requires the merged tree to pass `git grep` for `private-keys-v1.d` "with zero hits", but the guard that makes the tree safe is itself the literal pattern line `private-keys-v1.d/` in `.gitignore:22` (verified via `git show feature/TASK-0024-rpm-signing-gpgcheck:.gitignore`), so `git grep private-keys-v1.d` returns exactly one hit on the merged tree.
+**Failure scenario:** merge the branch as-is → the literal DoD check fails on a tree that has no key material, because the .gitignore guard line matches the search string.
+**Suggested direction:** reword to "zero hits for `BEGIN PGP PRIVATE KEY BLOCK`, and for `private-keys-v1.d` only the `.gitignore` guard line". (DoD is Robotnik's section; flagged here, not edited.)
+**Resolution:** *(filled by `Tails`)* fixed in `<sha>` | disputed, because
 
-**House style (AGENTS.md section 10).** No em dashes, en dashes, or double
-hyphens in prose. No forbidden words. Every colon in the four surfaces is
-technical (URLs) or pre-existing outside them (INSTALL.md:386 and :393
-introduce troubleshooting lists, README.md:9-11 are key/value header
-lines). No style edits needed.
+**Verified, no finding (run-1).** The following were checked and cleared: passphrase handling in `sign-rpms.sh` (read from the 600-mode file, hex-encoded, sent on `gpg-connect-agent` stdin only, never in argv; `PASS`/`PASS_HEX` wiped at lines 181/194; `clear_preset` EXIT trap covers all exit paths, lines 199-208); `setup-repo.sh` statelessness contract (bad argument dies at the `cd -P` resolution, lines 61-62, before the root check at line 78 and every state-changing step, matching the contract at lines 21-28); the `is_signed` grep (lowercase "signatures OK" cannot match the failure string "SIGNATURES NOT OK", lines 213-221); harness test 6's flip to `gpgcheck=1` (asserts the new intended behavior, `vm-test/test-repo-setup.sh:314-323`; the template and the script's printf both carry `gpgcheck=1` with no `gpgkey=`, consistent); the public key file's fingerprint subpacket decodes exactly to `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, and `KEY_ID="fda02785"` is its last 8 hex chars (`repo-setup/setup-repo.sh:42`); `rpms/SHA256SUMS` structure (64 lines, basenames only, 1:1 with the tree listing) plus the commit-range argument that no `rpms/*.rpm` changed after the manifest commit (`git log --stat db60bb6..1b57ac8` and `1b57ac8..e6ee370`), on top of the recorded item 4 evidence (`sha256sum -c` 64/64 OK). Note: the hashes themselves were not independently re-computed — this review has no `sha256sum` permission — so the manifest's correctness rests on the recorded item 4 run plus the commit-range argument.
 
-**Checked and needed no change:**
-- `repo-setup/setup-repo.sh`, `repo-setup/cinnamon-rocky10.repo`,
-  `vm-test/install-set.txt`, `rpms/SHA256SUMS`,
-  `keys/cinnamon-rocky10-public.asc`. Read for verification only.
-- INSTALL.md sections outside the four surfaces (Minimal server, Direct RPM
-  install, Installed packages, GDM session configuration, Troubleshooting).
-  The "step N" cross-references at `INSTALL.md:93-95`, `:102`, `:115`,
-  `:207`, `:216-218`, `:270` all resolve against the current numbering.
-- README.md outside the signing section. Version table, test log, project
-  structure, and development sections are consistent.
-- `CHANGELOG.md`. Not present in this repository. Nothing to update.
+#### Re-review (ba7babf), 2026-09-23 (full text)
 
-**Key-material check (pre-push).** `git grep` is not in this agent's
-permission set and the `rg` binary is not installed on the host, so the
-check ran as `git log -S`, which covers the whole branch history and is
-therefore stronger than a HEAD-tree grep. `git log -S "BEGIN PGP PRIVATE KEY
-BLOCK" --oneline HEAD` returned zero hits, so no commit ever introduced a
-private-key block and none can be in the HEAD tree. `git log -S "BEGIN PGP"
---oneline HEAD` returned exactly one commit, `7d47a02` (item 1, the public
-key). The committed diff of `2466b70` is the four doc lines above (verified
-with `git diff` before committing) and contains no key material. The
-passphrase-absence claim rests on the Tails records (item 6 and the fix
-pass, where the 600-mode passphrase file was used only as a variable for
-diff greps). The passphrase file was not read here.
+**Scope.** The fix delta `e6ee370..ba7babf` is a single commit (`git diff --stat`: `INSTALL.md` 5±, `repo-setup/sign-rpms.sh` 95±, `vm-test/test-repo-setup.sh` 28±; +98/-30). Re-checked only what changed plus the previously flagged lines, and the two deviations Tails recorded from the fix brief. `repo-setup/setup-repo.sh`, the `.repo` template, `rpms/`, and `rpms/SHA256SUMS` are untouched in the delta, so the statelessness contract, the `gpgcheck=1` block, and the manifest remain as verified in the first pass.
 
-**Push state (action needed).** Commit `2466b70` is local. `git push origin
-feature/TASK-0024-rpm-signing-gpgcheck` was denied by this agent's
-permission set, which allows only `git push origin main`. `git ls-remote
-origin` confirms the remote branch is still at `6bb500e` and main at
-`893b22a`. No bypass was attempted. The next agent or user with push rights
-on the feature branch pushes `2466b70`. Nothing else is pending on the docs
-side. The metalinux.dev fingerprint publication (the out-of-band line the
-docs now reference) was drafted below.
+**Verdict.** 6 of 7 original findings CLEARED, 1 REOPENED (nit), 1 NEW (nit). **Unblock the merge**; both open nits are one-line fixes.
 
-### Out-of-band fingerprint anchor page (metalinux.dev)
+**1. Harness ships `keys/` to the VM (blocker): CLEARED.** Phase 1 now rsyncs `keys/` after `rpms/` and before phase 2 (`vm-test/test-repo-setup.sh:366-375`), in the file's existing copy idiom (`ssh_pin_opts` + word-split with the `SC2086` disable, verify-after-copy). The destination matches the `KEY_FILE` resolution of the phase-2 invocation (`test-repo-setup.sh:411-412` passes `/root/cinnamon-for-rocky10`; `setup-repo.sh` reads `${PROJECT_ROOT}/keys/cinnamon-rocky10-public.asc`). The new check "public key copied to VM" (`test-repo-setup.sh:395-401`) is fail-closed: PASS only on exact `present` output; a missing file, ssh failure, or connection error all land on FAIL via `2>/dev/null || true` plus the empty-string compare, and any FAIL record drives `OVERALL: FAIL`/exit 1 (`test-repo-setup.sh:833-839`). `record()` takes an optional detail argument (`test-repo-setup.sh:48-67`), so the two-arg PASS call is valid. The tree's `keys/` holds exactly `cinnamon-rocky10-public.asc` (`git show HEAD:keys`); header line 9 is updated to match.
 
-The out-of-band publication referenced by "Verifying the release" in
-INSTALL.md and "Signing and release verification" in README.md did not
-exist. Drafted it in the site repo `~/Linux/projects/github_pages`
-(Jekyll, theme minimal-mistakes, `url: https://metalinux.dev`).
+**2. Verification pins the expected signer (should-fix): CLEARED, deviation justified.** The set is now verified against a scratch rpm root holding only the repo key file (`sign-rpms.sh:281-291`), requiring `signatures OK` per RPM. That is a real pin, not a string match: a signature verifies only if its key ID is in the scratch keyring (the imported key's) and it cryptographically verifies against that key. Tails' recorded four-way matrix proves both directions (real-signed vs throwaway-only keyring NOT OK, so the host keyring is not consulted; throwaway-signed vs throwaway keyring OK, so the scratch keyring is). I independently confirmed the deviation's premise on this rpm: `%{SIGPGP}` and `%{SIGGPG}` query empty and `%{PGP}` is an unknown tag on rpm 4.19 (`rpm -qp --qf` against `rpms/cinnamon-rocky-defaults-1.0-2.el10.noarch.rpm`), so the originally suggested `%{SIGPGP}` extraction is unavailable and the recorded deviation stands. A key-file swap is caught loudly: the script signs with the preflight-verified key, so the swapped file's key ID is absent from the scratch keyring and the loop dies at line 289. The only theoretical bypass is a 64-bit key ID collision (infeasible). Residual, out of scope of this finding and tracked under the Omega medium: a package pre-signed by a third-party key not in the host keyring is re-signed by the script before verification, and the final claim states exactly what the pin checks ("the pinned key", line 302).
 
-| File | Sections touched | What changed |
-|---|---|---|
-| `_pages/cinnamon-rocky10-signing-key.md` | New page | Anchor page draft. Front matter follows the existing non-article pages (`layout: single`, `permalink: /linux-journey/cinnamon-rocky10-signing-key/`, `author_profile: true`, `sidebar: nav: linux-journey`, metalinux-2.png overlay, toc). Body: purpose, fingerprint, key UID, full armored public key verbatim, one-paragraph verification procedure using `gpg --show-keys` (no keyring import). |
-| `_data/navigation.yml` | `linux-journey` nav, "Courses & Projects" | Added "Cinnamon for Rocky Linux 10 (Signing Key)" pointing at `/linux-journey/cinnamon-rocky10-signing-key/`. Required by the site AGENTS.md for every new page. |
-| `_pages/linux-journey.md` | "Courses & Projects" table | One row linking the new page. |
+**3. Count 48 to 64 (should-fix): CLEARED.** The constant and message now say 64 (`vm-test/test-repo-setup.sh:378-385`); the tree holds exactly 64 `.rpm` files (`git show HEAD:rpms`). The "derive the count" alternative was not taken; the constant is commented to the item-3 record (line 380) and will need the same one-line update if a future republish changes the set size.
 
-`_pages/` rather than `_linux_journey/` because
-`scripts/process_linux_journey.py:460-462` removes and rebuilds
-`_linux_journey/` from `~/Documents/linux_journey/` on every run, which
-would delete a hand-written page there. `_pages/` is outside that process
-(`include: [_pages]`, `_config.yml:31-32`).
+**4. Dead hex round-trip check, wrong comment (nit): REOPENED (nit).** The dead check is correctly removed (single `xxd` plus single `gpg-connect-agent`, `sign-rpms.sh:200-201`). The replacement comment (lines 202-205) is still factually wrong: it claims "a malformed file, for example a multi-line passphrase, is rejected by gpg-agent itself, which then answers without an OK line". `PRESET_PASSPHRASE` is a cache operation; the agent stores the hex-decoded bytes and answers OK for any valid hex string without verifying against the key. A multi-line file therefore passes the preset; if its bytes do not equal the key's actual passphrase (as must be the case for a key generated through the interactive prompt), the failure surfaces as an unprotect error in the first `rpm --addsign` (line 264), not as a preset rejection. The "single line" invariant is still asserted (lines 37, 196-197) and still unenforced. No functional impact, unchanged. Direction: correct the comment at 202-205 to the actual failure point, and either enforce single-line on the raw file bytes or drop the invariant from lines 37 and 196-197.
 
-Key provenance. The armored block in the page is a verbatim copy of
-`cinnamon-for-rocky10/keys/cinnamon-rocky10-public.asc` read from the
-working tree on branch `feature/TASK-0024-rpm-signing-gpgcheck` (HEAD
-`2466b70`). `git diff 6bb500e HEAD -- keys/cinnamon-rocky10-public.asc`
-is empty, so the file is identical at the briefed tip and at HEAD. A
-line-by-line comparison of the page block against the file matched all 30
-lines. The fingerprint on the page matches `EXPECTED_FINGERPRINT` at
-`repo-setup/sign-rpms.sh:66` (recorded at item 1 generation), the
-fingerprint-subpacket decode verified in `## Review` (line 856) and
-`## Security` (line 977), and the consistency anchors of the item 10
-pass above. The UID on the page is the ratified string.
+**5. `xxd`/`stat` pre-flight (nit): CLEARED.** Both added to the tool loop (`sign-rpms.sh:121-123`); first uses at lines 157/159 (`stat`) and 201 (`xxd`), with the actionable die on a host missing either.
 
-**Not committed and not pushed**, per the brief. The user reviews the
-wording before publication. Once published the URL is
-`https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`.
-INSTALL.md and README.md say only "published out-of-band on
-metalinux.dev" and carry no URL, so no project-repo doc change is
-required for the references to resolve. Adding the explicit URL to the
-project docs is an optional follow-up.
+**6. Keyring pre-flight SIGPIPE (nit): CLEARED.** The pipeline is gone; the check is a direct `rpm -q "gpg-pubkey-${KEYID8}-*"` (`sign-rpms.sh:174`), no pipe, no SIGPIPE under `pipefail`. The glob is required (the bare `gpg-pubkey-fda02785` prefix matches nothing; Tails recorded rc=1 on the host with the key installed) and matches the proven idiom in `setup-repo.sh`. I could not re-run the glob query in this review (not in the reviewer's tool set); the verdict rests on Tails' recorded host run plus the pattern match.
 
----
+**7. DoD "zero hits" wording (nit): CLEARED.** The DoD is reworded as suggested: zero hits for `BEGIN PGP PRIVATE KEY BLOCK`, and for `private-keys-v1.d` only the `.gitignore` guard line itself (planning doc, Definition of Done, lines 107-109). The DoD is Robotnik's section, so I verified the current text, not who edited it. Satisfiable on the merged tree: the recorded pre-push greps at `ba7babf` show rc=1 for the private-key block and exactly one `.gitignore` hit for the directory name.
 
-## Release
+**New items in the delta.**
+- `set -x` guard (`sign-rpms.sh:46-58`): no finding. `$-` carries `x` only when xtrace is set; the script adds `e`, `u`, and pipefail, none of which is `x`, so a normal run is never refused, and `bash -x` or sourcing into an xtrace shell dies at line 56 before the passphrase is read (trace stops at the guard; Tails verified 5 lines). The comment at 50-52 correctly notes that BASHOPTS does not list xtrace in a script shell.
+- INSTALL.md out-of-band line (lines 282-285): no finding. Placed in the "GPG signature, origin tampering" subsection, accurate, no secret (the fingerprint is public data, already in the doc three times). The metalinux.dev publication is the recorded non-blocking follow-up scheduled before the first public tag, and the documented procedure is anchored to the tag (`clone --branch v1.0.0`), so the line is correct at the point the procedure is followed.
+- `cleanup()` rename and `rm -rf "${SIGNER_ROOT}"` (lines 223-238): no finding. `SIGNER_ROOT` is always a fresh `mktemp -d` path, quoted, guarded by `-n`.
+- NEW nit: the scratch keyring import (`sign-rpms.sh:283-284`) runs after the signing loop (255-266), so a missing or corrupt `keys/cinnamon-rocky10-public.asc` is only detected after all RPMs are signed in place. The script dies loudly at line 284 and the state is recoverable (a re-run skips the signed RPMs), but the file's pre-flight section (112-182) exists to check every prerequisite before mutation, and `KEYFILE` is one. Direction: add a `KEYFILE` existence check to the pre-flight section.
 
-*Owner: `Knuckles`.*
+**Bookkeeping.** The seven `Resolution:` lines in the findings above are still unfilled placeholders; `Tails` fills them with `ba7babf` (item 4: the comment half lands in the follow-up commit).
 
-**DONE checklist verified:** no. Two boxes remain open; this step proceeded anyway because it
-is a scoped, explicitly user-approved release (2026-09-24, wording reviewed and approved):
-publishing the out-of-band fingerprint anchor, which is Omega's tracked non-blocking condition
-that must land before the `v1.0.0` tag. What is missing:
+**Bottom line.** 6 of 7 CLEARED, 1 REOPENED (nit, comment), 1 NEW (nit, fail-fast ordering). Merge unblocked; the two nits are one-line fixes Tails can land as a trivial follow-up before or at merge.
 
-- [ ] `Vector`: docs on `main`. The update exists on the feature branch (`2466b70` "TASK-0024
-      item 10: docs polish pass on INSTALL.md and README.md"; `INSTALL.md:285` carries the
-      out-of-band metalinux.dev reference) but is not merged, so it is not on `main`.
-- [ ] `Knuckles`: merged to `metalllinux/cinnamon-for-rocky10` `main` via PR. Not done; the
-      feature branch is 1 commit ahead of its own remote (`2466b70` unpushed).
+#### Harness-delta review (8672013), 2026-09-23 (full text)
 
-These two boxes block the repo merge and the `v1.0.0` tag, not this anchor publish.
+*Owner: `Shadow`. Targeted re-review of the harness delta `ce7b084..8672013` (commits `80ade06`, `8672013`), committed by `Big` after the fix reviews. Read-only: `git diff`/`git show` against branch objects, reads of the working tree at branch tip `8672013` (clean per `git status` apart from an untracked `AGENTS.md`; two commits ahead of origin).*
 
-- **Branch:** `main` of `metalllinux/metalllinux.github.io` (site default branch, verified via
-  `git remote -v` and `origin/HEAD`).
-- **Commits:** `075a3c9` "Add Cinnamon for Rocky Linux 10 GPG signing key verification page",
-  3 files changed, 77 insertions; unsigned (no `commit.gpgsign` in the site repo config).
-- **PR:** none. Direct commit and push to the site default branch per the explicit user
-  instruction for this step.
-- **Push:** `git push origin main` returned `453cb1d..075a3c9 main -> main`. Only `075a3c9`
-  transferred; the 6 commits the pre-push status reported as ahead were already on the remote
-  (stale local tracking ref, confirmed by `git fetch origin` plus post-push
-  `main...origin/main` in sync).
-- **Deploy:** GitHub Pages deploys on push; no workflow dispatch for a Pages site.
-- **Live:** confirmed. `curl https://metalinux.dev/linux-journey/cinnamon-rocky10-signing-key/`
-  returned HTTP 404 roughly 30s after the push (still deploying) and HTTP 200 about two minutes
-  later. The 200 response contains `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (one hit), title
-  `Cinnamon for Rocky Linux 10 GPG Signing Key - metalinux`, the PGP public key block, the
-  nav entry text, and the grammar-corrected compare sentence.
-- **Key block integrity:** the page's armored block is byte-identical to
-  `keys/cinnamon-rocky10-public.asc` in `cinnamon-for-rocky10` (`diff` exit 0 over the
-  BEGIN/END block); `gpg --show-keys` on that file reports fingerprint
-  `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, matching the page.
-- **Grammar fix:** one line in `_pages/cinnamon-rocky10-signing-key.md` (comma added after
-  "character by character"), user-approved; nothing else in that file changed.
+**Functional-tree claim: holds.** `git diff ce7b084..8672013 --stat` lists exactly two files, both under `vm-test/` (`test-repo-setup.sh` 40 lines, `verify-install-packages.sh` 13 lines; 40 insertions, 13 deletions in total). No change to `rpms/`, `repo-setup/`, `keys/`, or docs. The signed content under test is byte-identical to `ce7b084`.
 
-### Project release v1.0.0 (2026-09-24)
+**Verified sound, no finding.**
 
-**DONE checklist verified:** yes. All 11 DoD boxes ticked; box 11 (merged to `main` via PR)
-closed by this step. Omega's before-tag condition (the out-of-band anchor) was satisfied before
-the tag cut: the anchor above is live at site commit `075a3c9`, confirmed with `curl` (HTTP 200,
-fingerprint present, key block byte-identical).
+1. **Inverted install check (`80ade06`, `vm-test/test-repo-setup.sh:598-614`).** Bug fix, not a weakening. The old form captured `rpm -q cinnamon 2>/dev/null || echo not-installed`; for a missing package `rpm -q` prints "package cinnamon is not installed" to stdout (rc 1) and the `|| echo` appends a second line, so the captured string never equals "not-installed" and the old check recorded PASS for an uninstalled package. It could not record FAIL at all. The new form branches on the rc of `rpm -q --quiet cinnamon` (0 only when installed) and then reads `%{VERSION}-%{RELEASE}`; PASS requires both to succeed, otherwise it records FAIL "cinnamon not found via rpm -q". `ssh_cmd` returns the remote rc unchanged (`vm-test/lib.sh:206`). A successful install PASSes ("cinnamon-6.7.4-3.el10"); a refused install FAILs both the rc check at `:592-596` and the package check. Strictly stronger than the old check, and the two-step pattern matches the Phase 5 idiom at `:681-684`.
+2. **pipefail `grep` (`80ade06`, `vm-test/test-repo-setup.sh:564-570`).** Sound. `grep -q` exits on the first match; under `set -o pipefail` the still-flushing `echo` (a multi-hundred-KB dnf capture) dies with SIGPIPE (141) and pipefail fails the pipeline, producing a false WARN. Dropping `-q` and redirecting to `/dev/null` makes the pipeline read to EOF. The match pattern ("Complete" or "installed", case-insensitive) is unchanged, so no previously-failing state now PASSes on different grounds; the check is WARN-level and diagnostic, and the authoritative install checks are rc-based. Same bug class as original finding 6 (SIGPIPE in the `sign-rpms.sh` keyring pre-flight).
+3. **repodata rsync exclusion (`80ade06`, `vm-test/test-repo-setup.sh:358-372`).** Sound, and a test strengthening. `.gitignore:13` is exactly `rpms/repodata/` (the comment's claim, verified). `setup-repo.sh:109-111` regenerates metadata with `createrepo_c` when `repodata/repomd.xml` is absent, so the VM state the harness now exercises is the state a real follower reaches from a clone. The excluded artifact is a working-tree byproduct that no clone ships, and its stale form (pre-dating the `db60bb6` re-sign) is what broke the first re-run with a 64/64 SHA256SUMS mismatch. Excluding it removes an unreachable state from the test, not a reachable one.
+4. **Pin data (`8672013`, `vm-test/verify-install-packages.sh:35-50`).** Correct data fix. All 14 `BASE_PACKAGES` pins now equal the committed `rpms/` filenames at `8672013`, verified against the `git show 8672013:rpms` tree listing. The four changed pins (cinnamon-desktop 6.7.2-2, cinnamon-settings-daemon 6.7.2-2, nemo 6.7.4-2, cinnamon 6.7.4-3) and the ten unchanged pins (mozjs115 115.29.0-1, cjs 6.4.0-1, muffin/-clutter/-cogl 6.7.4-3, cinnamon-session 6.7.3-1, cinnamon-control-center 6.7.2-1, cinnamon-menus 6.7.0-1, xapps-lib 3.3.3-1) all match. The installed versions recorded in the re-run (6.7.2-2/6.7.4-2/6.7.4-3) equal the committed filenames, so the fix aligns the table with the release set rather than masking a mismatch.
+5. **The 6 SKIPs (re-run record vs `vm-test/test-repo-setup.sh:743-788`).** Genuinely environmental, not dropped checks. The code defines 7 binaries. `cinnamon-session` and `csd-xsettings` carry `version_flag=NONE` and SKIP with "no version flag for this binary" (a fact about the binaries, 2 SKIPs). `muffin`, `cinnamon-control-center`, `nemo`, `cinnamon` carry `needs_xvfb=yes` and SKIP only when Xvfb is unavailable (4 SKIPs), and the harness attempts `dnf install -y xorg-x11-server-Xvfb` at `:733` before declaring it unavailable; the record shows the minimal image has no such package ("No match for argument"). The ldd check (`:765-777`) runs for every binary before any version-SKIP branch, and the overall 0 FAIL means every ldd counterpart, including all six SKIPped binaries, PASSed with 0 missing libraries. The one Xvfb-independent version check (cjs) ran and PASSed with `cjs 6.4.0`, matching the committed `cjs-6.4.0-1.el10`.
 
-- **Branch:** `feature/TASK-0024-rpm-signing-gpgcheck` at `2466b70` (the reviewed state,
-  Vector's docs pass). Pre-merge safety at the tip: `git grep -il "BEGIN PGP PRIVATE KEY BLOCK"
-  HEAD` zero hits, no passphrase or keyring file in `git ls-tree -r HEAD`, merge-base is the
-  `main` tip (`893b22a`) and `git merge-tree --write-tree` reports a clean merge. Pushed with
-  `git push origin feature/TASK-0024-rpm-signing-gpgcheck` → `6bb500e..2466b70`.
-- **Commits:** unsigned (no `commit.gpgsign` in the project repo config). The squash commit on
-  `main` is `a70aedc` "feat(release): TASK-0024 signed RPM set with gpgcheck=1 and SHA256
-  manifest (#6)".
-- **PR:** #6, https://github.com/metalllinux/cinnamon-for-rocky10/pull/6, state MERGED
-  (2026-09-24T01:54:14Z). Merge strategy: squash, the repo standard (zero merge commits across
-  all 40 prior commits on `main`); `gh pr merge 6 --squash`.
-- **Tag:** `v1.0.0`, annotated and unsigned (repo convention, no `tag.gpgsign`), on `a70aedc`;
-  tag object `954c14a`; `git push origin v1.0.0` → `[new tag] v1.0.0 -> v1.0.0`. The message
-  names the signed, gpgcheck=1 release, the SHA256 manifest baseline, and the metalinux.dev
-  verification anchor.
-- **Verified post-merge:** fresh clone of the tag
-  (`git clone --depth 1 --branch v1.0.0`) → HEAD `a70aedc`, 64 RPMs in `rpms/`,
-  `sha256sum -c SHA256SUMS` 64/64 OK, `rpm --checksig` 64/64 `digests signatures OK`;
-  `keys/cinnamon-rocky10-public.asc` present; `repo-setup/setup-repo.sh:156` writes `gpgcheck=1`
-  with no `gpgkey=` line; the out-of-band anchor reference is in `INSTALL.md:282-285`
-  (fingerprint `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, compare against metalinux.dev).
-- **Deploy:** none. This is a source-tag release on `metalllinux/cinnamon-for-rocky10`; no
-  workflow dispatch.
-- **Open follow-up (not a blocker):** Omega's tracked condition 2, the item 14 fresh-clone
-  record (per-file sizes + the full `rpm --checksig` output against the tag), is still to be
-  recorded in `## Test Results`. The verification run above covers the tag; the record belongs
-  to `Big` per section ownership.
+**Findings.**
 
----
+### `8672013` refreshed the standalone script's pin table, not the table that produced the 4 WARNs
+**Severity:** should-fix
+**Where:** `vm-test/test-repo-setup.sh:654-669` (inline `PKG_LIST`); `vm-test/verify-install-packages.sh:35-50` (the table `8672013` did refresh)
+**Problem:** the 4 WARNs in the item-10 re-run came from the harness's own inline `PKG_LIST`, which still pins the old versions for the same four packages, and `8672013` changed only the other copy of the table.
+**Failure scenario:** re-run `vm-test/test-repo-setup.sh` → Phase 5 compares the installed 6.7.2-2/6.7.4-2/6.7.4-3 against the inline pins 6.7.2-1 (lines 661, 664) and 6.7.4-1 (lines 667, 668) → the same 4 version-mismatch WARNs reappear. `test-repo-setup.sh` never invokes `verify-install-packages.sh` (only the comment at line 653 references it; the script is driven by `vm-test/validate-install.sh:300,366`, the TASK-0005 suite), so the `8672013` fix takes effect only on the standalone path, and the Test Results claim "Fixed in `8672013`; a re-run would show 0 WARN" is false for the harness.
+**Suggested direction:** apply the same four version updates to the inline `PKG_LIST`, or remove the duplication so the harness reads the table from one place, and correct the Test Results attribution. Not a blocker: WARN does not flip OVERALL (`vm-test/test-repo-setup.sh:855-861` exits 1 only on FAIL>0), and the WARNs are true positives against the harness's own stale pins, not masked failures. The new header comment in `verify-install-packages.sh` ("Regenerate this table from `rpms/` whenever the set is rebuilt") now describes two tables, one of which was missed. That duplication is the drift risk.
 
-## Archive
+### Per-phase lines in the re-run table undercount against the code
+**Severity:** nit
+**Where:** planning doc, `## Test Results` "Re-run (ce7b084)" phase table (Phase 0 "7/7 PASS"; Phase 6 "6 binaries ... 6/6 ldd PASS ... 5 SKIP")
+**Problem:** the code records 9 Phase 0 checks and 7 Phase 6 binaries (7 ldd checks, 1 version PASS, 6 version SKIPs), not 7 and 6/5.
+**Failure scenario:** none functional. The overall total (60 = 50 PASS + 0 FAIL + 6 SKIP + 4 WARN) reconciles exactly with the code at 9 Phase 0 records (lines 191, 201, 250, 287, 301, 309, 320, 328, 336) and 7 `BINARY_DEFS` entries (lines 743-751), so the verdict stands. The per-phase lines contradict both the code and the same record's overall totals, and a reader who trusts "5 SKIP" will miscount when Xvfb is added to the image.
+**Suggested direction:** correct the two lines to 9/9 and 7 binaries (7/7 ldd, 1 version PASS, 6 SKIP).
 
-*Owner: `Espio`, the only agent that deletes. Superseded detail lands here rather than being
-lost. Decisions, verified facts, rejected options with their reasons, known traps, and anything the
-user said are never deleted.*
-
-**Pruning log**
-
-| Date | What was pruned or compressed | Rough size |
-|---|---|---|
-| | | |
+**Verdict.** The harness delta is sound on all four requested points. The inverted-check fix is a genuine bug fix (the old check could not record FAIL; a refused install is now detected as such), the pipefail and repodata fixes are correct, the pin data matches the committed release set exactly, the 6 SKIPs are environmental with ldd passing for every SKIPped binary, and the functional-tree-byte-identical claim holds. One should-fix: `8672013` refreshed the wrong copy of a duplicated pin table, so the harness will still emit the same 4 WARNs on re-run, and the "re-run would show 0 WARN" line in Test Results needs correcting. No blockers; the delta does not impede merge.
