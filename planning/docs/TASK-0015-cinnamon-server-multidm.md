@@ -12,6 +12,16 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-14): waiting condition met; bare-metal role removed.** (1) The TASK-0008 merge to
+main is done (main at `c1de933` carries the fixes via the rebase merge; confirmed 2026-09-14),
+so the work branch can be cut and `Amy` dispatched — but this task stays queued behind
+TASK-0017 (current priority; the user's 2026-09-14 instruction keeps desktop development + the
+new feature-parity goal as the active work). (2) `192.168.1.103` is **no longer available for
+testing** (user, 2026-09-14; no ICMP reply verified). The 2026-08-30 "Bare-metal real-hardware
+target" paragraph below is superseded for all future work: the LightDM/SDDM matrix and the
+server-install test run in VMs on host `192.168.1.102` only; the historical bare-metal install
+evidence (TASK-0008/0016 records) stands as recorded.
+
 **Now (2026-08-30): task created from the user's request; waiting on the TASK-0008 merge before
 work starts.** User wants: (1) the Cinnamon RPMs to install cleanly on a minimal Rocky Linux 10
 "server" system with **no login manager and no windowing system at all**, with tests built around

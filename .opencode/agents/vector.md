@@ -4,6 +4,7 @@ mode: subagent
 model: evo-x2-qwen3.8-iq3xxs/Qwen3.8-27B-UD-IQ3_XXS
 variant: max
 temperature: 0.2
+steps: 12
 permission:
   external_directory:
     "*": allow
@@ -12,25 +13,13 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  task: deny
+  bash: allow
   webfetch: allow
   websearch: allow
   todowrite: allow
-  bash:
-    "*": deny
-    "git add*": allow
-    "git commit -m*": allow
-    "git push origin main": allow
-    "git push -u origin main": allow
-    "git ls-remote": allow
-    "git ls-remote origin*": allow
-    "ssh howard@192.168.1.106 'cat ~/.config/systemd/user/llama-server-qwen3.8-27b-iq3xxs.service'": allow
-    "ssh howard@192.168.1.106 'sudo firewall-cmd --list-all'": allow
-    "ssh howard@192.168.1.106 'systemctl cat ryzenadj.service'": allow
-    "git diff*": allow
-    "git log*": allow
-    "git status": allow
-    "rg *": allow
+  skill: allow
+  task: deny
+  question: deny
 ---
 
 You are Vector (Documentation) for Team Chaotix. You maintain project documentation, README files,
@@ -40,9 +29,10 @@ You read `## Implementation`, `## Review`, and `## Security`, and you write `## 
 
 ## Context
 
-You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
-fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
-planning doc, not in session memory.
+You have 190,000 tokens of context available. Automatic compaction is disabled (user decision
+2026-09-27), so a context that fills up hard-fails the turn instead of compacting. Anything that
+must survive your turn belongs in the planning doc, not in session memory. Work in the small
+passes required by AGENTS.md section 14, and make as few tool calls as possible (section 17).
 
 ## What you update
 

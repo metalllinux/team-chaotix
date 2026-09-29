@@ -12,6 +12,17 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
+**Now (2026-09-14): bare-metal matrix re-scoped; merge confirmed on main.** (1) `192.168.1.103` is
+no longer available for testing (user, 2026-09-14; no ICMP reply, verified from the PM host). The
+follow-up Big re-run's "bare-metal interactive matrix" now runs on host `192.168.1.102` VMs (the
+live `gdm-login-vm` — still running, VNC 127.0.0.1:5900 — or a fresh VM); the "user at the
+physical console" visual step is replaced by VNC/`virsh screenshot` evidence plus the a11y and
+journal checks. The 2026-08-30 bare-metal records above remain valid as history. (2) Merge
+confirmed: main at `c1de933` carries the TASK-0008 fixes via the rebase merge (tip `4880e0b`
+matches branch tip `f259dd5` by subject; recorded in TASK-0016 Status 2026-08-30); the local
+`task-0008-gdm-auth` branch is stale. Remaining follow-up chain unchanged: batches C/D, trio
+re-run (re-scoped per above), Vector docs, Knuckles follow-up merge.
+
 **Now (2026-08-30, fourth entry): user instruction — merge all 13 branch commits to main now.**
 User directed (2026-08-30, second explicit ask) that **all** commits on `task-0008-gdm-auth` be
 pushed to main. Branch state: tip `f259dd5` = origin, 13 commits ahead of `main`
@@ -527,8 +538,10 @@ the PM reads.*
       propagate before any wait), `f259dd5` (#9 ChannelError + shared wait_for, broken channel
       vs missing node reported separately). All five verified per finding; record: `##
       Implementation` `### Fix batch B`.
-- [ ] `Knuckles` (dispatched 2026-08-30, **user instruction**): open the PR
-      `task-0008-gdm-auth` → main and merge all 13 commits (`b15dfcb`..`f259dd5`). The DoD
+- [x] `Knuckles` (dispatched 2026-08-30, **user instruction**): open the PR
+      `task-0008-gdm-auth` → main and merge all 13 commits (`b15dfcb`..`f259dd5`). Done via
+      rebase merge to main (tip `4880e0b`; confirmed on main 2026-09-14, record in `## Status`).
+      The DoD
       deviation is recorded in `## Status` (Shadow gate not met: #2, #5, #6, #10 + vnc-grab +
       7 nits remain; trio re-run + interactive matrix pending) — the user has explicitly
       authorized this merge with those tracked as follow-ups; record the deviation + follow-up
@@ -542,9 +555,10 @@ the PM reads.*
 - [ ] `Shadow` (re-run): verify batches A–D resolved all findings in `## Review`.
 - [ ] `Omega` (re-run): verify all findings above low resolved in `## Security`.
 - [ ] `Big` (re-run): VM harness re-run (re-establish login evidence with the fixed harness) +
-      bare-metal interactive matrix (start GDM, log in as `howard`, a11y + journal + ukey
-      verification, user at the physical console for visual confirmation, record no-glitch
-      evidence) in `## Test Results`.
+      interactive matrix on host `192.168.1.102` VMs (bare-metal `192.168.1.103` no longer
+      available, 2026-09-14): start GDM, log in as `howard` on the live `gdm-login-vm` or a fresh
+      VM, a11y + journal + ukey verification, VNC/`virsh screenshot` evidence in place of the
+      physical-console visual step, record no-glitch evidence in `## Test Results`.
 - [ ] `Vector`: update the repo README + INSTALL.md for the verified state (GDM Wayland login
       PASS, harness location and usage); write to `## Docs`. Lands with the follow-up merge.
 - [ ] `Knuckles` (follow-up): land batches C + D + re-run results + docs on main (second PR

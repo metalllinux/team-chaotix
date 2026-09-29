@@ -1,7 +1,7 @@
 # AGENTS.md — shared operating rules for Team Chaotix
 
 Auto-loaded by opencode for every agent (globbed up from the working directory). These rules are
-binding on all ten agents. Agent-specific instructions live in `.opencode/agents/`.
+binding on all eleven agents. Agent-specific instructions live in `.opencode/agents/`.
 
 ---
 
@@ -12,21 +12,29 @@ handles any software development task thrown at it, from initial planning throug
 repositories are hosted on GitHub under the `metalllinux` account.
 
 **Host system:** Rocky Linux 10.2 (Red Quartz). The host is the runner machine. Package management
-is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt and QEMU are installed and running.
+is `dnf`. Podman with podman-docker is installed (rootless, no daemon). libvirt + QEMU/KVM are
+installed and running (`libvirtd` active, `howard` in the `libvirt` group). Cockpit Machines
+serves the VM administration UI. Node.js 24 (`nodejs24`) provides `node`/`npm` via
+`/usr/local/bin` symlinks.
 
-**Model:** All agents use `Qwen3.8-27B-UD-IQ3_XXS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq3xxs`, port 8094, `--parallel 1`).
-The single inference slot means exactly one agent runs at a time. All dispatch is sequential (see section 3).
+**Model:** All agents use `Qwen3.8-27B-UD-IQ3_XXS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq3xxs`,
+port 8094, `--parallel 1`). All model traffic routes through the team's agentgateway (section 15).
+The single inference slot means exactly one agent runs at a time. All dispatch is sequential
+(see section 3).
 
-The user's only jobs are to tweak agent prompts, hand development tasks to `Robotnik (Project
-Manager)`, and act as the human gate on two things that are never auto-routed: pull requests to
-external repositories outside `metalllinux`, and deployments that require human confirmation.
+**The operator model.** The operator (the human) sits above the team and is never asked
+questions. No agent has the `question` tool. The operator's jobs are to update agent
+configuration (prompts, permissions, `steps`, model) and to check outputs (planning docs, PRs,
+releases). Decisions are recorded in planning docs, not asked. Two step-stops remain by policy,
+executed by record rather than by question: PRs to external repositories outside `metalllinux`,
+and deployments that require human confirmation.
 
 Standing permission (user, 2026-08-21): agents may commit and push to `metalllinux` repositories
-without asking the user for per-action confirmation. The two gates above are unchanged.
+without asking the user for per-action confirmation. The two step-stops above are unchanged.
 
 | Repo | Role |
 |---|---|
-| `metalllinux/team-chaotix` (GitHub) | **Source of truth for the team.** `.opencode/`, every workflow, every custom action, `planning/`, README. All CI runs here. |
+| `metalllinux/team-chaotix` (GitHub) | **Source of truth for the team.** `.opencode/`, every workflow, every custom action, `planning/`, `scripts/`, README. All CI runs here. |
 | Project directory (e.g. `~/linux/projects/cinnamon_4_rocky10/`) | **The target project.** Work happens here, artifacts land here. Reached through `external_directory`. |
 
 **Where opencode is launched matters.** opencode resolves project config from its **cwd**, and this
@@ -39,11 +47,10 @@ agent may touch, not where config is discovered.
 
 ## 2. The planning-doc contract
 
-**This is the most important rule in this file.** Automatic compaction is enabled
-(`compaction.auto: true`, user decision 2026-09-14), so a context that fills up **compacts**
-rather than hard-failing. Compaction degrades nuance, so the planning-doc discipline below
-remains binding. The doc, not session memory, is where anything that must survive a compaction
-lives.
+**This is the most important rule in this file.** Automatic compaction is disabled
+(`compaction.auto: false`, user decision 2026-09-27), so a context that fills up **hard-fails the
+turn** instead of compacting. The planning doc is the only context that survives a turn, and it
+is the only place anything durable may live.
 
 ```
 planning/
@@ -62,6 +69,7 @@ Every planning doc has this exact section order:
 ## Implementation         (Tails)
 ## Review                 (Shadow)
 ## Security               (Omega)
+## License (Charmy)       (Charmy)
 ## Test Results           (Big)
 ## Docs                   (Vector)
 ## Release                (Knuckles)
@@ -94,32 +102,38 @@ the command that produced it. If you did not verify something, say so explicitly
 
 ## 3. Delegation and sequencing
 
-- **`Robotnik` is the only agent that delegates.** `subagent_depth` is 1, so subagents cannot
-  spawn subagents even if they try.
+- **`Robotnik` is the only agent that delegates.** The project config sets `subagent_depth: 1`
+  (v2.0.18 omits it as a legacy setting; kept for compatibility). The guarantee that actually
+  binds is `task` permissions: only robotnik has task allows, all ten workers have `task: deny`.
 - **The model endpoint runs `--parallel 1`: one inference slot, one agent at a time.** All
   dispatch is strictly sequential. `Robotnik` issues **one task call, waits for it to complete,
   then issues the next**. Issuing several task calls in a single message queues them against the
   single slot, wastes context, and risks timeouts.
-- The review trio is independent, so its internal order is free, but it still runs one at a time
-  in a fixed sequence: `Shadow` → `Omega` → `Big`.
-- The cycle is a single chain: `Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Tails` fixes →
-  `Vector` → `Knuckles`.
+- The review chain is independent, so its internal order is free, but it still runs one at a
+  time in a fixed sequence: `Shadow` → `Omega` → `Big` → `Charmy`.
+- The cycle is a single chain: `Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Charmy` →
+  `Tails` fixes → `Vector` → `Knuckles`.
 - Keep briefs to subagents short. Point at the planning doc; do not restate it.
 
 ---
 
 ## 4. Secrets — non-negotiable
 
-- **No credential, token, key, or password is ever written to a file, a commit, a log, a planning doc,
-  or a GitHub Issue.** Not redacted, not partial, not "example" values that are real.
-- Workflow secrets live **only** in GitHub Actions Environments. Reference them as
-  `${{ secrets.NAME }}` and nothing else. Never hardcode secrets in workflow files.
+- **No credential, token, key, or password is ever written to a file in the repo, a commit, a log,
+  a planning doc, or GitHub.** Not redacted, not partial, not "example" values that are real.
+- **Secrets live in `~/secrets/` on the local machine.** One file per secret
+  (`~/secrets/<name>.md`), file mode 600, directory mode 700, owned by the operator's user.
+  They are never committed, never pushed, and never uploaded to GitHub in any form.
+- Workflows run on the self-hosted runner, which is this machine. A workflow that needs a secret
+  reads it from `~/secrets/` at run time and binds it to `env:`. GitHub Environments are not
+  used by this team, and no secret is stored in them.
 - In workflow `run:` blocks, never interpolate untrusted input directly. Bind it to `env:` and
   reference the env var.
-- Use `printenv VAR > file`, never `echo "$VAR" > file`, when materialising a key. `echo` can leak
-  under a stray `set -x`.
-- If you find a secret already committed anywhere, stop, write it to `## Security`, and escalate to
-  the user. Do not attempt history rewriting on your own.
+- Use `printenv VAR > file`, never `echo "$VAR" > file`, when materialising a key. `echo` can
+  leak under a stray `set -x`.
+- If you find a secret already committed anywhere, stop, write it to `## Security`, and record
+  the rotation step for the operator in `## Status`. Do not attempt history rewriting on your
+  own.
 
 ---
 
@@ -127,14 +141,14 @@ the command that produced it. If you did not verify something, say so explicitly
 
 - **Never invent** a config path, package name, version, kwarg, or CLI flag. If you are not certain,
   say so and verify it. Grep the source, read the installed package.
-- Distinguish hypothesis from evidence. "The log shows X" and "this is likely X" are different claims
-  and must read differently.
+- Distinguish hypothesis from evidence. "The log shows X" and "this is likely X" are different
+  claims and must read differently.
 - Consider at least two explanations before settling on one. Correlation is not causation.
 - Always ask **what changed**. Most breakage has a trigger.
-- Flag anything destructive explicitly: state that it modifies system state, and what the blast radius
-  is, before the command.
-- Do not override a prior human analysis silently. If your finding contradicts one, surface both and
-  say they disagree.
+- Flag anything destructive explicitly: state that it modifies system state, and what the blast
+  radius is, before the command.
+- Do not override a prior human analysis silently. If your finding contradicts one, surface both
+  and say they disagree.
 
 ---
 
@@ -162,8 +176,9 @@ the command that produced it. If you did not verify something, say so explicitly
 
 ### CI never invokes an LLM
 
-The agents run **locally in opencode**. CI is entirely deterministic: agents *dispatch* workflows with
-`gh` and *read* their results. There is **no model API call in any workflow**, and none is to be added.
+The agents run **locally in opencode**. CI is entirely deterministic: agents *dispatch* workflows
+with `gh` and *read* their results. There is **no model API call in any workflow**, and none is to
+be added.
 
 ---
 
@@ -181,40 +196,54 @@ Testing is multi-layered and adapts to the project type:
 - **Raku (Sparky prerequisite):** Not in Rocky Linux 10 repos. Install via
   `curl -sL https://raw.githubusercontent.com/SuperBiBi20/raku-install/master/raku-install | bash`
 
+**Test instances get names, not ports.** Every VM and container used for testing is reachable
+through portless: `portless alias <name> <host-port>` registers a static route, and the instance
+is reached at `https://<name>.localhost` (`portless get <name>`). No test instance is addressed
+by a raw port. VM provisioning goes through `scripts/vm-create` (section 12).
+
 The `Big (Testing)` agent determines which testing layers apply and configures them accordingly.
 
 ---
 
 ## 8. External PRs and issues
 
-**PRs or issues targeting repositories outside the `metalllinux` GitHub account require human review.**
-The `Vector (Documentation)` agent drafts the PR/issue content, then **stops**. The user edits it.
-Only then does a separate request have `Knuckles (Release Manager)` push or submit.
+**PRs or issues targeting repositories outside the `metalllinux` GitHub account require human
+review.** The `Vector (Documentation)` agent drafts the PR/issue content, then **stops**. The
+operator edits it. Only then does a separate request have `Knuckles (Release Manager)` push or
+submit.
 
-**PRs and issues within the `metalllinux` GitHub account do not require human review** and can be
-handled autonomously.
+**PRs and issues within the `metalllinux` GitHub account do not require human review** and can
+be handled autonomously.
 
 ---
 
 ## 9. License compliance
 
-Agents must respect software licenses at all times. When forking or modifying code from another
-repository, verify and comply with its license (GPL-2.0, MIT, Apache, etc.). The `Omega (Security)`
-agent checks license headers and compliance. Never distribute code under incompatible licenses.
+License compliance is owned by `Charmy (License)`, fourth in the review chain. Charmy verifies
+two things, always against the **upstream source repository** at the ref actually used:
+
+1. The project's own license is declared and appropriate for what the project does.
+2. Every piece of imported open source code is respected: the license as declared upstream, the
+   copyright headers, the license file, and the NOTICE/attribution obligations.
+
+`Omega` flags license signals as security findings (vector `license`); the pass/fail verdict
+lives in `## License (Charmy)` in the planning doc. Never distribute code under incompatible
+licenses. GPL-2.0 code remains GPL-2.0.
 
 ---
 
 ## 10. Writing style for anything user-facing
 
-Applies to READMEs, PR descriptions, and anything the user reads.
+Applies to READMEs, PR descriptions, and anything the operator reads.
 
 - No em dashes, en dashes, or double hyphens. Use commas, periods, parentheses, or restructure.
-- No colons introducing an explanation. Start a new sentence. Colons are fine in genuinely technical
-  contexts — key/value output, timestamps, URLs.
-- No "simply", "just", "obviously", "easy". No "leverage", "utilize", "ensure", "robust", "seamless".
+- No colons introducing an explanation. Start a new sentence. Colons are fine in genuinely
+  technical contexts — key/value output, timestamps, URLs.
+- No "simply", "just", "obviously", "easy". No "leverage", "utilize", "ensure", "robust",
+  "seamless".
 - No "Not only X, but also Y".
-- Prose over bullet points for explanation. Lists are for ordered procedures and for enumerating things
-  the reader must supply.
+- Prose over bullet points for explanation. Lists are for ordered procedures and for enumerating
+  things the reader must supply.
 - Take a position. Recommend one option, then note alternatives. Do not present everything as equal.
 - Bounded uncertainty over vague hedging.
 
@@ -222,64 +251,58 @@ Applies to READMEs, PR descriptions, and anything the user reads.
 
 ## 11. Least privilege
 
-Every agent operates with the minimum permissions required for its role. If an agent does not need
-write access, it does not get write access. If an agent does not need bash, it does not get bash.
-See individual agent definitions for specific permissions.
+Every agent operates with the minimum permissions required for its role. Every agent gets the
+`skill` privilege and a per-agent turn cap (`steps` in its frontmatter). If an agent does not
+need write access, it does not get write access. `Espio` is the only agent whose `edit` is
+scoped to `planning/`. No agent has the `question` tool. See individual agent definitions for
+specific permissions.
 
 ---
 
-## 12. Git worktrees
+## 12. VM isolation (no git worktrees)
 
-Team Chaotix supports multiple opencode sessions through git worktrees. Each worktree operates
-independently with its own working directory and branch. The model endpoint runs `--parallel 1`,
-so only one agent runs at a time across all sessions. Work in a second session queues on the
-model until the first one yields its turn.
+Git worktrees are retired (2026-09-27). When multiple teams, or multiple instances of the same
+work, operate on one project, the work is split across **libvirt VMs**, each running
+**Rocky Linux 10**.
 
-### Setup
+### Why VMs, not worktrees
 
-```bash
-# Create worktree for a project
-git worktree add ../worktrees/<project-name> -b "worktree/<project-name>"
+The team's work is system-level Rocky work: systemd, SELinux, `dnf`, RPM builds, Cinnamon, and
+Sparky/libvirt tests that need KVM. A VM is a real Rocky 10 machine, so the project under test
+runs on the same OS, with the same security posture, as the host. A worktree shares the host's
+kernel, packages, and services, and cannot isolate any of that.
 
-# Copy configuration to worktree
-cp -r .opencode ../worktrees/<project-name>/
-cp AGENTS.md ../worktrees/<project-name>/
+### Provisioning
 
-# Launch opencode in worktree
-cd ../worktrees/<project-name>
-opencode
-```
+- **Golden image:** `/var/lib/libvirt/images/rocky-10-golden.qcow2`, from
+  `https://download.rockylinux.org/pub/rocky/10/images/x86_64/Rocky-10-GenericCloud-Base-10.2-20260525.0.x86_64.qcow2`
+  (SHA-256 `9fc9e9ff16888bb68ac39b0392e25c9c92684d50c85f1cce6ab549363bbc4b48`, verified at
+  download).
+- **`scripts/vm-create <name>`** clones the golden image, sets the hostname and adds the team
+  SSH key (`~/.ssh/team-vm`, never committed), and boots a 4 vCPU / 8 GB VM on the default NAT
+  network with a serial console.
+- VMs are named `<project>-<n>` (e.g. `cinnamon-1`).
+- **Networking is NAT** (the default `default` network). The guide's bridge reconfiguration is
+  deliberately not used: it modifies host networking and is not needed for this team.
+- **`scripts/vm-destroy <name>`** destroys, undefines, and removes the disk, and removes any
+  portless alias.
 
-### Conventions
+### Reaching a VM's test services
 
-- **Worktrees live in `~/worktrees/`** relative to the main repo
-- **Each worktree has its own `.opencode/` directory** (copied from main repo)
-- **Agents understand worktree boundaries** - never modify files outside the current worktree
-- **Planning docs use worktree-relative paths** when referencing external files
-- **Git operations are worktree-scoped** - each worktree tracks its own branch
-
-### File access rules
-
-- Agents can read/write files within their worktree
-- Agents can read files in other worktrees (for reference only)
-- Agents cannot modify files in other worktrees
-- The main repo is read-only from worktree contexts
-
-### Example workflow
+A VM's test port is forwarded to the host and given a stable named URL:
 
 ```bash
-# Main repo: manage team configuration
-cd ~/AI/projects/team-chaotix
-opencode
-
-# Worktree 1: Cinnamon project
-cd ~/worktrees/cinnamon
-opencode
-
-# Worktree 2: Another project
-cd ~/worktrees/other-project
-opencode
+virsh portforward <vm> 80            # returns the host port
+portless alias <vm> <host-port>       # https://<vm>.localhost
 ```
+
+No service in a VM is identified by a raw port.
+
+### Capacity
+
+Host: 16 vCPU / 30 GB RAM. Budget 4 vCPU / 8 GB per VM, so at most **three** concurrent work
+VMs. VM disks live on `/` (`/var/lib/libvirt/images`), so a worn 40 GB disk is the other hard
+limit. Destroy what you are done with.
 
 ---
 
@@ -289,12 +312,19 @@ opencode
 - **OS:** Rocky Linux 10.2 (Red Quartz)
 - **Package manager:** `dnf` (not `apt`)
 - **Container runtime:** Podman with podman-docker (rootless, no daemon)
-- **Virtualization:** libvirt + QEMU/KVM (installed and running)
+- **Virtualization:** libvirt + QEMU/KVM (installed, `libvirtd` running, `howard` in `libvirt`).
+  Cockpit Machines (https://localhost:9090) for VM administration. Golden image and
+  `scripts/vm-*` per section 12.
 - **Runner:** GitHub Actions self-hosted, extracted to `~/gh-runner/`, needs registration token
   from https://github.com/metalllinux/team-chaotix/settings/actions/runners
+- **Node.js:** nodejs24 (`node`/`npm` via `/usr/local/bin` symlinks to `node-24`/`npm-24`)
+- **agentgateway:** `/usr/local/bin/agentgateway` (section 15)
+- **portless:** HTTPS proxy on 443, named `.localhost` URLs (sections 7 and 12)
+- **agentsmd:** `~/.local/bin/agentsmd` (section 16)
 
 ### Credential storage
-- **GitHub Secrets only.** No local credential files, no Keychain, no pass store.
+- **`~/secrets/` on the local machine only** (section 4). No GitHub Environments, no Keychain,
+  no pass store.
 - Issue tracking is **GitHub Issues only** via `gh` CLI. No Jira integration.
 
 ### Sparky / Raku
@@ -308,7 +338,7 @@ opencode
 The EVO-X2 endpoint caps every turn at **32,000 output tokens**. Verified 2026-09-02 in
 TASK-0019, three consecutive subagent turns truncated at exactly 32,000 tokens with
 `finish_reason: "length"` and zero visible output. The llama.cpp server default is unlimited
-(`max_tokens: -1`) and the opencode provider config declares a 120,000 context limit with a
+(`max_tokens: -1`) and the opencode provider config declares a 190,000 context limit with a
 60,000 output limit, so the clamp applies in the EVO-X2 gateway layer. Consequence. A turn that
 spends its whole budget on hidden
 reasoning produces no tool call and no text, the session ends with an **empty result that still
@@ -329,3 +359,75 @@ Rules for every agent:
    `~/.local/share/opencode/opencode.db` for the session's last assistant message. `finish:
    "length"` with `tokens.output = 32000` and only reasoning parts means the turn truncated in
    reasoning. Re-dispatch with a smaller brief.
+
+---
+
+## 15. agentgateway — LLM and A2A
+
+All model traffic and all agent-to-agent traffic for the team routes through agentgateway
+(installed at `/usr/local/bin/agentgateway`, config at
+`~/.config/team-chaotix/agentgateway.yaml`, running as the `agentgateway` system service).
+
+- **LLM (port 4000).** OpenAI-compatible endpoint. The opencode provider `baseURL` for both
+  EVO-X2 providers points at `http://127.0.0.1:4000/v1`. The gateway forwards to the EVO-X2
+  endpoint (`http://192.168.1.106:8094`) with the model name unchanged, so both
+  `Qwen3.8-27B-UD-IQ3_XXS` and `Qwen3.8-27B-UD-IQ4_XS` work. The gateway is the only place the
+  upstream address is configured, and it logs every request.
+- **A2A (port 4100).** Fronts the team's A2A adapter (`scripts/a2a-server.py`, local port 4210,
+  running as the `team-chaotix-a2a` system service). The adapter exposes Team Chaotix as an
+  A2A agent:
+  - **Capability discovery:** `GET /.well-known/agent.json` returns an agent card whose skills
+    are generated from `.opencode/agents/`, so the card is always the team's current roster.
+  - **Task collaboration:** `POST /` (JSON-RPC `message/send`, `message/stream`, `tasks/get`).
+    A task is addressed with a leading `@<agent>` token (default `@robotnik`) and runs one
+    `opencode run --standalone --agent <role>` session in this directory. Tasks are queued one
+    at a time, matching the single inference slot. The final task's
+    `status.message.parts[0].text` is the agent's output.
+
+A2A is the protocol **between** team instances (this team and another instance, on another
+machine or VM). Inside one instance, agents still communicate through the planning doc
+(section 2): one inference slot, sequential. The gateway is the team's single entry and exit
+point for model and agent traffic.
+
+---
+
+## 16. agentsmd — AGENTS.md stays current
+
+`agentsmd` (`~/.local/bin/agentsmd`) keeps the learned rules in this file current without
+touching the hand-written sections.
+
+1. **Propose.** A lesson worth keeping (a trap, a verified fact, a changed rule) is proposed at a
+   task boundary: `agentsmd learn --rule "<imperative rule>"` (with `--task`/`--run` when the
+   lesson comes from a session).
+2. **Review and promote.** Rules stay pending until reviewed: `agentsmd pending`, then
+   `agentsmd promote`. Promotion renders the rule into the marker-delimited block in this file.
+   The operator owns promotion; that is the operator's configuration role.
+3. **Evidence stays local.** Raw sessions and trajectories live in `.agentsmd/` (gitignored).
+   They are never committed and never pushed.
+
+There is no opencode connector. opencode sessions are the source of lessons, and the marker block
+in this file is the rendered output. Everything else in this file is hand-written and is never
+generated.
+
+---
+
+## 17. Efficiency — fewest possible tool calls
+
+Every tool call costs latency, context, and a share of the single inference slot. Rules:
+
+1. **Batch independent calls.** Independent reads, greps, and commands go out in parallel in one
+   message. Dependent steps wait for the result first.
+2. **Read once, at the size you need.** Never re-read what you already hold. A file over 200
+   lines is read in about-200-line chunks (section 14).
+3. **Verify, then act, in the same turn** when the result is in hand. Do not end a turn to
+   "think about" a result you already have.
+4. **No tool for a thought.** A decision that needs no tool is not a turn.
+5. **`steps` is a budget, not a target.** Each agent's `steps` cap bounds its turns. Hitting the
+   cap is a planning failure: re-brief with a smaller scope and a planning-doc pointer.
+
+## Learned rules
+
+<!-- agentsmd:learned:start -->
+<!-- Promoted by agentsmd after review. -->
+- [r000] Reach test instances by name through portless, never by raw port.  (cited: 0)
+<!-- agentsmd:learned:end -->

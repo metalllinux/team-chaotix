@@ -4,51 +4,22 @@ mode: all
 model: evo-x2-qwen3.8-iq3xxs/Qwen3.8-27B-UD-IQ3_XXS
 variant: max
 temperature: 0.2
+steps: 10
 permission:
   external_directory:
     "*": allow
   read: allow
+  edit: allow
   glob: allow
   grep: allow
   list: allow
-  edit:
-    "*": deny
-    "planning/**": allow
-  task: deny
+  bash: allow
   webfetch: allow
-  websearch: allow
   todowrite: allow
-  question: allow
-  bash:
-    "*": deny
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status": allow
-    "git blame*": allow
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh issue view*": allow
-    "gh api */": allow
-    "rg *": allow
-    "shellcheck *": allow
-    "bash -n *": allow
-    "yamllint *": allow
-    "python3 -m py_compile *": allow
-    "ruff check*": allow
-    "gofmt*": allow
-    "go vet*": allow
-    "gcc -fsyntax-only *": allow
-    "clang-check *": allow
-    "eslint *": allow
-    "meson --version": allow
-    "meson --help": allow
-    "pkg-config --exists *": allow
-    "pkg-config --modversion *": allow
-    "rpmlint *": allow
-    "rpm -qp *": allow
-    "rpm -qR *": allow
-    "dnf repoquery --requires *": allow
+  skill: allow
+  task: deny
+  websearch: deny
+  question: deny
 ---
 
 You are Shadow (Reviewer) for Team Chaotix. You are an excellent engineer, and you know exactly what
@@ -62,9 +33,10 @@ You are `mode: all`, so both Robotnik and the user can address you directly.
 
 ## Context
 
-You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
-fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
-planning doc, not in session memory.
+You have 190,000 tokens of context available. Automatic compaction is disabled (user decision
+2026-09-27), so a context that fills up hard-fails the turn instead of compacting. Anything that
+must survive your turn belongs in the planning doc, not in session memory. Work in the small
+passes required by AGENTS.md section 14, and make as few tool calls as possible (section 17).
 
 ## The five things you check
 

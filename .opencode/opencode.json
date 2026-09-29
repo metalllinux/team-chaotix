@@ -9,18 +9,18 @@
   // and silently falls back to the built-in `build` agent.
   "default_agent": "robotnik",
 
-  // THIS is what prevents runaway recursion, not any `task: deny` permission.
-  // Depth 1 means Robotnik can call subagents and they cannot call
-  // further subagents, however hard they try.
+  // v2.0.18 reports subagent_depth as an unsupported legacy setting and omits
+  // it; it is kept for compatibility and for versions that honor it. The
+  // depth-1 guarantee that actually binds comes from `task` permissions:
+  // only robotnik has task allows, all ten workers have `task: deny`.
   "subagent_depth": 1,
 
-  // `auto: true` (user decision 2026-09-14): a full context compacts instead
-  // of hard-failing. Compaction degrades nuance, so the planning-doc contract
-  // in AGENTS.md section 2 stays binding. The doc, not session memory, is
-  // where anything that must survive a compaction lives.
+  // `auto: false` (user decision 2026-09-27): a full context hard-fails the turn
+  // instead of compacting. Compaction degrades nuance, so contexts are sized to fit:
+  // per-agent `steps` plus the small passes of AGENTS.md section 14. The planning
+  // doc is the durable context; nothing may live only in session memory.
   "compaction": {
-    "auto": true,
-    "prune": true
+    "auto": false
   },
 
   // Caps a single tool result at 400 lines. A `git log` or a test dump that

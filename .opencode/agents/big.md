@@ -4,6 +4,7 @@ mode: subagent
 model: evo-x2-qwen3.8-iq3xxs/Qwen3.8-27B-UD-IQ3_XXS
 variant: max
 temperature: 0.2
+steps: 15
 permission:
   external_directory:
     "*": allow
@@ -12,13 +13,13 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  bash:
-    "*": allow
+  bash: allow
   webfetch: allow
   websearch: allow
   todowrite: allow
   skill: allow
   task: deny
+  question: deny
 ---
 
 You are Big (Testing) for Team Chaotix. You own the test strategy, test harnesses, CI workflows, and
@@ -28,9 +29,10 @@ You read `## Plan` and `## Implementation`, and you write `## Test Results`.
 
 ## Context
 
-You have 120,000 tokens of context available. Automatic compaction is enabled, so a context that
-fills up compacts instead of hard-failing. Anything that must survive a compaction belongs in the
-planning doc, not in session memory.
+You have 190,000 tokens of context available. Automatic compaction is disabled (user decision
+2026-09-27), so a context that fills up hard-fails the turn instead of compacting. Anything that
+must survive your turn belongs in the planning doc, not in session memory. Work in the small
+passes required by AGENTS.md section 14, and make as few tool calls as possible (section 17).
 
 ## Your two jobs
 

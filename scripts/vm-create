@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# vm-create — provision a Rocky Linux 10 VM for team work (AGENTS.md section 12).
+#
+# Usage: scripts/vm-create <name> [vcpus=4] [ram_mb=8192]
+#   <name>  VM and disk name; convention <project>-<n> (e.g. cinnamon-1)
+#
+# Preconditions:
+#   - golden image /var/lib/libvirt/images/rocky-10-golden.qcow2 (AGENTS.md section 12)
+#   - team SSH key  ~/.ssh/team-vm
+#     (generate once: ssh-keygen -t ed25519 -f ~/.ssh/team-vm -N '')
+#   - caller in the libvirt group (else: sg libvirt -c 'bash scripts/vm-create <name>')
+#
+# What it does: sparse clone of the golden image, hostname + SSH key via virt-customize,
+# import + boot with a serial console on the default NAT network, DHCP-lease lookup,
+# and a portless alias for the VM's port 80 when portless is available.
+set -euo pipefail
+
+NAME="${1:?usage: scripts/vm-create <name> [vcpus=4] [ram_mb=8192]}"
+
+# Ensure the default NAT network is active on the system domain.
+# The system network is shared by both libvirt domains and is used for VM networking.
+NETWORK="default"
+if ! sudo virsh -c qemu:///system net-list --all --name 2>/dev/null | grep -qx "$NETWORK"; then
+  echo "Network '$NETWORK' not found; defining..."
+  sudo virsh -c qemu:///system net-define /tmp/net/default.xml >/dev/null 2>&1 || true
+fi
+# Start the network (suppress "already active" error which is not a real failure)
+if sudo virsh -c qemu:///system net-start "$NETWORK" 2>/dev/null; then
+  echo "Network '$NETWORK' started"
+else
+  # "Already active" is not a real failure
+  if sudo virsh -c qemu:///system net-list --all --name 2>/dev/null | grep -qx "$NETWORK"; then
+    echo "Network '$NETWORK' already active"
+  else
+    echo "Failed to start network" >&2; exit 1
+  fi
+fi
+sudo virsh -c qemu:///system net-autostart "$NETWORK" >/dev/null 2>&1 || true
+VCPUS="${2:-4}"
+RAM="${3:-8192}"
+IMAGES=/var/lib/libvirt/images
+GOLDEN="$IMAGES/rocky-10-golden.qcow2"
+DISK="$IMAGES/$NAME.qcow2"
+KEY="$HOME/.ssh/team-vm.pub"
+
+[ -f "$GOLDEN" ] || { echo "missing golden image: $GOLDEN" >&2; exit 1; }
+[ -f "$KEY" ] || { echo "missing team SSH key: $KEY" >&2; echo "generate: ssh-keygen -t ed25519 -f ~/.ssh/team-vm -N ''" >&2; exit 1; }
+[ ! -f "$DISK" ] || { echo "disk already exists: $DISK" >&2; exit 1; }
+if virsh -c qemu:///system list --all | awk '{print $2}' | grep -qx "$NAME"; then
+  echo "VM already exists: $NAME" >&2; exit 1
+fi
+# Also check if the domain exists but is not listed (transient state)
+if virsh -c qemu:///system domstate "$NAME" >/dev/null 2>&1; then
+  echo "VM $NAME is already running or in a transient state" >&2; exit 1
+fi
+# Check if domain is defined but not running
+if virsh -c qemu:///system list --all | awk '{print $2}' | grep -qx "$NAME"; then
+  echo "VM $NAME is defined (shut down)" >&2; exit 1
+fi
+if ! id -nG "$(id -un)" | tr ' ' '\n' | grep -qx libvirt; then
+  echo "not in libvirt group; run: sg libvirt -c 'bash $0 $*'" >&2; exit 1
+fi
+
+# 1. sparse 40 GB clone of the golden image
+qemu-img create -f qcow2 -B qcow2 -b "$GOLDEN" "$DISK" 40G
+
+# 2. pre-provision: hostname + team key (Rocky cloud qcow2 allows root SSH login)
+virt-customize -a "$DISK" \
+  --write "/etc/hostname:$NAME" \
+  --ssh-inject root:file:"$KEY"
+
+# 3. define on the default NAT network (qemu:///system domain), serial console, no graphics
+OSVARIANT="rocky10"
+osinfo-query os short-id=rocky10 >/dev/null 2>&1 || OSVARIANT="rhel10"
+virt-install \
+  --connect qemu:///system \
+  --import --name "$NAME" \
+  --ram "$RAM" --vcpus "$VCPUS" \
+  --disk path="$DISK" \
+  --os-variant "$OSVARIANT" \
+  --network network=default \
+  --graphics none \
+  --serial pty
+
+# 4. boot (virt-install --import may already have started the domain)
+if virsh -c qemu:///system domstate "$NAME" 2>/dev/null | grep -q running; then
+  echo "VM $NAME running (serial console: virsh console $NAME)"
+else
+  virsh -c qemu:///system start "$NAME"
+  echo "VM $NAME running (serial console: virsh console $NAME)"
+fi
+
+# 5. wait for the DHCP lease (up to ~90s)
+mac=$(virsh -c qemu:///system domiflist "$NAME" | awk 'NR==3 {print $NF}' | tr 'A-F' 'a-f')
+# Try multiple lease file formats - virbr0 uses .status/.macs, default may use .leases
+ip=""
+for _ in $(seq 1 30); do
+  # Try .status JSON format (used by virbr0 bridge) - has IP directly
+  statusfile="/var/lib/libvirt/dnsmasq/virbr0.status"
+  if [ -f "$statusfile" ]; then
+    ip=$(python3 -c "
+import json
+import sys
+try:
+  with open(sys.argv[1]) as f:
+    data = json.load(f)
+  for e in data:
+    if e.get('mac-address', '').lower() == sys.argv[2]:
+      print(e.get('ip-address', ''))
+      break
+except:
+  pass
+" "$statusfile" "$mac" 2>/dev/null || true)
+    [ -n "$ip" ] && break
+  fi
+  # Try .macs JSON format (alternative virbr0 format) - has domain name
+  # If domain name matches, the .status file likely has stale data but will be updated next lease cycle
+  # For now, output the domain name as the 'IP' for the hostname-based SSH
+  macsfile="/var/lib/libvirt/dnsmasq/virbr0.macs"
+  if [ -f "$macsfile" ]; then
+    ip=$(python3 -c "
+import json
+import sys
+try:
+  with open(sys.argv[1]) as f:
+    data = json.load(f)
+  for e in data:
+    for m in e.get('macs', []):
+      if m.lower() == sys.argv[2]:
+        print(e.get('domain', ''))
+        break
+except:
+  pass
+" "$macsfile" "$mac" 2>/dev/null || true)
+    [ -n "$ip" ] && break
+  fi
+  # Try .leases format (traditional text format)
+  leasesfile="/var/lib/libvirt/dnsmasq/default-dnsmasq.leases"
+  if [ -f "$leasesfile" ]; then
+    ip=$(awk -v m="$mac" '$2 == m {print $1; exit}' "$leasesfile" 2>/dev/null || true)
+    [ -n "$ip" ] && break
+  fi
+  sleep 3
+done
+if [ -n "$ip" ]; then
+  echo "IP: $ip"
+  echo "SSH: ssh -i $HOME/.ssh/team-vm -o StrictHostKeyChecking=accept-new root@$ip"
+else
+  echo "no lease found for MAC $mac; check: virsh console $NAME"
+fi
+
+# 6. named URL for the VM's port 80 (portless; skip silently if absent)
+if command -v portless >/dev/null 2>&1; then
+  hostport=$(virsh -c qemu:///system portforward "$NAME" 80 2>/dev/null | grep -oE '[0-9]+$' | head -1 || true)
+  if [ -n "$hostport" ]; then
+    if portless alias "$NAME" "$hostport" >/dev/null 2>&1; then
+      echo "named URL: https://$NAME.localhost (host port $hostport)"
+    fi
+  fi
+fi

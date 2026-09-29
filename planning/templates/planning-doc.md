@@ -35,6 +35,7 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
 - [ ] `Omega`: no unresolved findings above `low` in `## Security`
 - [ ] `Big`: all harness checks PASS, with no silently dropped checks
+- [ ] `Charmy`: no unresolved findings in `## License (Charmy)`
 - [ ] `Vector`: documentation updated as affected
 - [ ] Human review completed (if external PR or deployment)
 
@@ -118,6 +119,23 @@ the PM reads.*
 **Impact:** what they get.
 **Fix:** the specific change.
 **Resolution:** *(filled by `Tails`)*
+
+---
+
+## License (Charmy)
+
+*Owner: `Charmy`. Fourth in the review chain. Every license is verified at the upstream source
+repository and the ref used, never from a copy in this repo.*
+
+**Project license:** <license> — appropriate | finding
+
+**Imported code**
+
+| Component | Source (repo @ ref) | License (verified at) | Obligations met | Status |
+|---|---|---|---|---|
+| | | | yes/no + what | pass/finding |
+
+**Verdict:** pass | findings *(Tails fixes; the chain re-runs until clean)*
 
 ---
 

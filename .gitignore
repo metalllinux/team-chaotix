@@ -29,3 +29,7 @@ gh_token*
 /actions-runner.tar.gz
 /.path
 /externals/
+
+# agentsmd local evidence store (raw sessions, trajectories, ledger).
+# Rules render into AGENTS.md; the evidence never leaves the machine.
+.agentsmd/

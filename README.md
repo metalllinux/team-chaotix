@@ -5,7 +5,7 @@ software development task thrown at it, from initial planning through deployment
 
 ## Architecture
 
-Team Chaotix uses a 10-agent team with strict least-privilege permissions. Each agent has a specific
+Team Chaotix uses an 11-agent team with strict least-privilege permissions. Each agent has a specific
 role and is restricted to only the capabilities it needs.
 
 ```
@@ -17,6 +17,7 @@ Robotnik (PM) ── delegates to ──┬── Amy (Task Planner)
                                 ├── Vector (Documentation)
                                 ├── Sonic (Triage)
                                 ├── Knuckles (Release Manager)
+                                ├── Charmy (License)
                                 └── Espio (Context Curator)
 ```
 
@@ -39,11 +40,13 @@ Key permission patterns:
 
 - `external_directory: "*": allow` on all agents (prevents silent stalls in headless runs)
 - `task: deny` on all subagents (prevents recursion beyond depth 1)
-- `Shadow`, `Omega`, and `Espio` are read-only on code. Their only writes go to the planning doc,
-  into their own section (`Espio` additionally archives within existing sections)
-- `Robotnik`, `Amy`, `Sonic` may only edit files under `planning/`
-- Bash-restricted agents have explicit allowlists of permitted commands
-- No agent can access credential stores directly
+- Every agent gets the `skill` privilege. Per-agent turn caps (`steps`) bound each session
+- `Espio` is the only agent scoped to `planning/` edits. All other agents have full `edit`
+  and are scoped by role, in their prompt, not by tool
+- `Shadow`, `Omega`, and `Charmy` are read-only on code in practice: their writes go to the
+  planning doc, into their own section (`Espio` additionally archives within existing sections)
+- No agent can access credential stores directly. Secrets live in `~/secrets/` on the local
+  machine, never in the repo and never on GitHub
 
 ## Getting started
 
@@ -60,15 +63,16 @@ Sonic, Knuckles, and Robotnik use `gh` CLI to read Issues, create PRs, and dispa
 token must be available as the `GH_TOKEN` environment variable before launching opencode:
 
 ```bash
-export GH_TOKEN="ghp_..."
-opencode
+GH_TOKEN="$(cat ~/secrets/github-token.md)" opencode
 ```
 
 The token needs `repo` and `workflow` scopes. That covers reading Issues and PRs, creating pull
 requests, and triggering GitHub Actions workflow runs.
 
-Do not commit the token to the repository. Keep it in `~/.bashrc` or a secret store. Token files
-named `githubtoken*.md` are in `.gitignore` to prevent accidental commits.
+The push token lives in `~/secrets/github-token.md` on the local machine (file mode 600,
+directory mode 700). No secret is ever committed or pushed to GitHub. Workflow runs on the
+self-hosted runner (this machine) read what they need from `~/secrets/` at run time.
+Token files named `githubtoken*.md` stay in `.gitignore` as a trap for accidents.
 
 ### Quick start
 
@@ -88,57 +92,38 @@ opencode
 from a project directory loads zero custom agents and no `AGENTS.md`, and fails silently. The
 project directory is reached through `external_directory`.
 
-### Git worktrees for parallel projects
+### VM isolation for parallel projects
 
-Team Chaotix supports working on multiple projects using git worktrees. Each worktree is an
-independent working directory linked to the same repository. The model endpoint has a single
-inference slot (`--parallel 1`), so work in different worktrees shares the model serially:
-one agent runs at a time, and the rest queue.
+Git worktrees are retired. When several teams, or several instances of the same work, operate on
+one project, the work is split across **libvirt VMs**, each running **Rocky Linux 10**. A VM is
+a real Rocky 10: the same `dnf`, the same SELinux, the same systemd, and KVM where the project
+needs it.
 
-**Creating a worktree for a project:**
-
-```bash
-cd ~/AI/projects/team-chaotix/team-chaotix
-git worktree add ../worktrees/cinnamon -b worktree/cinnamon
-cp -r .opencode ../worktrees/cinnamon/
-cp AGENTS.md ../worktrees/cinnamon/
-```
-
-**Launching opencode in a worktree:**
+**Creating a VM for a project:**
 
 ```bash
-cd ~/worktrees/cinnamon
-opencode
+# Clone the Rocky 10 golden image, set hostname + team SSH key, boot 4 vCPU / 8 GB
+scripts/vm-create <project>-<n>
+
+# Forward the VM's test port and give it a stable named URL
+virsh portforward <project>-<n> 80
+portless alias <project>-<n> <host-port>
+# reachable at https://<project>-<n>.localhost
 ```
 
-Each worktree maintains its own branch, so changes don't conflict between projects. The main
-repo at `~/AI/projects/team-chaotix/team-chaotix/` remains the source of truth for team
-configuration, while worktrees handle project-specific development.
+**Reaching a test instance** never uses a raw port: VMs and containers are reached by name
+through portless (`portless get <name>`), and `portless alias <name> <host-port>` registers a
+static route when a service lives on a forwarded port.
 
-**Listing and removing worktrees:**
+**Listing and removing VMs:**
 
 ```bash
-# List all active worktrees
-git worktree list
-
-# Remove a worktree
-git worktree remove ../worktrees/cinnamon
-git branch -D worktree/cinnamon
+virsh list --all
+scripts/vm-destroy <project>-<n>
 ```
 
-**Multiple simultaneous projects:**
-
-```bash
-# Terminal 1: Cinnamon project
-cd ~/worktrees/cinnamon
-opencode
-
-# Terminal 2: Another project
-cd ~/worktrees/another-project
-opencode
-
-# Both sessions run independently without file conflicts
-```
+The model endpoint still has one inference slot (`--parallel 1`): VMs isolate state and
+machines, they do not parallelise the model. One agent runs at a time.
 
 ### How it works
 
@@ -146,7 +131,7 @@ opencode
 2. Robotnik creates a planning doc and dispatches Amy for planning
 3. Amy produces a plan with work breakdown
 4. Robotnik dispatches Tails for implementation
-5. After implementation, Robotnik dispatches Shadow, then Omega, then Big, one at a time
+5. After implementation, Robotnik dispatches Shadow, then Omega, then Big, then Charmy, one at a time
 6. If any findings are raised, Tails fixes them and the cycle repeats
 7. Once clean, Vector updates documentation
 8. Knuckles handles branching, PR, and merge
@@ -196,7 +181,7 @@ podman ps
 
 ```bash
 # Install libvirt on Rocky Linux 10
-sudo dnf install -y libvirt-daemon-system libvirt-daemon-client bridge-utils virtinst
+sudo dnf install -y epel-release virt-top libguestfs-tools virt-viewer qemu-kvm libvirt virt-install
 
 # Start and enable
 sudo systemctl enable --now libvirtd
@@ -293,8 +278,11 @@ All actions are hand-written. No Marketplace actions are used (except `actions/c
 
 ## Secrets management
 
-- **No secrets in the repository.** All credentials live in GitHub Environments.
-- Workflow secrets are referenced as `${{ secrets.NAME }}` and nothing else.
+- **No secrets in the repository, and none on GitHub.** All credentials live in `~/secrets/` on
+  the local machine (one file per secret, mode 600, directory mode 700).
+- Workflows run on the self-hosted runner (this machine) and read what they need from
+  `~/secrets/` at run time. Nothing secret is referenced from GitHub Environments, and none
+  is pushed.
 - In workflow `run:` blocks, untrusted input is bound to `env:` first, never interpolated.
 - `printenv VAR > file` is used instead of `echo "$VAR" > file` when materialising keys.
 - If a secret is found committed anywhere, the security agent escalates to the user.
@@ -338,7 +326,9 @@ Agents respect software licenses at all times. When forking or modifying upstrea
 - Verify and comply with the upstream license
 - GPL-2.0 code remains GPL-2.0, never relicensed
 - Include original copyright headers and license files
-- `Omega` checks license headers and compatibility
+- `Charmy` owns the license gate: the project's own license is appropriate, and every imported
+  component is verified at its upstream source repository. `Omega` flags license signals as
+  security findings
 
 ## External PRs
 
@@ -349,8 +339,8 @@ PRs within `metalllinux` are handled autonomously.
 
 ## Planning documentation
 
-The planning doc is the durable context that keeps a compacted session trustworthy
-(`compaction.auto: true`).
+The planning doc is the durable context. Automatic compaction is disabled
+(`compaction.auto: false`), so the doc is the only context that survives a turn.
 
 ```
 planning/
@@ -375,26 +365,28 @@ team-chaotix/
     scripts/            # Helper scripts (worktrees, etc.)
   .opencode/
     opencode.json       # Project configuration
-    agents/             # Agent definitions (10 files)
+    agents/             # Agent definitions (11 files)
   planning/
     TASKS.md            # Master task index
     docs/               # Per-task planning documents
     templates/          # Doc templates
   AGENTS.md             # Shared operating rules (auto-loaded)
   README.md             # This file
-  worktrees/            # Git worktrees for parallel projects (auto-created)
+  scripts/              # Team tools: vm-create, vm-destroy, A2A adapter
 ```
 
-**Worktrees directory** (`worktrees/`): Each project gets its own worktree directory with
-isolated working files. Worktrees are git worktrees that share the same repository but
-maintain independent working directories.
+**scripts/**: `vm-create` and `vm-destroy` provision Rocky Linux 10 VMs for project isolation
+(golden image at `/var/lib/libvirt/images/rocky-10-golden.qcow2`), and `a2a-server.py` is the
+team's A2A adapter (fronted by agentgateway on port 4100).
 
 ## Model
 
-All agents use `Qwen3.8-27B-UD-IQ3_XXS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq3xxs`, port 8094, `--parallel 1`).
-The endpoint has a single inference slot, so exactly one agent runs at a time and every dispatch
-is strictly sequential. The machine that serves this endpoint, a GMKtec EVO-X2, is documented in
-the EVO-X2 model host setup section below.
+All agents use `Qwen3.8-27B-UD-IQ3_XXS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq3xxs`, port 8094,
+`--parallel 1`). All model traffic routes through the team's agentgateway (LLM gateway on port
+4000, see AGENTS.md section 15), which forwards to the EVO-X2 endpoint unchanged. The endpoint
+has a single inference slot, so exactly one agent runs at a time and every dispatch is strictly
+sequential. The machine that serves this endpoint, a GMKtec EVO-X2, is documented in the EVO-X2
+model host setup section below.
 
 ## EVO-X2 model host setup
 

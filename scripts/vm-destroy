@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# vm-destroy — destroy a team VM, remove its disk and any portless alias (AGENTS.md 12).
+# Usage: scripts/vm-destroy <name>
+set -euo pipefail
+
+NAME="${1:?usage: scripts/vm-destroy <name>}"
+IMAGES=/var/lib/libvirt/images
+DISK="$IMAGES/$NAME.qcow2"
+
+if virsh -c qemu:///system list --all | awk '{print $2}' | grep -qx "$NAME"; then
+  virsh -c qemu:///system destroy "$NAME"
+  virsh -c qemu:///system undefine "$NAME" --remove-storage
+fi
+if [ -f "$DISK" ]; then
+  rm -f "$DISK"
+  echo "removed $DISK"
+fi
+if command -v portless >/dev/null 2>&1; then
+  portless alias --remove "$NAME" >/dev/null 2>&1 || true
+fi
+echo "VM $NAME destroyed"
