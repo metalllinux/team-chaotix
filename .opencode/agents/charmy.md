@@ -1,7 +1,7 @@
 ---
 description: Verifies that the project's own license is appropriate and that every piece of imported open source code is respected, verified at the upstream source repository. Fourth in the review chain; writes the planning doc's License section.
 mode: subagent
-model: evo-x2-qwen3.8-iq3xxs/Qwen3.8-27B-UD-IQ3_XXS
+model: "evo-x2-qwen3.8-9b/Qwen3.8-9B-Q4_K_M"
 variant: max
 temperature: 0.2
 steps: 15
