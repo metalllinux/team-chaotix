@@ -1,0 +1,32 @@
+<domain type='kvm'>
+  <name>fedora-cinnamon-fallback-1</name>
+  <memory unit='MiB'>8192</memory>
+  <vcpu>4</vcpu>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <devices>
+    <disk type='file' device='disk'>
+      <source file='/home/howard/AI/projects/team-chaotix/images/rocky-10-golden.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    <disk type='file' device='disk'>
+      <source file='/dev/shm/fedora-cinnamon-fallback-1.qcow2'/>
+      <target dev='vdb' bus='virtio'/>
+    </disk>
+    <interface type='bridge'>
+      <source bridge='virbr0'/>
+      <model type='virtio'/>
+    </interface>
+    <console type='pty'><target type='serial'/></console>
+    <graphics type='vnc' port='5901' listen='0.0.0.0' autoport='no'/>
+    <video>
+      <model type='virtio' vram='16' vram64='0' heads='1' primary='yes'/>
+    </video>
+    <sound model='ich6'>
+      <diffit>0</diffit>
+    </sound>
+    <memballoon model='none'/>
+  </devices>
+</domain>

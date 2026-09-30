@@ -58,3 +58,8 @@ never deletes a doc.
 - **`Owner agent`** is whoever the work is with *right now*, not who will finish it.
 - **`Blocked`** always has a reason in the planning doc's `## Status`, naming what would unblock it.
 - The `Planning doc` cell links to the file.
+
+| Key | Title | Owner agent | Planning doc | Status |
+|---|---|---|---|---|
+| TASK-0026 | Cinnamon Control Center GUI test: Rocky Linux 10 vs Fedora Cinnamon 45 beta | Tails | planning/docs/TASK-0026-cinnamon-control-center-comparison.md | Done |
+
