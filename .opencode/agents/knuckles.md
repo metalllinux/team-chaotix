@@ -1,8 +1,7 @@
 ---
 description: Manages releases, branching strategy, pull requests, versioning, GPG-signed commits, and deployment coordination. Owns the final merge and issue closure.
 mode: subagent
-model: "evo-x2-qwen3-coder-next/Qwen3-Coder-Next-UD-IQ3_XXS#high"
-variant: max
+model: "evo-x2-qwen3.8-iq3xxs/Qwen3.8-27B-UD-IQ3_XXS#low"
 temperature: 0.2
 permission:
   external_directory:

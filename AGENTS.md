@@ -17,9 +17,11 @@ installed and running (`libvirtd` active, `howard` in the `libvirt` group). Cock
 serves the VM administration UI. Node.js 24 (`nodejs24`) provides `node`/`npm` via
 `/usr/local/bin` symlinks.
 
-**Model:** All agents use `Qwen3.8-9B-Q4_K_M` (EVO-X2 endpoint `evo-x2-qwen3.8-9b`, port 8094,
-`--parallel 1`). All model traffic routes through the team's agentgateway (section 15). The single
-inference slot means exactly one agent runs at a time. All dispatch is sequential (see section 3).
+**Model:** All agents use `Qwen3.8-27B-UD-IQ3_XXS` (provider `evo-x2-qwen3.8-iq3xxs`); thinking
+stays on for the project-manager agent (`robotnik`), every other agent runs the `low` variant
+(`#low` in its model reference). Gateway routing is unchanged: all model traffic routes through
+the team's agentgateway (section 15) with `--parallel 1`, the single inference slot means exactly
+one agent runs at a time. All dispatch is sequential (see section 3).
 
 **The operator model.** The operator (the human) sits above the team and is never asked
 questions. No agent has the `question` tool. The operator's jobs are to update agent
