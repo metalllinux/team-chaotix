@@ -32,7 +32,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0023 | Install ripgrep (rg) on the agent host | Robotnik | planning/docs/TASK-0023-rg-host.md | Done |
 | TASK-0024 | Sign the Cinnamon RPMs, enable gpgcheck, publish the release manifest | Robotnik | planning/docs/TASK-0024-rpm-signing-gpgcheck.md | Done (2026-09-24; PR #6 merged, main `a70aedc`, tag `v1.0.0`; all 11 DoD ticked) |
 | TASK-0025 | Team v2: license agent, VM isolation, agentgateway/A2A, agentsmd, operator model | Robotnik | planning/docs/TASK-0025-team-v2-upgrade.md | Done (2026-09-29; all spec items implemented, verified end-to-end, committed) |
-| TASK-0026 | Cinnamon Control Center GUI test: Rocky Linux 10 vs Fedora Cinnamon 45 beta | Knuckles | planning/docs/TASK-0026-cinnamon-control-center-comparison.md | In Review |
+| TASK-0026 | Cinnamon Control Center GUI test: Rocky Linux 10 vs Fedora Cinnamon 45 beta | Robotnik | planning/docs/TASK-0026-cinnamon-control-center-comparison.md | Blocked (box 1 open at window level on TASK-0034 no-render; box 2 open on TASK-0035 verdict) |
 | TASK-0027 | Cinnamon brightness: Settings and keyboard shortcuts have no effect | Robotnik | planning/docs/TASK-0027-cinnamon-brightness-fix.md | Planning |
 | TASK-0028 | Rocky 10 + Fedora Cinnamon VM deploy skill | Shadow | planning/docs/TASK-0028-vm-deploy-skill.md | Done |
 | TASK-0029 | VM scripts repair (align scripts/ with AGENTS.md section 12) | Robotnik | planning/docs/TASK-0029-vm-scripts-repair.md | Planning |

@@ -431,4 +431,5 @@ Every tool call costs latency, context, and a share of the single inference slot
 <!-- agentsmd:learned:start -->
 <!-- Promoted by agentsmd after review. -->
 - [r000] Reach test instances by name through portless, never by raw port.  (cited: 0)
+- [r001] A subagent dispatch that fails with a request-body or compaction-summary size error means the PM session context is too large for the child to inherit; record a handoff in the planning doc's ## Status and continue in a fresh PM session.  (cited: 0)
 <!-- agentsmd:learned:end -->
