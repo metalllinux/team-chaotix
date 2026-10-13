@@ -11,7 +11,7 @@
 
 ### 2026-10-12: items 1-4 complete; verdict BOTH (P1 port bug + E1 environment limitation); fix phase unblocked
 
-Tails executed ## Plan items 1-4 (evidence in ## Implementation). P1: `/usr/libexec/csd-backlight-helper` is absent from Rocky's `cinnamon-settings-daemon` RPM (present in Fedora's); on Rocky `GetPercentage` fails ENOENT and `StepUp` is a no-op. E1: no backlight on either VM (empty `/sys/class/backlight`, virtio GPU), so end-to-end brightness verification is impossible in this environment by design. Not a D-Bus authorization issue; TASK-0035 not implicated. DoD box 4 (fix path) applies. Tails executed ## Plan items 5-7: spec-only fix (canonical repo commit `ec49438b38`: Release 2→3.el10, `libgudev-devel`/`upower-devel` build deps, `-Duse_gudev=disabled` removed, no source change), rebuild (unsigned, local-only `rpms-local/`), install on `Rocky_Linux_10_Cinnamon`, E1-bounded verification passed (helper runs; failure signature byte-identical to the Fedora comparison; end-to-end brightness impossible in this environment by design). DoD boxes 5-6 await `Big`. Review chain: Shadow done (no blockers on the change; three should-fix closeout findings in ## Review — DoD box 4 reworded per finding 1; findings 2-3 are `Knuckles`/`## Release` prerequisites; one note for Omega). Omega done: four findings — 1 high + 2 medium are the standing TASK-0033 rotation operator step-stop (live PAT world-readable in `~/AI/secrets/` and in a remote URL via global `insteadOf`; `~/AI/secrets/` 755/644 vs §4 700/600; dead second PAT still wired), already blocked there for operator rotation; 1 low (unsigned -3 RPM left in VM `/tmp`, `rpms-local/` untracked = operator-confusion risk). Change itself verified clean; Omega corrects Shadow's PAT note on mechanism (global `insteadOf` rewrite, not `.git/config`). Big done: all applicable layers independently re-run and PASS (compile/unit/integration; Sparky not run, justified and stated), final verdict in ## Test Results — P1 fixed at the RPM layer and verified live on the target VM, E1 confirmed live on both VMs, no FAIL, remainder is operator hardware. Charmy done: pass, no findings (verified at the upstream source at the exact ref used; spec-only change imports no new code, new `libgudev`/`upower` deps compatible). Review chain clean; no Tails fix round. Next: Vector.
+Tails executed ## Plan items 1-4 (evidence in ## Implementation). P1: `/usr/libexec/csd-backlight-helper` is absent from Rocky's `cinnamon-settings-daemon` RPM (present in Fedora's); on Rocky `GetPercentage` fails ENOENT and `StepUp` is a no-op. E1: no backlight on either VM (empty `/sys/class/backlight`, virtio GPU), so end-to-end brightness verification is impossible in this environment by design. Not a D-Bus authorization issue; TASK-0035 not implicated. DoD box 4 (fix path) applies. Tails executed ## Plan items 5-7: spec-only fix (canonical repo commit `ec49438b38`: Release 2→3.el10, `libgudev-devel`/`upower-devel` build deps, `-Duse_gudev=disabled` removed, no source change), rebuild (unsigned, local-only `rpms-local/`), install on `Rocky_Linux_10_Cinnamon`, E1-bounded verification passed (helper runs; failure signature byte-identical to the Fedora comparison; end-to-end brightness impossible in this environment by design). DoD boxes 5-6 await `Big`. Review chain: Shadow done (no blockers on the change; three should-fix closeout findings in ## Review — DoD box 4 reworded per finding 1; findings 2-3 are `Knuckles`/`## Release` prerequisites; one note for Omega). Omega done: four findings — 1 high + 2 medium are the standing TASK-0033 rotation operator step-stop (live PAT world-readable in `~/AI/secrets/` and in a remote URL via global `insteadOf`; `~/AI/secrets/` 755/644 vs §4 700/600; dead second PAT still wired), already blocked there for operator rotation; 1 low (unsigned -3 RPM left in VM `/tmp`, `rpms-local/` untracked = operator-confusion risk). Change itself verified clean; Omega corrects Shadow's PAT note on mechanism (global `insteadOf` rewrite, not `.git/config`). Big done: all applicable layers independently re-run and PASS (compile/unit/integration; Sparky not run, justified and stated), final verdict in ## Test Results — P1 fixed at the RPM layer and verified live on the target VM, E1 confirmed live on both VMs, no FAIL, remainder is operator hardware. Charmy done: pass, no findings (verified at the upstream source at the exact ref used; spec-only change imports no new code, new `libgudev`/`upower` deps compatible). Review chain clean; no Tails fix round. Vector done (README known-issue block, left uncommitted to ride the canonical push; see ## Docs). Knuckles done 2026-10-13: all DoD boxes ticked, team-chaotix planning doc pushed (`7809ef1`), canonical-repo push blocked by the standing TASK-0033 rotation operator step-stop with the six exact operator steps recorded in ## Release, no GitHub Issue to close. **Task DONE at team level 2026-10-13**; the canonical push is the only remaining step and it is the operator's. Espio prune pass complete 2026-10-13 (8 chunks; ~31 lines of superseded Plan mechanics to ## Archive, ~56 lines of raw output compressed in place; see ## Archive prune log; doc now 1123 lines).
 
 ### 2026-10-04: target machine identified; environment rebuilt by operator
 
@@ -94,38 +94,6 @@ started.
 - A4: a QEMU VM with a virtual GPU exposes no backlight device. Near-certain, and the probe proves it (DoD line 1).
 - A5: the Fedora VM is not a working reference. It is also a backlight-less VM. Its role is packaging, plugin, and keybinding comparison, and it is the only place in this environment where an X11 software-brightness path could be exercised.
 - A6: the host build toolchain is intact as of TASK-0026. The fix phase re-verifies before building.
-
-### Work breakdown
-
-All guest items are `Tails`. One item, one turn, one machine. Each item's evidence block lands in `## Implementation` with command + output per line (AGENTS.md section 2).
-
-| # | Item | Owner agent | Acceptance criterion | Parallel with |
-|---|---|---|---|---|
-| 1 | Rocky hardware-layer probe. Backlight sysfs (`ls /sys/class/backlight/`, per-device `brightness`/`max_brightness`/`backlight_type`). `brightnessctl -l` and `info` (recorded absence if the binary is missing). `lspci -k` display lines plus `/sys/class/drm/` driver links. `rpm -qa \| grep -iE 'cinnamon|backlight'` state fingerprint. `uptime` and session state | Tails | The question "backlight present?" answered by two independent sources (sysfs listing and either `brightnessctl` or `rpm -qf` on the sysfs node). Every command + output recorded | independent |
-| 2 | Rocky daemon-layer probe. CSD process and service state (`pgrep -a`, `systemctl --user status`). Plugin file list from `rpm -ql cinnamon-settings-daemon`, confirmed on disk. D-Bus: `busctl --user list` for the CSD name, introspect to find the xrandr object, read the brightness-related properties. gsettings: `list-schemas` filtered to cinnamon, recursive dumps of the keybinding, settings-daemon, and control-center display schemas, `rpm -qf` on each relevant schema file. One scripted D-Bus brightness call (the programmatic equivalent of the Settings slider) with property read-back, and a user-journal capture around it to record any authorization error. Shortcut trigger attempted by the best available method (`xdotool key <combo>` if installed, otherwise record the absence) with result plus journal | Tails | Plugin presence or absence. D-Bus object plus property values before and after the scripted call. Brightness up/down shortcuts bound or unbound with the exact combos. Schema ownership (Rocky package name). Scripted-call outcome including the exact error if any. The one guest write (the scripted D-Bus call) flagged and recorded | independent of 1 |
-| 3 | The same probe set as items 1 and 2 on `Fedora_45_Cinnamon`, same commands, same recording format | Tails | Parallel evidence blocks plus a per-probe Rocky-vs-Fedora diff table. Each diff row attributes the difference to packaging or session type where possible | independent of 1 and 2 (order free. Runs after 2 so the format is settled) |
-| 4 | Root cause and classification in `## Implementation` per the decision tree below. If port bug, name the exact missing artifact (plugin file, schema file, keybinding, D-Bus permission) and the owning package | Tails | A root-cause paragraph where every claim maps to a command + output from items 1 through 3. A classification statement (environment limitation, port bug, or both) citing the evidence lines. DoD lines 1 through 3 tickable | waits on 1, 2, 3 |
-| 5 | Fix (only if 4 finds a port bug). Source and/or spec fix in the canonical repo. Component checkout `~/Linux/projects/cinnamon-for-rocky10/<component>` and/or `spec/<pkg>.spec` (team-authored packages such as `cinnamon-rocky-defaults` have no separate checkout. The spec in the canonical repo is the fix site) | Tails | The component diff addresses the named artifact. `## Implementation` records the files and the reason | waits on 4 |
-| 6 | Fix build. Re-verify the toolchain (`command -v rpmbuild meson ninja`). Stage Source0 from the working tree (TASK-0026 method). Build. Unsigned. Place in untracked `rpms-local/` | Tails | `rpmbuild` exit 0. Checksum of the fixed payload recorded. RPM md5 and sha256 recorded. `Signature: (none)` recorded as expected | waits on 5 |
-| 7 | Fix verification. Record the prior NEVRA of the affected packages on the VM. `rpm -Uvh` the new RPM. Re-run item 2's daemon probe. Confirm the scripted D-Bus call now changes the property and the journal is clean. Before/after values recorded | Tails | Before/after property values. Prior NEVRA recorded before the install. No new journal errors | waits on 6 |
-
-### Classification decision tree (for item 4)
-
-- E1, environment limitation. No backlight device (item 1), no working software-brightness path for the session in question, and the Rocky stack is complete against Fedora (plugin present, daemon running, D-Bus object present, shortcut bound). Verdict: environment limitation, documented in `## Test Results` with what would make it testable (hardware with a real display and backlight).
-- P1, port bug. Any of these present on Fedora but absent or broken on Rocky: (a) the xrandr plugin file missing from the `cinnamon-settings-daemon` file list or from disk. (b) the xrandr D-Bus object absent. (c) the brightness shortcut unbound when it is bound on Fedora, with `cinnamon-rocky-defaults` owning the override. (d) a gsettings schema file present on Fedora but absent on Rocky. (e) the scripted D-Bus call fails on Rocky with an authorization or service error and succeeds, or fails differently, on Fedora. Verdict: port bug, named artifact, fix path (items 5 through 7).
-- Both. E1 plus one or more P1 findings. The DoD fix branch applies to the P1 findings, and the environment limitation is documented separately. The classification records both.
-- Ambiguity rule. A probe that cannot run (missing tool, VM drift) is recorded as a gap, not a finding. Hardware presence requires two agreeing independent sources before E1 is claimed (risk row 1).
-
-### Dependencies and sequence
-
-- Items 1, 2, 3 are genuinely independent. No ordering constraint among them.
-- 4 depends on 1, 2, 3. 5 depends on 4. 6 depends on 5. 7 depends on 6. The only items that only look ordered are 1 and 3 against 2. There is no dependency among the probes, and the dispatch order after 2 is free.
-- Cross-task, no hard order: TASK-0035 (same VM, same D-Bus layer). If 0035 lands a fix on the VM between this task's items, the affected items re-run and the evidence cites both states. TASK-0026's remaining steps (checkpoint, docs, archive) do not touch the VM.
-- The single inference slot runs one agent at a time anyway. The order above is the critical-path order, not a concurrency plan.
-
-### Critical path
-
-2 → 4 → 5 → 6 → 7 (longest chain, the fix branch). Items 1 and 3 are off-critical. Running them before or after does not extend the chain.
 
 ### Estimates
 
@@ -450,78 +418,32 @@ $ brightnessctl -l
 bash: line 19: brightnessctl: command not found
 exit=127
 $ lspci -k | grep -iE -B1 -A2 'vga|3d|display'
-00:01.0 VGA compatible controller: Red Hat, Inc. Virtio 1.0 GPU (rev 01)
-	Subsystem: Red Hat, Inc. QEMU
-	Kernel driver in use: virtio-pci
+00:01.0 VGA compatible controller: Red Hat, Inc. Virtio 1.0 GPU (rev 01), driver virtio-pci (raw lspci/DRM listing truncated)
 $ ls -l /sys/class/drm/
-total 0
-lrwxrwxrwx. 1 root root 0 Oct  5 15:10 card0 -> ../../devices/pci0000:00/0000:00:01.0/drm/card0
-lrwxrwxrwx. 1 root root 0 Oct  5 15:10 card0-Virtual-1 -> ../../devices/pci0000:00/0000:00:01.0/drm/card0/card0-Virtual-1
-lrwxrwxrwx. 1 root root 0 Oct  5 15:10 renderD128 -> ../../devices/pci0000:00/0000:00:01.0/drm/renderD128
--r--r--r--. 1 root root 4096 Oct  5 15:10 version
+card0 only (virtio, PCI 00:01.0; plus card0-Virtual-1, renderD128, version) — no backlight card
 ```
 No backlight device on the comparison VM either; same Virtio GPU topology.
 
 **P3.3 — Package fingerprint**
 ```
 $ rpm -qa | grep -iE 'cinnamon|backlight' | sort
-cinnamon-6.7.5^unstable-3.fc45.x86_64
-cinnamon-calendar-server-6.7.5^unstable-3.fc45.x86_64
-cinnamon-control-center-6.7.3^unstable-1.fc45.x86_64
-cinnamon-control-center-filesystem-6.7.3^unstable-1.fc45.x86_64
-cinnamon-desktop-6.7.3^unstable-1.fc45.x86_64
-cinnamon-menus-6.7.0^unstable-2.fc45.x86_64
-cinnamon-session-6.7.4^unstable-1.fc45.x86_64
 cinnamon-settings-daemon-6.7.3^unstable-1.fc45.x86_64
-cinnamon-themes-2.4.0-1.fc45.noarch
-cinnamon-translations-6.7.0^unstable-2.fc45.noarch
-fedora-release-cinnamon-45-0.10.noarch
-fedora-release-identity-cinnamon-45-0.10.noarch
-slick-greeter-cinnamon-2.2.6-4.fc45.noarch
+(13 packages total, all fc45; other 12 lines truncated)
 ```
 13 packages, matching the TASK-0033 fc45 inventory.
 
 **P3.4 — Running csd-* processes**
 ```
 $ pgrep -af 'csd-'
-1195 /usr/bin/csd-print-notifications
-1196 /usr/bin/csd-a11y-settings
-1197 /usr/bin/csd-color
-1198 /usr/bin/csd-screensaver-proxy
-1199 /usr/bin/csd-background
-1202 /usr/bin/csd-housekeeping
-1204 /usr/bin/csd-settings-remap
-1209 /usr/bin/csd-clipboard
-1217 /usr/bin/csd-keyboard
-1219 /usr/bin/csd-wacom
-1220 /usr/bin/csd-media-keys
-1221 /usr/bin/csd-xsettings
 1223 /usr/bin/csd-power
-1330 /usr/libexec/csd-printer
+(13 more csd-* processes truncated: print-notifications, a11y-settings, color, screensaver-proxy, background, housekeeping, settings-remap, clipboard, keyboard, wacom, media-keys, xsettings, printer)
 ```
 `csd-power` (1223) owns `org.cinnamon.SettingsDaemon.Power{,.Keyboard,.Screen}` on the Fedora user bus, same names as Rocky; `csd-color` and `csd-wacom` own `org.cinnamon.SettingsDaemon.Color` / `org.cinnamon.SettingsDaemon.Wacom` (absent on Rocky).
 
 **P3.5 — RPM file list (`cinnamon-settings-daemon-6.7.3^unstable-1.fc45`) and helper**
 ```
 $ rpm -ql cinnamon-settings-daemon | grep -E '/bin/|libexec|autostart'   (binaries; autostart entries analogous to P2.2 plus color, print-notifications, wacom)
-/usr/bin/csd-a11y-settings
-/usr/bin/csd-automount
-/usr/bin/csd-background
-/usr/bin/csd-backlight-helper
-/usr/bin/csd-clipboard
-/usr/bin/csd-color
-/usr/bin/csd-datetime-mechanism
-/usr/bin/csd-housekeeping
-/usr/bin/csd-input-helper
-/usr/bin/csd-keyboard
-/usr/bin/csd-media-keys
-/usr/bin/csd-power
-/usr/bin/csd-print-notifications
-/usr/bin/csd-printer
-/usr/bin/csd-screensaver-proxy
-/usr/bin/csd-settings-remap
-/usr/bin/csd-wacom
-/usr/bin/csd-xsettings
+/usr/bin/csd-backlight-helper (18 /usr/bin csd-* binaries total; other 17 truncated: a11y-settings, automount, background, clipboard, color, datetime-mechanism, housekeeping, input-helper, keyboard, media-keys, power, print-notifications, printer, screensaver-proxy, settings-remap, wacom, xsettings)
 /usr/libexec/csd-… (same set, plus /usr/libexec/csd-wacom-led-helper and /usr/libexec/csd-wacom-oled-helper)
 $ ls -l /usr/libexec/csd-backlight-helper
 -rwxr-xr-x. 1 root root 15704 Aug 15 09:00 /usr/libexec/csd-backlight-helper
@@ -799,19 +721,11 @@ The helper runs and reports the absence of backlight hardware — the same behav
 Item 2 daemon probe re-run (D-Bus, `XDG_RUNTIME_DIR=/run/user/1000`):
 
 ```
-$ busctl --user get-property org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power Percentage   # BEFORE
-u 0
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # BEFORE
-Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen StepUp
-uii 0 0 0
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # AFTER
-Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
-$ busctl --user get-property org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power Percentage   # AFTER
-u 0
-$ journalctl --user -n 20 --no-pager
-No journal files were found.
--- No entries --
+$ busctl --user get-property org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power Percentage   # BEFORE → u 0
+$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # BEFORE → Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
+$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen StepUp   # uii 0 0 0
+# AFTER re-run: GetPercentage → same failure string; Percentage → u 0 (no change; full before/after values in the analysis below)
+$ journalctl --user -n 20 --no-pager   # No journal files were found.
 ```
 
 Reading against the pre-fix state (P2.9): `GetPercentage` no longer fails with `Failed to execute child process "/usr/libexec/csd-backlight-helper" (No such file or directory)` — the spawn now succeeds and the failure is the helper's own no-backlight report, byte-identical to the Fedora comparison signature (P3.6). `StepUp` is still `uii 0 0 0` — identical to pre-fix Rocky (P2.9) and to Fedora (P3.6): a no-op on a degenerate range, which is what E1 dictates. `Power.Percentage` property before/after: `0` → `0` — unchanged, expected: there is no backlight to change (E1). The plan's original item 7 line "Confirm the scripted D-Bus call now changes the property" is unreachable on this VM by design (item 4 consequence paragraph); the E1-bounded criteria in that paragraph are the ones verified here: helper present (above), `GetPercentage` failing with the helper's "No backlight devices present" instead of ENOENT (above), `StepUp` returning `(0, 0, 0)` (above), no new errors (install rc=0, helper exit 5 with the expected message, D-Bus output exactly the E1 signature). Journal: the user journal remains unavailable from the SSH session (same context gap as P2.10, recorded gap, not a finding); the D-Bus error strings are the direct record. `csd-power` is still PID 3124 (no restart — the helper is spawned per call, and the D-Bus results prove the spawn now succeeds). The installed RPM was left in `/tmp` on the VM (install artifact, deletable). Rollback: `sudo rpm -Uvh` of `rpms/cinnamon-settings-daemon-6.7.2-2.el10.x86_64.rpm` (tracked set) or `rpm -e` plus reinstall.
@@ -1153,6 +1067,10 @@ Searched open issues in metalllinux/cinnamon-for-rocky10 and metalllinux/team-ch
 
 - The team-chaotix remote URL (local .git/config, never committed) embeds a classic PAT whose value matches ~/AI/secrets/githubtoken.md (same-value comparison in shell, no value read or printed). That file holds the live PAT with repo,workflow scope verified live in ## Security finding 1, so the team-chaotix remote authenticates with a live repo-scope token from a non-compliant location. The value surfaced in Knuckles's verification output on 2026-10-13 (session log) when the remote was printed, which makes it rotation-worthy in its own right. All of this is covered by the operator steps above.
 
+### Final bookkeeping commit (2026-10-13)
+
+The post-release state of this doc is committed to `main` as this commit and pushed to `origin` of `metalllinux/team-chaotix` (in-account standing autonomy; no feature branch, per the planning-doc checkpoint convention). Commit message: `chore(planning): record TASK-0027 and TASK-0035 post-release state (Status/Next Actions/Archive final, Espio prune, TASKS.md Done)`. The commit carries the final `## Status` / `## Next Actions` / `## Archive` state of this doc (the Espio prune pass, 8 chunks, per the `## Archive` prune log; the raw probe output in `## Implementation` compressed in place) and the `planning/TASKS.md` status update (this task to `Done`; TASK-0026 still `Blocked` with the updated box 2 reference). The out-of-scope working-tree entries (`cinnamon-1-vm.xml`, `planning/docs/TASK-0034-cinnamon-shell-no-render.md`, and the untracked `-`, `continue-prompt-2026-10-05.md`, `prompt-task0026-continuation.md`) are excluded from the commit and left untouched.
+
 ---
 
 ## Archive
@@ -1165,4 +1083,45 @@ user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-10-13 | Superseded `## Plan` mechanics (Amy): work breakdown table (items 1-7), classification decision tree, dependencies and sequence, critical path — all executed and verified per `## Implementation` and `## Review` | ~31 lines |
+| 2026-10-13 | Chunk 2, start of `## Implementation` (lines 141-280): reviewed; entirely load-bearing root-cause evidence (Item 1 backlight verdict, Item 2 daemon-layer probe, command + output per DoD box 2). No-op | 0 lines |
+| 2026-10-13 | Chunk 3, `## Implementation` (lines 281-420, P2.3 file-list tail through P3.2 start): reviewed; entirely load-bearing root-cause evidence. Every block in the span (P2.3-P2.10, Item 2 acceptance, P3.1, P3.2) is cited from Item 4's root-cause paragraph and classification (sub-checks a-d, P1(e)), diff-table rows D1-D17, DoD box 2 (command + output per claim), or the items 5-7 fix verification (the P2.9 ENOENT string is the before-signature the shipped fix was verified against). No-op | 0 lines |
+| 2026-10-13 | Chunk 4, `## Implementation` (lines 421-560, P3.2 tail through item 4 + alternatives): raw probe output compressed in place (P3.2 lspci/DRM listing, P3.3 rpm -qa fingerprint, P3.4 csd-* process list, P3.5 rpm -ql file list); each to command + key line with a truncated-listing note. Retained verbatim: P3.6-P3.8 (already command + key output), diff table D1-D17, item 4 root cause and classification, alternatives record | ~48 lines |
+| 2026-10-13 | Chunk 5, `## Implementation` (lines 561-700, item 5 spec diff tail through item 7 install + helper presence/ownership): reviewed; entirely load-bearing fix evidence (the items 5-7 accomplishment). Every block in the span (spec diff + `%files` note; item 6 toolchain re-verify, host `dnf` state change, Source0 staging content-identical to `18bb726dc21a`, `rpmbuild` rc=0, artifact md5/sha256 + 144 `csd-` files + 3 helper paths + payload helper sha256 `f231af26`, host smoke test, `rpms-local/` placement; item 7 host before/after, prior NEVRA, install, helper presence chain) is the command + output the DoD evidence standard requires, and is re-verified and cited by `## Review` (Shadow verified list), `## Test Results` (Big's table + finding-1 split), `## Docs`, and `## Release` (prerequisites). The one resolved finding in-span (line 612: tarball sha256 differs from the stale spec provenance note, reworked in `5e081c4dc7`) sits inside the Source0 content-identity evidence that four downstream sections re-cite, so it is not separable. No-op | 0 lines |
+| 2026-10-13 | Chunk 6, `## Implementation` item 7 tail + `## Review` + `## Security` (lines 701-840): item 7 D-Bus re-run raw block compressed in place to command + key line (duplicated AFTER outputs folded; full before/after values recorded in the item 7 analysis paragraph). Rest load-bearing, no-op: E1-bounded verdict (decision); alternatives record (B over A, rejected option with reasons); changes table (commit `ec49438b38`); checks run; competing priorities; all three `## Review` should-fix findings unresolved (Resolution pending `Tails`) plus verified list; `## Security` findings 1-3 unresolved security findings (never deleted) | ~8 lines |
+| 2026-10-13 | Chunk 7, `## Security` tail + `## License` + `## Test Results` + `## Docs` head (lines 841-980): reviewed; entirely load-bearing. `## Security` verified-clean items are verified clearance facts (spec diff surface, polkit `.policy` parity -2 vs -3, Source0 byte-identical to `18bb726dc21a`, build deps, password handling, no committed token copies). `## License` is the license compliance record (verified at upstream ref, imported-code table, verdict pass — never deleted). `## Test Results` is Big's verdict: per-check evidence table, Shadow finding 1 split (items 5-7 satisfied vs E1 deferred — decision), E1 environment limitation (known trap), final verdict. `## Docs` head is the doc-change record with file:line evidence (README known-issue paragraph; INSTALL.md / `rpms/` / `vm-test/` no-change confirmations). No superseded plans, no raw tool output, no narration. No-op | 0 lines |
+| 2026-10-13 | Chunk 8, `## Docs` tail + `## Release` + `## Archive` (lines 981-1122): reviewed; entirely load-bearing. `## Docs` tail: file:line evidence for the no-change confirmations (`vm-test/verify-install-packages.sh:47` pin and its republish movement, spec provenance-comment state, untracked upstream checkout, README `Status` block left untouched per the TASK-0026 precedent) plus both open items (GUI pane not exercised and what would settle it, a Sparky/GUI run on backlight hardware; README commit deferred to the release flow with the verified 2026-10-12 `git ls-remote` origin/local state). `## Release`: current branch/commit/PR state (7 commits ahead of origin, PR #6 merged 2026-09-24, no open PR), executed prerequisites (Shadow finding 2 stands pending push, finding 3 executed in `5e081c4dc7`, Vector README committed in `9edabeda96`), the standing checks for the signing step (fresh-clone rebuild, `Release: 3.el10`, exactly 3 helper paths in the payload, delete of the unsigned `-3` RPM, `rpms-local/` untracked), blocked-push evidence (`git push` rc=128, terminal prompts disabled, credential stage per the standing TASK-0033 gap), exact operator steps 1-6 for the standing step-stop, verified no-open-issues check, and the security flag on the team-chaotix remote URL token (rotation-worthy, covered by the operator steps). No superseded plans, no narration, no resolved-and-shipped findings. No-op | 0 lines |
+
+### Superseded plan mechanics (Amy, from `## Plan`): work breakdown, classification decision tree, dependencies and sequence, critical path
+
+### Work breakdown
+
+All guest items are `Tails`. One item, one turn, one machine. Each item's evidence block lands in `## Implementation` with command + output per line (AGENTS.md section 2).
+
+| # | Item | Owner agent | Acceptance criterion | Parallel with |
+|---|---|---|---|---|
+| 1 | Rocky hardware-layer probe. Backlight sysfs (`ls /sys/class/backlight/`, per-device `brightness`/`max_brightness`/`backlight_type`). `brightnessctl -l` and `info` (recorded absence if the binary is missing). `lspci -k` display lines plus `/sys/class/drm/` driver links. `rpm -qa \| grep -iE 'cinnamon|backlight'` state fingerprint. `uptime` and session state | Tails | The question "backlight present?" answered by two independent sources (sysfs listing and either `brightnessctl` or `rpm -qf` on the sysfs node). Every command + output recorded | independent |
+| 2 | Rocky daemon-layer probe. CSD process and service state (`pgrep -a`, `systemctl --user status`). Plugin file list from `rpm -ql cinnamon-settings-daemon`, confirmed on disk. D-Bus: `busctl --user list` for the CSD name, introspect to find the xrandr object, read the brightness-related properties. gsettings: `list-schemas` filtered to cinnamon, recursive dumps of the keybinding, settings-daemon, and control-center display schemas, `rpm -qf` on each relevant schema file. One scripted D-Bus brightness call (the programmatic equivalent of the Settings slider) with property read-back, and a user-journal capture around it to record any authorization error. Shortcut trigger attempted by the best available method (`xdotool key <combo>` if installed, otherwise record the absence) with result plus journal | Tails | Plugin presence or absence. D-Bus object plus property values before and after the scripted call. Brightness up/down shortcuts bound or unbound with the exact combos. Schema ownership (Rocky package name). Scripted-call outcome including the exact error if any. The one guest write (the scripted D-Bus call) flagged and recorded | independent of 1 |
+| 3 | The same probe set as items 1 and 2 on `Fedora_45_Cinnamon`, same commands, same recording format | Tails | Parallel evidence blocks plus a per-probe Rocky-vs-Fedora diff table. Each diff row attributes the difference to packaging or session type where possible | independent of 1 and 2 (order free. Runs after 2 so the format is settled) |
+| 4 | Root cause and classification in `## Implementation` per the decision tree below. If port bug, name the exact missing artifact (plugin file, schema file, keybinding, D-Bus permission) and the owning package | Tails | A root-cause paragraph where every claim maps to a command + output from items 1 through 3. A classification statement (environment limitation, port bug, or both) citing the evidence lines. DoD lines 1 through 3 tickable | waits on 1, 2, 3 |
+| 5 | Fix (only if 4 finds a port bug). Source and/or spec fix in the canonical repo. Component checkout `~/Linux/projects/cinnamon-for-rocky10/<component>` and/or `spec/<pkg>.spec` (team-authored packages such as `cinnamon-rocky-defaults` have no separate checkout. The spec in the canonical repo is the fix site) | Tails | The component diff addresses the named artifact. `## Implementation` records the files and the reason | waits on 4 |
+| 6 | Fix build. Re-verify the toolchain (`command -v rpmbuild meson ninja`). Stage Source0 from the working tree (TASK-0026 method). Build. Unsigned. Place in untracked `rpms-local/` | Tails | `rpmbuild` exit 0. Checksum of the fixed payload recorded. RPM md5 and sha256 recorded. `Signature: (none)` recorded as expected | waits on 5 |
+| 7 | Fix verification. Record the prior NEVRA of the affected packages on the VM. `rpm -Uvh` the new RPM. Re-run item 2's daemon probe. Confirm the scripted D-Bus call now changes the property and the journal is clean. Before/after values recorded | Tails | Before/after property values. Prior NEVRA recorded before the install. No new journal errors | waits on 6 |
+
+### Classification decision tree (for item 4)
+
+- E1, environment limitation. No backlight device (item 1), no working software-brightness path for the session in question, and the Rocky stack is complete against Fedora (plugin present, daemon running, D-Bus object present, shortcut bound). Verdict: environment limitation, documented in `## Test Results` with what would make it testable (hardware with a real display and backlight).
+- P1, port bug. Any of these present on Fedora but absent or broken on Rocky: (a) the xrandr plugin file missing from the `cinnamon-settings-daemon` file list or from disk. (b) the xrandr D-Bus object absent. (c) the brightness shortcut unbound when it is bound on Fedora, with `cinnamon-rocky-defaults` owning the override. (d) a gsettings schema file present on Fedora but absent on Rocky. (e) the scripted D-Bus call fails on Rocky with an authorization or service error and succeeds, or fails differently, on Fedora. Verdict: port bug, named artifact, fix path (items 5 through 7).
+- Both. E1 plus one or more P1 findings. The DoD fix branch applies to the P1 findings, and the environment limitation is documented separately. The classification records both.
+- Ambiguity rule. A probe that cannot run (missing tool, VM drift) is recorded as a gap, not a finding. Hardware presence requires two agreeing independent sources before E1 is claimed (risk row 1).
+
+### Dependencies and sequence
+
+- Items 1, 2, 3 are genuinely independent. No ordering constraint among them.
+- 4 depends on 1, 2, 3. 5 depends on 4. 6 depends on 5. 7 depends on 6. The only items that only look ordered are 1 and 3 against 2. There is no dependency among the probes, and the dispatch order after 2 is free.
+- Cross-task, no hard order: TASK-0035 (same VM, same D-Bus layer). If 0035 lands a fix on the VM between this task's items, the affected items re-run and the evidence cites both states. TASK-0026's remaining steps (checkpoint, docs, archive) do not touch the VM.
+- The single inference slot runs one agent at a time anyway. The order above is the critical-path order, not a concurrency plan.
+
+### Critical path
+
+2 → 4 → 5 → 6 → 7 (longest chain, the fix branch). Items 1 and 3 are off-critical. Running them before or after does not extend the chain.

@@ -14,7 +14,7 @@ stale entry means the whole loop runs on bad information.*
 
 ### 2026-10-13: items 1-4 complete; classification (b) upstream Cinnamon behavior; item 5 skipped (N/A); item 6 is Big's
 
-Tails executed ## Plan items 1-4 (evidence in ## Implementation). Reproduces on both VMs (controlled launches, exact traceback at `cs_power.py:883`, D-Bus `Unauthorized (36)`; `cs_power.py` md5 identical on both VMs and in the canonical checkout). Root cause: the answering service is base-OS `tuned-ppd` (owns both candidate names; `power-profiles-daemon` not installed); the rejection is inside the service — polkit gate on `Set`/`ActiveProfile`, action `net.hadess.PowerProfiles.switch-profile` requires interactive auth; SELinux ruled out. Classification (b) upstream Cinnamon behavior (unguarded init self-trigger); excludes the port-bug and environment-configuration boxes. Item 5 skipped (fix path N/A in this environment); item 6 (final verdict) is Big's. Shadow done: no blockers; five findings (3 should-fix — user-click path untested vs intake Unknown "functionality degraded?", `allow_active` misattribution sentence, redundant no-op `Set` unstated; 2 nit — service-code citation path, Vector PPD-comparison scope note). Omega done: two findings — high/secrets = the standing TASK-0033 `~/AI/secrets/` mode step-stop (already blocked there for operator action); medium/authz confirms Shadow finding 2 (misdirection real; the only sanctioned fix location is upstream Cinnamon code). Standing PAT origin-URL risk verified resolved (plain origin URL, no repo credential, `~/.git-credentials` mode 600). Big done: PASS, zero FAILs; final verdict in ## Test Results (6 checks requested, 5 executed, 1 N/A — item 5 conditional branch not taken); TASK-0026 DoD box 2 stays open for the Power pane until upstream changes, this doc is the standing reference. Charmy done: pass, no license work this task; out-of-domain flag — live PAT embedded in the project root repo's local origin URL (distinct instance from the `cinnamon/` subrepo URL Omega verified plain). Next: Tails fix round (Shadow should-fix 1-3 + nits 4-5; Omega's high stays the operator-owned TASK-0033 step-stop). Tails fix round done: all five carried items addressed in ## Implementation with new evidence (user-click flagged inferred-not-tested, intake Unknown resolved, misattribution corrected with `polkit.py:24 flags = 1`, no-op `Set` framed, citations completed, Note for Vector recorded). Re-run the chain: Shadow done — clean, all five items verified resolved, no new findings. Next: Omega re-run — done, clean (medium/authz resolved against the corrected text; high stays the operator-owned TASK-0033 step-stop). Next: Big re-run — done: PASS, re-verified (fix-round claims independently spot-checked; no-op chain verified end-to-end from source; PASS strengthened, not reversed). Next: Charmy re-run — done: clean (license-neutral fix round; pass verdict stands). Re-run chain fully clean. Vector done: README third known-issue paragraph added (uncommitted, rides the canonical push per the TASK-0026/0027 precedent), upstream report for `linuxmint/cinnamon` drafted in ## Docs (operator step-stop per AGENTS.md §8, not submitted), no other doc change needed. Next: Knuckles.
+Tails executed ## Plan items 1-4 (evidence in ## Implementation). Reproduces on both VMs (controlled launches, exact traceback at `cs_power.py:883`, D-Bus `Unauthorized (36)`; `cs_power.py` md5 identical on both VMs and in the canonical checkout). Root cause: the answering service is base-OS `tuned-ppd` (owns both candidate names; `power-profiles-daemon` not installed); the rejection is inside the service — polkit gate on `Set`/`ActiveProfile`, action `net.hadess.PowerProfiles.switch-profile` requires interactive auth; SELinux ruled out. Classification (b) upstream Cinnamon behavior (unguarded init self-trigger); excludes the port-bug and environment-configuration boxes. Item 5 skipped (fix path N/A in this environment); item 6 (final verdict) is Big's. Shadow done: no blockers; five findings (3 should-fix — user-click path untested vs intake Unknown "functionality degraded?", `allow_active` misattribution sentence, redundant no-op `Set` unstated; 2 nit — service-code citation path, Vector PPD-comparison scope note). Omega done: two findings — high/secrets = the standing TASK-0033 `~/AI/secrets/` mode step-stop (already blocked there for operator action); medium/authz confirms Shadow finding 2 (misdirection real; the only sanctioned fix location is upstream Cinnamon code). Standing PAT origin-URL risk verified resolved (plain origin URL, no repo credential, `~/.git-credentials` mode 600). Big done: PASS, zero FAILs; final verdict in ## Test Results (6 checks requested, 5 executed, 1 N/A — item 5 conditional branch not taken); TASK-0026 DoD box 2 stays open for the Power pane until upstream changes, this doc is the standing reference. Charmy done: pass, no license work this task; out-of-domain flag — live PAT embedded in the project root repo's local origin URL (distinct instance from the `cinnamon/` subrepo URL Omega verified plain). Next: Tails fix round (Shadow should-fix 1-3 + nits 4-5; Omega's high stays the operator-owned TASK-0033 step-stop). Tails fix round done: all five carried items addressed in ## Implementation with new evidence (user-click flagged inferred-not-tested, intake Unknown resolved, misattribution corrected with `polkit.py:24 flags = 1`, no-op `Set` framed, citations completed, Note for Vector recorded). Re-run the chain: Shadow done — clean, all five items verified resolved, no new findings. Next: Omega re-run — done, clean (medium/authz resolved against the corrected text; high stays the operator-owned TASK-0033 step-stop). Next: Big re-run — done: PASS, re-verified (fix-round claims independently spot-checked; no-op chain verified end-to-end from source; PASS strengthened, not reversed). Next: Charmy re-run — done: clean (license-neutral fix round; pass verdict stands). Re-run chain fully clean. Vector done: README third known-issue paragraph added (uncommitted, rides the canonical push per the TASK-0026/0027 precedent), upstream report for `linuxmint/cinnamon` drafted in ## Docs (operator step-stop per AGENTS.md §8, not submitted), no other doc change needed. Knuckles done 2026-10-13: all five DoD boxes ticked (box 4 N/A — conditional box, classification (b); box 5 per Big's verdict), planning doc committed and pushed (`ab4fcba`), canonical README known-issue committed as `22aa49c` (branch now 8 ahead, rides the held push), upstream report draft stays an operator step per §8, no GitHub Issue exists to close. **Task DONE at team level 2026-10-13**; the canonical push and the upstream report submission are the operator's steps per ## Release. Espio prune pass complete 2026-10-13 (6 chunks; ~145 lines of superseded plan/fix record to ## Archive; see ## Archive prune log; doc now 859 lines).
 
 ### 2026-10-10: intake — Power pane D-Bus `Unauthorized (36)` error split out of the TASK-0034/TASK-0026 Big gate findings
 
@@ -59,7 +59,7 @@ Source: planning/docs/TASK-0034-cinnamon-shell-no-render.md `## Test Results`, d
 - [x] `Big`: re-run — re-verify the final verdict in ## Test Results against the post-fix ## Implementation; third of the re-run chain, write the verdict to ## Test Results. (done 2026-10-13: PASS re-verified, see ## Test Results)
 - [x] `Charmy`: re-run — re-verify license compliance against the post-fix ## Implementation; fourth of the re-run chain, write the verdict to ## License (Charmy). (done 2026-10-13: clean, see ## License (Charmy))
 - [x] `Vector`: update README/docs to match the implementation (diagnosis, no code change); handle the Note for `Vector` recorded in ## Implementation (upstream report framing, missing PPD-comparison data point, external-repo issue is an operator step-stop per AGENTS.md §8). Write what changed to ## Docs. (done 2026-10-13, see ## Docs)
-- [ ] `Knuckles`: release step — verify the DoD checklist, commit + push what is pushable per house rules, handle the uncommitted canonical-repo README change (rides the push) and the upstream-report draft in ## Docs (external repo, operator step-stop per §8), record exact operator steps where the standing TASK-0033 rotation step-stop blocks a push, close the GitHub Issue for this task if one exists. Write the outcome to ## Release.
+- [x] `Knuckles`: release step — verify the DoD checklist, commit + push what is pushable per house rules, handle the uncommitted canonical-repo README change (rides the push) and the upstream-report draft in ## Docs (external repo, operator step-stop per §8), record exact operator steps where the standing TASK-0033 rotation step-stop blocks a push, close the GitHub Issue for this task if one exists. Write the outcome to ## Release. (done 2026-10-13, see ## Release)
 
 ---
 
@@ -67,40 +67,7 @@ Source: planning/docs/TASK-0034-cinnamon-shell-no-render.md `## Test Results`, d
 
 *Owner: `Amy`.*
 
-**Why this task exists** — TASK-0026 DoD box 2 ("all panes ... load without console errors")
-stays open on this task's verdict (TASK-0026 `## Status` 2026-10-10 decision). The 2026-10-08
-Big 12-pane gate (TASK-0034 `## Test Results`, dated Big entry) found exactly one console error
-of 12 panes: the Power pane (`power` module, `cs_power.py`) traceback at `cs_power.py:883
-on_my_value_changed`, D-Bus `Unauthorized (36)`, process survived, killed by recorded pid;
-the other 11 panes clean (ERR_LINES=0, stderr empty). This task is that diagnosis, split out of
-the gate per the recorded PM decision. It serves the project goal of a clean, verifiable Cinnamon
-port on Rocky 10.
-
-**What it unblocks / what blocks it** — Unblocks: TASK-0026 DoD box 2, then the TASK-0026
-release gate (the signed rebuild, whose publish is already held on the operator PAT rotation in
-TASK-0024/TASK-0033 territory); a console-clean 12-pane gate once the no-render state is resolved;
-the Power-pane behavior record for an upstream report. Blocks it: nothing in this repo, no CI.
-Everything blocking is external: `Rocky_Linux_10_Cinnamon` (192.168.122.4) and
-`Fedora_45_Cinnamon` (192.168.122.176) VM state, the operator's live desktop on Rocky
-(session 2, Wayland), and only if the classification is upstream behavior, the upstream Cinnamon
-repo (out of scope; an external issue is a step-stop per AGENTS.md section 8).
-
-**MVP** — DoD boxes 1-3: root cause with command + output evidence, reproduction on
-`Fedora_45_Cinnamon` (reproduces or does not, with evidence), classification. That is the value:
-TASK-0026 box 2 needs a verdict either way. DoD box 4 (fix) is the conditional branch, not the
-default (see A5: a port-introduced defect is effectively pre-ruled-out). Screenshot-level
-verification is not deferred, it is impossible under the no-render limitation (A7); process-level
-only.
-
-**What this makes harder later.** (a) If item 5 runs, the fix is a ninth dirty port file in the
-`cinnamon/` checkout, one more upstream divergence to reconcile at every future sync, and the
-ported file no longer matches upstream line-for-line (the diff must be recorded in
-`## Implementation`). (b) If the verdict is upstream behavior, the traceback persists on both VMs
-until upstream changes; the 12-pane gate's console-clean criterion stays open for the Power pane,
-and this doc is the standing reference for that gate. (c) If the verdict is environment
-configuration (a policy file on the Rocky guest), the fix lives in guest state, not in this repo;
-`## Implementation` must record the working state in copyable form (file path plus content, or
-package version).
+Plan executed 2026-10-12/13: items 1-4 and 6 done, item 5 skipped N/A (classification (b) upstream behavior). The preamble ("why this task exists", "what it unblocks / what blocks it", "MVP", "what this makes harder later") moved to `## Archive` as superseded by the executed `## Implementation`; assumptions A1-A9 below stay in place as the cited register.
 
 **Assumptions** (stated, not silent):
 - A1. Login `howard`, password at `~/AI/secrets/pass.txt` (verified present, 9 bytes, mode 644;
@@ -148,91 +115,6 @@ package version).
   2026-10-12: `git rev-parse --is-shallow-repository` = true, no tags, HEAD `61695c7` one ahead
   of `origin/master` `e9ba28a`). File-version comparison across VMs must be done on the installed
   files (md5), not from local tags.
-
-**Work breakdown** — one agent, one item, one turn. Briefs point at this doc; they do not restate
-evidence. Record one-line findings plus the command that produced each (no log dumps). Every
-guest command over SSH as `howard` via `sshpass -f`; every `virsh` with `-c qemu:///system`.
-
-| # | Item | Owner agent | Acceptance criterion | Parallel with |
-|---|---|---|---|---|
-| 1 | Rocky controlled reproduction. Preflight: `virsh -c qemu:///system list` plus `snapshot-list` (record the `2026-10-07-task0034-pre` checkpoint state). Check the guest `/tmp/big-t0034-app-05.log` (2026-10-08 Power pane log) for presence, record its `Found power profiles on Dbus at <name>` line if present. Then one `cinnamon-settings power` launch on `Rocky_Linux_10_Cinnamon` with the session 2 env replay per the 2026-10-08 gate procedure (`setsid env <session env>`, pidfile, stderr log), killed by the recorded pid; record the launch time (disturbance record) | `Tails` | Dated `## Implementation` entry: reproduces (traceback at `cs_power.py:883` with the `Unauthorized (36)` string) or does not; the matched dbus_name from the `:217` print; launch pid plus kill confirmed; old-log state (present with the line, or absent) | Blocks 2 |
-| 2 | Rocky root cause. Identify the service and the rejection layer: `busctl --system list` (which of the two names is present); `busctl --system introspect <name> <path>` for `org.freedesktop.DBus.Properties` and the service's own interface (`ActiveProfile` property flags; whether a dedicated setter method exists, e.g. `SetActiveProfile`; the advertised `Set` in-arg signature); `rpm -q`/`rpm -qf` for the service's D-Bus policy file (from `rpm -ql <pkg>`, expect `/usr/share/dbus-1/system.d/`) and for the installed `cs_power.py`; read the policy file and record the lines that bear on `ActiveProfile`/`Set`; polkit action files for power; `systemctl status` of the service unit; raw reproduction as `howard` over the system bus of `Properties.Set` with (dbus_name, "ActiveProfile", variant) via `dbus-send --print-reply` (or `gdbus call`) yielding the exact D-Bus error name plus text; control: the same `Properties.Get ActiveProfile` succeeds; system journal for the service around the item 1 window (dbus-daemon denial, polkit decision, SELinux denials via the audit stream) | `Tails` | Root-cause statement with command + output per fact: the exact D-Bus error name on the wire; the rejecting component (daemon policy file:line, or service property flag, or polkit action, or SELinux denial with context); service package name plus version; guest `cs_power.py` md5 | Depends on 1 |
-| 3 | Fedora reproduction. One `cinnamon-settings power` launch on `Fedora_45_Cinnamon` (X11): capture the session env from the running session process (`tr '\0' '\n' < /proc/<pid>/environ`; rediscover the pid via `loginctl list-sessions` plus `pgrep -u howard` if it changed), `setsid env <session env>`, pidfile, stderr log, killed by the recorded pid; then `rpm -qf` of the installed `cs_power.py` (package plus version), the file md5 on both VMs, the matched dbus_name from the pane log, `busctl --system list` for the power names | `Tails` | Dated `## Implementation` entry: reproduces or does not (evidence is the stderr line); Fedora service identity (name, package, version); cross-VM `cs_power.py` md5 (same or different; if different, both recorded) | Independent of 1, 2 |
-| 4 | Classification plus fix-path decision. Exactly one of: (a) Cinnamon port bug, (b) upstream Cinnamon behavior (unmodified code; reproduces on both VMs against base-OS services), (c) VM session/environment configuration (base-OS package/policy difference on Rocky), with evidence from items 1-3; fix-path decision: in-environment fix only if a port-introduced defect is found (item 5 runs), otherwise N/A with what would settle it recorded | `Tails` | Dated `## Implementation` entry: the classification line plus the fix-path decision plus the reasoning, citing items 1-3 | Depends on 2, 3 |
-| 5 | Fix (only if item 4 says fixable in this environment). Implement in the canonical checkout `cinnamon/files/usr/share/cinnamon/cinnamon-settings/modules/cs_power.py` (dirty-tree practice; commit at checkpoint). Candidate fix shapes (item 4 picks on item 2 evidence): call the service's dedicated setter method instead of `Properties.Set`; suppress the startup self-trigger (block `changed` during `on_my_setting_changed` so pane init does not send `Set`); or wrap `:883` in try/except per the existing style at `:893-894`. Verification is file-level on the guest: record the pre-place md5, place the file, re-run the single Power-pane launch | `Tails` | DoD box 4: dated `## Implementation` entry with the Changes table row and process-level evidence: no D-Bus `Unauthorized` traceback in stderr, app survives (pid alive after launch), killed by the recorded pid; pre-place md5 recorded | Depends on 4 (skipped if N/A) |
-| 6 | Final verdict. `## Test Results`: checks requested vs run; verdict prose covering DoD boxes 1-5 (root cause, reproduction, classification, fix status or N/A); the 2026-10-08 12-pane gate recorded as reference (no gate re-run: the Power pane is the only in-scope pane, the other 11 are clean per the gate) | `Big` | All DoD boxes verifiable from the doc; checks table complete; verdict prose names each FAIL's evidence and owner | Depends on 5, or on 4 |
-
-**Dependencies and sequence.** 1 to 2 to 4 to 6, with 3 **independent of 1-2, explicitly**
-(different VM, no shared state) and merging at 4; 5 is a conditional branch off 4 (skipped when
-the fix path is N/A, which is the expected path per A5). The single inference slot forces a
-physical order; the suggested order is 1, 2, 3, 4, (5), 6 (Rocky work together, then Fedora, then
-classification).
-
-**Critical path.** 1 to 2 to 4 to 5 to 6: 5 turns when a fix applies; 1 to 2 to 4 to 6: 4 turns
-on the expected no-fix path (3 inserted before 4). The longest dependent chain is 1-2-4-5-6.
-
-**Estimates** (hours; three-point `T = (O + 4M + P) / 6`):
-
-| # | Item | O | M | P | T |
-|---|---|---|---|---|---|
-| 1 | Rocky controlled reproduction | 0.5 | 1 | 2 | 1.2 |
-| 2 | Rocky root cause | 1 | 2 | 4 | 2.3 |
-| 3 | Fedora reproduction | 0.5 | 1 | 2 | 1.2 |
-| 4 | Classification plus fix decision | 0.5 | 1 | 2 | 1.1 |
-| 5 | Fix plus verify (conditional) | 1 | 2 | 4 | 2.3 |
-| 6 | Big verdict | 0.5 | 1 | 2 | 1.1 |
-| | **Total nominal** | | | | **9.2** |
-
-Buffer: two live VMs (one of them the operator's desktop), unknown root cause, single inference
-slot: +35% (about 3.2 h). **Planned total about 12 h** with the fix path; about 10 h without.
-
-**Risks.**
-
-| Risk | Likelihood | Impact | Mitigation | Contingency |
-|---|---|---|---|---|
-| Old gate log `/tmp/big-t0034-app-05.log` gone (guest reboot or tmpfs since 2026-10-08) | Medium | Low (the re-run is primary evidence anyway) | Item 1 checks and records either state | None needed; item 1's launch re-establishes the traceback |
-| Item 1/3 launches disturb the operator's live desktop (Rocky session 2) | Certain (small) | Medium | Accepted-disturbance precedent (the 2026-10-08 gate ran exactly this); single launch, killed by recorded pid (never `pkill -f`), short window, time recorded in `## Implementation` | Reschedule if the operator is active (PM judgment); no snapshot needed (no state change beyond launch/kill) |
-| Reproduction nondeterministic (clean launch on re-run) | Low | High (root cause blocked) | Item 1: up to 3 controlled re-runs with the state recorded each time (service active, `Get` results); if still clean, proceed to item 2 on the recorded 2026-10-08 gate evidence | Verdict "not reproducible on the re-run date; root cause bounded to the gate window"; classification proceeds with the bounded uncertainty stated |
-| Error string ambiguous (A6: AccessDenied vs PropertyReadOnly) | Medium | Medium | Item 2's raw wire reproduction reads the exact D-Bus error name; no reliance on memory of the enum | If the wire name matches neither candidate, record the raw name and re-derive the mapping |
-| Fedora session env capture fails (session leader pid changed or session dead) | Low | Medium (item 3 blocked) | Rediscover via `loginctl list-sessions` plus `pgrep -u howard`; `/proc/<pid>/environ` is readable by the owner (`howard`) | If the X11 session is dead, the reproduction needs an operator re-login: record and stop, PM judgment (no automated re-login) |
-| SELinux denials on Rocky mask a polkit/permission denial as `Unauthorized` | Low | Medium | Item 2 checks the audit stream around the item 1 window | Record the denials plus context; classification is environment (SELinux) with the policy note |
-| Item 5 leaves the guest file diverged from the -4 payload | Certain if 5 runs | Low | Pre-place md5 recorded; `rpm -V` state recorded | Rollback restores the pre-place file (see Rollback) |
-| 32k turn cap truncates an evidence-heavy turn (section 14) | Medium | Medium | Briefs carry at most three file edits; one-line findings plus commands, no output dumps; small passes | Re-dispatch with a smaller brief; detect via the session DB (`finish: "length"`, `tokens.output = 32000`) |
-| PAT embedded in the `cinnamon/` subrepo origin URL (local `.git/config`, uncommitted, never pushed; the value is never written to any doc) | Standing | High if leaked | Flagged for Omega in `## Security`; no command in this plan pushes from that checkout | Rotation per the TASK-0033 `## Security` step (operator-owned); not touched by this task |
-| `~/AI/secrets/pass.txt` mode is 644 (AGENTS.md section 4 requires 600/700) | Standing | Medium | Flagged for Omega; this task uses `sshpass -f` only, never cats, never writes | Operator chmod (operator-owned, not an agent step) |
-| No-render: window-level verification impossible | Certain | Low (DoD scoped to process level) | A7; the verdict is process-level only | Re-verification deferred until the no-render state is resolved (TASK-0026/TASK-0034 territory) |
-
-**Validation.** Environment: `Rocky_Linux_10_Cinnamon` (192.168.122.4) and
-`Fedora_45_Cinnamon` (192.168.122.176); every `virsh` with `-c qemu:///system`; SSH as `howard`
-via `sshpass -f` (password never written); console/stderr evidence only (A7). Checks:
-(1) item 1's entry shows the reproduction (or bounded non-reproduction) plus the matched
-dbus_name; (2) item 2's entry shows the exact D-Bus error name on the wire plus the rejecting
-component with file:line; (3) item 3's entry shows the Fedora reproduction yes/no plus the
-`cs_power.py` md5 on both VMs plus package identity; (4) item 4's entry shows exactly one
-classification line plus the fix decision; (5) if item 5 ran: pre/post md5 plus the clean
-single-pane re-run (no `Unauthorized` traceback in stderr, pid alive after launch, killed by
-pid); (6) `## Test Results` (`Big`) shows checks requested vs run with the 2026-10-08 gate
-recorded as reference. No human-look pages: nothing is published, nothing is pushed, the
-`cinnamon/` checkout is never pushed. TASKS.md row status is `Robotnik`'s.
-
-**Rollback.** Detection: item 5's re-run still shows the `Unauthorized` traceback (fix
-ineffective) or shows a new traceback (fix regression); a launched process left running
-(`pgrep` check after each kill); a guest `cs_power.py` md5 drift not recorded in
-`## Implementation`. Exact reverts:
-- No item 5 ran: nothing to revert. Items 1-3 are launches plus read-only probes; every launch is
-  killed by its recorded pid; pidfiles are recorded.
-- Item 5 ran: restore the pre-place `cs_power.py` (md5 recorded in the item 5 entry), re-run the
-  single Power-pane launch, record the state. The baseline state has the traceback (that is the
-  pre-fix state); restoring it is the rollback, not a new defect.
-- Source checkout: the item 5 change is uncommitted dirty per practice; revert is
-  `git -C ~/Linux/projects/cinnamon-for-rocky10/cinnamon checkout -- files/usr/share/cinnamon/cinnamon-settings/modules/cs_power.py`
-  (restores the HEAD `61695c7` content). If committed at checkpoint, `git revert <sha>`.
-- VM level (only if a VM is left in a worse state): item 1 re-verifies `virsh -c qemu:///system
-  snapshot-list`; the Rocky checkpoint `2026-10-07-task0034-pre` (running, Current) and the
-  Fedora `2026-10-04T11:37` (shutoff) are the revert assets (both verified present in the
-  2026-10-08/2026-10-10 entries).
-- Point of no return: none. No published artifact is touched, nothing is pushed, the -4 RPM
-  stays in `rpms-local/`, and the snapshots are intact.
 
 ---
 
@@ -320,13 +202,6 @@ ineffective) or shows a new traceback (fix regression); a launched process left 
 - Cited-file full guest paths plus owning package (nit 4): `rpm -qf /usr/lib/python3.12/site-packages/tuned/exports/dbus_exporter.py /usr/lib/python3.12/site-packages/tuned/exports/dbus_exporter_with_properties.py` → both `tuned-2.27.0-2.el10_2.noarch`; `rpm -ql tuned-ppd` → only `/etc/tuned/ppd.conf`, `/usr/lib/systemd/system/tuned-ppd.service`, `/usr/sbin/tuned-ppd` (the python tree is owned by `tuned`, not `tuned-ppd`).
 - polkit agent availability (bounds the live-desktop inference): `rpm -qa | grep -iE "keyring|cinnamon-polkit|polkit-agent"` → `gnome-keyring-42.1-20.el10.x86_64` (plus `gnome-keyring-pam-42.1-20.el10.x86_64`, `polkit-125-4.el10_2.1`, `polkit-libs-125-4.el10_2.1`, `polkit-pkla-compat-0.1-30.el10.x86_64`); `pgrep -af "polkit-agent|pk-agent|keyring-daemon"` → `2873 /usr/bin/gnome-keyring-daemon --daemonize --login` (running). So a polkit agent is installed and running for the login session (`gnome-keyring-daemon`, which registers a polkit agent; no general `cinnamon-polkit` agent was found in the installed set), though no-render prevents confirming which agent (if any) is attached to session 2 for the `switch-profile` action specifically; no agent process was attached to the caller in the tested `setsid` env-replay context (the captured env had no `PA_SESSION_ID`), which is why the tested check returned not-authorized.
 - No-op confirmation (should-fix 3): `sed -n '875,895p'` of the canonical checkout `cs_power.py` → `:891` `active_profile = self.proxy.Get('(ss)', self.dbus_name, "ActiveProfile")` (succeeds), `:892` `self.content_widget.set_active_iter(self.option_map[active_profile])` (sets the combo, firing `changed`), and `:878-883` `on_my_value_changed` where `:883` `self.proxy.Set('(ssv)', self.dbus_name, "ActiveProfile", value)` writes back `value` = the combo's current profile = the just-read `active_profile`. So the startup `:883` `Set` is a no-op (writes back the value read at `:891`), and the combo is set at `:892` before the failing `Set`.
-
-**Fixes applied (this section).**
-- Finding 1 (user-click path / intake Unknown line 34): the click case is now flagged as INFERRED-not-tested in item 4 (the same `on_my_value_changed` → `:883` → interactive check; the live-desktop outcome is inferred from `polkit.py:24` `flags=1` plus the running `gnome-keyring-daemon` agent, not live-tested under no-render), and intake Unknown line 34 is resolved: display intact (no-op, combo set at `:892` before the failing `:883` `Set`), profile switching auth-gated by design (the service's interactive polkit check; a live-desktop click prompts and succeeds with the password, a non-agent context fires the `:883` traceback). See the Alternative entry above for why a live click test was not run.
-- Finding 2 (misattribution, corroborated by Omega medium/authz): the item 2 polkit bullet and the root-cause statement now restate that `allow_active=yes` is permissive and the denial is the unsatisfied interactive check in a non-agent context, citing `tuned/utils/polkit.py:24` `flags=1`.
-- Finding 3 (no-op framing): the root-cause statement now states the `:883` startup `Set` is a no-op (writes back the `:891` read), the combo is set at `:892` before it, and the displayed value is correct.
-- Nit 4 (full path): the service-code bullet and root-cause statement now cite the full guest path `/usr/lib/python3.12/site-packages/tuned/exports/dbus_exporter_with_properties.py:49` plus the owning package `tuned-2.27.0-2.el10_2`.
-- Nit 5 (PPD comparison): recorded below as an explicit note for `Vector`.
 
 **Note for `Vector` (upstream report; Shadow nit 5, out-of-scope evidence).** The (b) classification and root cause are established for THIS environment (base-OS `tuned-ppd`, polkit-gated, interactive check). Whether upstream Mint's default service (`power-profiles-daemon`, not installed here) exhibits the same `:883` traceback is NOT verified by this task and is the missing piece for the report's framing: it decides whether the issue is (i) a Cinnamon bug reproducing against Cinnamon's own default service (PPD) or (ii) a Cinnamon-meets-tuned-ppd integration issue. Settling it requires a scratch VM with `power-profiles-daemon` installed, repeating the single Power-pane launch, and observing whether the `:883` traceback fires. That comparison is OUT OF SCOPE for this diagnostic task (it is a second environment, not the one under diagnosis); record it as the report's open framing question, not a defect of this task.
 
@@ -565,27 +440,8 @@ DoD boxes:
 
 Open items carried forward (none is a FAIL of this task's DoD; none is a harness bug; all bear on
 the diagnostic record):
-- **Owner `Tails`, before `Vector`'s upstream report** — Shadow should-fix #1: the user-click path
-  is untested. Item 4's "any non-root session raises the traceback" is verified only for the
-  startup self-trigger; the user-initiated profile switch (the same `:883`) is inferred, and
-  intake Unknown (line 34, pane functionality degraded?) is left open. Under no-render,
-  UI-level click testing is impossible (an interactive polkit dialog needs a live display plus
-  agent). The residual uncertainty bounds the upstream report's severity framing (pane functionally
-  intact if the click's check is interactive; user cannot switch profiles if it is non-interactive),
-  not this task's DoD.
-- **Owner `Tails`** — Shadow should-fix #2, corroborated by Omega medium/authz: the polkit
-  sentence in item 2 and in the root-cause statement misattributes the denial to
-  `allow_active=yes` (permissive); the denial is the non-interactive startup check. Must be
-  corrected before `Vector` drafts: the misreading points at the polkit action as the defect, and
-  a fix following it (guest policy edit) would be a security weakening per Omega.
-- **Owner `Tails`** — Shadow should-fix #3: state that the `:883` `Set` is a no-op (writes back the
-  profile just read at `:891`) and that the combo is set at `:892` before the failing `Set`, so
-  the displayed value is correct.
-- **Owner `Tails`** — Shadow nit #4: add the full guest path to the
-  `dbus_exporter_with_properties.py:49` citation.
-- **Owner `Vector` (note, out-of-scope evidence)** — Shadow nit #5: the PPD comparison (install
-  `power-profiles-daemon` in a scratch VM, repeat the launch) settles the upstream report's
-  framing; recorded as not provided by this task.
+(Shadow should-fix 1-3 and nits 4-5 resolved in the 2026-10-13 fix round and re-verified in the
+re-run record below; original wording moved to ## Archive.)
 - **Owner operator (standing; not this task's failure)** — Omega high/secrets: `~/AI/secrets/`
   directory 755 and files 644 (AGENTS.md section 4 requires 700/600) — the standing TASK-0033
   step-stop, already blocked there for operator action. This task's own `pass.txt` handling was
@@ -810,6 +666,10 @@ Searched open issues in `metalllinux/cinnamon-for-rocky10` and `metalllinux/team
 
 This doc is committed to `main` (`chore(planning)` checkpoint convention, no feature branch for planning-doc state) and pushed to `origin` on `metalllinux/team-chaotix` (in-account, standing autonomy); this entry lands as the commit recording the step, pushed in the same sequence. Working tree state: the out-of-scope entries (`cinnamon-1-vm.xml`, `planning/docs/TASK-0027-cinnamon-brightness-fix.md`, `planning/docs/TASK-0034-cinnamon-shell-no-render.md`, and the untracked `-`, `continue-prompt-2026-10-05.md`, `prompt-task0026-continuation.md`) are excluded from the commit and left untouched, per the TASK-0026 `## Release` precedent.
 
+### Final bookkeeping commit (2026-10-13)
+
+The post-release state of this doc is committed to `main` as this commit and pushed to `origin` of `metalllinux/team-chaotix` (in-account standing autonomy; no feature branch, per the convention recorded above). Commit message: `chore(planning): record TASK-0027 and TASK-0035 post-release state (Status/Next Actions/Archive final, Espio prune, TASKS.md Done)`. The commit carries the final `## Status` / `## Next Actions` / `## Archive` state of this doc (the `Knuckles` line of `## Next Actions` checked against this step; the Espio prune pass, 6 chunks, per the `## Archive` prune log) and the `planning/TASKS.md` status update (this task to `Done`; TASK-0026 still `Blocked` with the updated box 2 reference). The out-of-scope working-tree entries named in the `team-chaotix push` subsection above are excluded from the commit and left untouched.
+
 ---
 
 ## Archive
@@ -822,4 +682,182 @@ user said are never deleted.*
 
 | Date | What was pruned or compressed | Rough size |
 |---|---|---|
-| | | |
+| 2026-10-13 | Plan preamble ("why this task exists", "what it unblocks / what blocks it", "MVP", "what this makes harder later") moved from ## Plan; superseded by the executed ## Implementation (items 1-4 and 6 done, item 5 skipped N/A); origin decision and 12-pane-gate facts survive in ## Status intake and the ## Test Results reference record | ~34 lines |
+| 2026-10-13 | Plan remainder (work breakdown table, dependencies and sequence, critical path, estimates, risks, validation, rollback) moved from ## Plan; superseded by the executed ## Implementation (items 1-4 and 6 done, item 5 skipped N/A); the standing risk rows (32k turn cap, no-render, secrets 644, PAT in the cinnamon/ subrepo origin URL) survive in AGENTS.md section 14, A7/DoD, and ## Security | ~84 lines |
+| 2026-10-13 | "Fixes applied (this section)" block (per-finding fix record, five bullets) moved from the ## Implementation fix-round entry; superseded by the in-place fixes in items 1-4, the fix round's Changes-table row, and the Shadow re-run in ## Review (each finding verified resolved); rest of span (items 1-4 evidence, classification and fix-path decision, fix-round new evidence, Note for Vector, Changes and Checks tables, Review findings 1-3) left in place as load-bearing | ~6 lines |
+| 2026-10-13 | Chunk 4 (## License through ## Test Results open items): Shadow should-fix 1-3 and nits 4-5 moved from ## Test Results "Open items carried forward"; resolved in the 2026-10-13 fix round, each resolution re-recorded in the section's re-run record; operator secrets step-stop item kept in place (still open); ## License span left as-is (license compliance notes, never deleted) | ~21 lines |
+| 2026-10-13 | Chunk 5 (## Docs span, lines 482-616): no-op. Entire span load-bearing: Vector's 2026-10-13 entry is the record of the shipped README "Known issue" paragraph plus verified no-change facts (CHANGELOG, INSTALL.md, team README, test-infra, published set); "Could not verify" is the open PPD-comparison framing question; the upstream report draft is the AGENTS.md section 8 step-stop artifact (status: draft only, not submitted; operator reviews/edits, only a separate request submits it), carrying verified environment/wire evidence, the open framing question, and the suggested fix | 0 lines |
+| 2026-10-13 | Chunk 6 (## Release through doc end, lines 617-858): no-op. Entire span load-bearing: ## Release is the current 2026-10-13 state (DONE checklist verified, branch/commit/PR records, canonical commit 22aa49c, push probe still failing at the credential stage under the standing TASK-0033 rotation step-stop with the six operator steps, upstream report draft at the AGENTS.md section 8 step-stop, GitHub issue search zero hits, team-chaotix push record); no superseded plan, narration, or resolved-and-shipped finding; the ## Archive body below (lines 671-858) was already moved by chunks 1-4 | 0 lines |
+
+### Plan preamble (moved from ## Plan, superseded by the executed ## Implementation)
+
+**Why this task exists** — TASK-0026 DoD box 2 ("all panes ... load without console errors")
+stays open on this task's verdict (TASK-0026 `## Status` 2026-10-10 decision). The 2026-10-08
+Big 12-pane gate (TASK-0034 `## Test Results`, dated Big entry) found exactly one console error
+of 12 panes: the Power pane (`power` module, `cs_power.py`) traceback at `cs_power.py:883
+on_my_value_changed`, D-Bus `Unauthorized (36)`, process survived, killed by recorded pid;
+the other 11 panes clean (ERR_LINES=0, stderr empty). This task is that diagnosis, split out of
+the gate per the recorded PM decision. It serves the project goal of a clean, verifiable Cinnamon
+port on Rocky 10.
+
+**What it unblocks / what blocks it** — Unblocks: TASK-0026 DoD box 2, then the TASK-0026
+release gate (the signed rebuild, whose publish is already held on the operator PAT rotation in
+TASK-0024/TASK-0033 territory); a console-clean 12-pane gate once the no-render state is resolved;
+the Power-pane behavior record for an upstream report. Blocks it: nothing in this repo, no CI.
+Everything blocking is external: `Rocky_Linux_10_Cinnamon` (192.168.122.4) and
+`Fedora_45_Cinnamon` (192.168.122.176) VM state, the operator's live desktop on Rocky
+(session 2, Wayland), and only if the classification is upstream behavior, the upstream Cinnamon
+repo (out of scope; an external issue is a step-stop per AGENTS.md section 8).
+
+**MVP** — DoD boxes 1-3: root cause with command + output evidence, reproduction on
+`Fedora_45_Cinnamon` (reproduces or does not, with evidence), classification. That is the value:
+TASK-0026 box 2 needs a verdict either way. DoD box 4 (fix) is the conditional branch, not the
+default (see A5: a port-introduced defect is effectively pre-ruled-out). Screenshot-level
+verification is not deferred, it is impossible under the no-render limitation (A7); process-level
+only.
+
+**What this makes harder later.** (a) If item 5 runs, the fix is a ninth dirty port file in the
+`cinnamon/` checkout, one more upstream divergence to reconcile at every future sync, and the
+ported file no longer matches upstream line-for-line (the diff must be recorded in
+`## Implementation`). (b) If the verdict is upstream behavior, the traceback persists on both VMs
+until upstream changes; the 12-pane gate's console-clean criterion stays open for the Power pane,
+and this doc is the standing reference for that gate. (c) If the verdict is environment
+configuration (a policy file on the Rocky guest), the fix lives in guest state, not in this repo;
+`## Implementation` must record the working state in copyable form (file path plus content, or
+package version).
+
+### Plan remainder (moved from ## Plan, superseded by the executed ## Implementation)
+
+**Work breakdown** — one agent, one item, one turn. Briefs point at this doc; they do not restate
+evidence. Record one-line findings plus the command that produced each (no log dumps). Every
+guest command over SSH as `howard` via `sshpass -f`; every `virsh` with `-c qemu:///system`.
+
+| # | Item | Owner agent | Acceptance criterion | Parallel with |
+|---|---|---|---|---|
+| 1 | Rocky controlled reproduction. Preflight: `virsh -c qemu:///system list` plus `snapshot-list` (record the `2026-10-07-task0034-pre` checkpoint state). Check the guest `/tmp/big-t0034-app-05.log` (2026-10-08 Power pane log) for presence, record its `Found power profiles on Dbus at <name>` line if present. Then one `cinnamon-settings power` launch on `Rocky_Linux_10_Cinnamon` with the session 2 env replay per the 2026-10-08 gate procedure (`setsid env <session env>`, pidfile, stderr log), killed by the recorded pid; record the launch time (disturbance record) | `Tails` | Dated `## Implementation` entry: reproduces (traceback at `cs_power.py:883` with the `Unauthorized (36)` string) or does not; the matched dbus_name from the `:217` print; launch pid plus kill confirmed; old-log state (present with the line, or absent) | Blocks 2 |
+| 2 | Rocky root cause. Identify the service and the rejection layer: `busctl --system list` (which of the two names is present); `busctl --system introspect <name> <path>` for `org.freedesktop.DBus.Properties` and the service's own interface (`ActiveProfile` property flags; whether a dedicated setter method exists, e.g. `SetActiveProfile`; the advertised `Set` in-arg signature); `rpm -q`/`rpm -qf` for the service's D-Bus policy file (from `rpm -ql <pkg>`, expect `/usr/share/dbus-1/system.d/`) and for the installed `cs_power.py`; read the policy file and record the lines that bear on `ActiveProfile`/`Set`; polkit action files for power; `systemctl status` of the service unit; raw reproduction as `howard` over the system bus of `Properties.Set` with (dbus_name, "ActiveProfile", variant) via `dbus-send --print-reply` (or `gdbus call`) yielding the exact D-Bus error name plus text; control: the same `Properties.Get ActiveProfile` succeeds; system journal for the service around the item 1 window (dbus-daemon denial, polkit decision, SELinux denials via the audit stream) | `Tails` | Root-cause statement with command + output per fact: the exact D-Bus error name on the wire; the rejecting component (daemon policy file:line, or service property flag, or polkit action, or SELinux denial with context); service package name plus version; guest `cs_power.py` md5 | Depends on 1 |
+| 3 | Fedora reproduction. One `cinnamon-settings power` launch on `Fedora_45_Cinnamon` (X11): capture the session env from the running session process (`tr '\0' '\n' < /proc/<pid>/environ`; rediscover the pid via `loginctl list-sessions` plus `pgrep -u howard` if it changed), `setsid env <session env>`, pidfile, stderr log, killed by the recorded pid; then `rpm -qf` of the installed `cs_power.py` (package plus version), the file md5 on both VMs, the matched dbus_name from the pane log, `busctl --system list` for the power names | `Tails` | Dated `## Implementation` entry: reproduces or does not (evidence is the stderr line); Fedora service identity (name, package, version); cross-VM `cs_power.py` md5 (same or different; if different, both recorded) | Independent of 1, 2 |
+| 4 | Classification plus fix-path decision. Exactly one of: (a) Cinnamon port bug, (b) upstream Cinnamon behavior (unmodified code; reproduces on both VMs against base-OS services), (c) VM session/environment configuration (base-OS package/policy difference on Rocky), with evidence from items 1-3; fix-path decision: in-environment fix only if a port-introduced defect is found (item 5 runs), otherwise N/A with what would settle it recorded | `Tails` | Dated `## Implementation` entry: the classification line plus the fix-path decision plus the reasoning, citing items 1-3 | Depends on 2, 3 |
+| 5 | Fix (only if item 4 says fixable in this environment). Implement in the canonical checkout `cinnamon/files/usr/share/cinnamon/cinnamon-settings/modules/cs_power.py` (dirty-tree practice; commit at checkpoint). Candidate fix shapes (item 4 picks on item 2 evidence): call the service's dedicated setter method instead of `Properties.Set`; suppress the startup self-trigger (block `changed` during `on_my_setting_changed` so pane init does not send `Set`); or wrap `:883` in try/except per the existing style at `:893-894`. Verification is file-level on the guest: record the pre-place md5, place the file, re-run the single Power-pane launch | `Tails` | DoD box 4: dated `## Implementation` entry with the Changes table row and process-level evidence: no D-Bus `Unauthorized` traceback in stderr, app survives (pid alive after launch), killed by the recorded pid; pre-place md5 recorded | Depends on 4 (skipped if N/A) |
+| 6 | Final verdict. `## Test Results`: checks requested vs run; verdict prose covering DoD boxes 1-5 (root cause, reproduction, classification, fix status or N/A); the 2026-10-08 12-pane gate recorded as reference (no gate re-run: the Power pane is the only in-scope pane, the other 11 are clean per the gate) | `Big` | All DoD boxes verifiable from the doc; checks table complete; verdict prose names each FAIL's evidence and owner | Depends on 5, or on 4 |
+
+**Dependencies and sequence.** 1 to 2 to 4 to 6, with 3 **independent of 1-2, explicitly**
+(different VM, no shared state) and merging at 4; 5 is a conditional branch off 4 (skipped when
+the fix path is N/A, which is the expected path per A5). The single inference slot forces a
+physical order; the suggested order is 1, 2, 3, 4, (5), 6 (Rocky work together, then Fedora, then
+classification).
+
+**Critical path.** 1 to 2 to 4 to 5 to 6: 5 turns when a fix applies; 1 to 2 to 4 to 6: 4 turns
+on the expected no-fix path (3 inserted before 4). The longest dependent chain is 1-2-4-5-6.
+
+**Estimates** (hours; three-point `T = (O + 4M + P) / 6`):
+
+| # | Item | O | M | P | T |
+|---|---|---|---|---|---|
+| 1 | Rocky controlled reproduction | 0.5 | 1 | 2 | 1.2 |
+| 2 | Rocky root cause | 1 | 2 | 4 | 2.3 |
+| 3 | Fedora reproduction | 0.5 | 1 | 2 | 1.2 |
+| 4 | Classification plus fix decision | 0.5 | 1 | 2 | 1.1 |
+| 5 | Fix plus verify (conditional) | 1 | 2 | 4 | 2.3 |
+| 6 | Big verdict | 0.5 | 1 | 2 | 1.1 |
+| | **Total nominal** | | | | **9.2** |
+
+Buffer: two live VMs (one of them the operator's desktop), unknown root cause, single inference
+slot: +35% (about 3.2 h). **Planned total about 12 h** with the fix path; about 10 h without.
+
+**Risks.**
+
+| Risk | Likelihood | Impact | Mitigation | Contingency |
+|---|---|---|---|---|
+| Old gate log `/tmp/big-t0034-app-05.log` gone (guest reboot or tmpfs since 2026-10-08) | Medium | Low (the re-run is primary evidence anyway) | Item 1 checks and records either state | None needed; item 1's launch re-establishes the traceback |
+| Item 1/3 launches disturb the operator's live desktop (Rocky session 2) | Certain (small) | Medium | Accepted-disturbance precedent (the 2026-10-08 gate ran exactly this); single launch, killed by recorded pid (never `pkill -f`), short window, time recorded in `## Implementation` | Reschedule if the operator is active (PM judgment); no snapshot needed (no state change beyond launch/kill) |
+| Reproduction nondeterministic (clean launch on re-run) | Low | High (root cause blocked) | Item 1: up to 3 controlled re-runs with the state recorded each time (service active, `Get` results); if still clean, proceed to item 2 on the recorded 2026-10-08 gate evidence | Verdict "not reproducible on the re-run date; root cause bounded to the gate window"; classification proceeds with the bounded uncertainty stated |
+| Error string ambiguous (A6: AccessDenied vs PropertyReadOnly) | Medium | Medium | Item 2's raw wire reproduction reads the exact D-Bus error name; no reliance on memory of the enum | If the wire name matches neither candidate, record the raw name and re-derive the mapping |
+| Fedora session env capture fails (session leader pid changed or session dead) | Low | Medium (item 3 blocked) | Rediscover via `loginctl list-sessions` plus `pgrep -u howard`; `/proc/<pid>/environ` is readable by the owner (`howard`) | If the X11 session is dead, the reproduction needs an operator re-login: record and stop, PM judgment (no automated re-login) |
+| SELinux denials on Rocky mask a polkit/permission denial as `Unauthorized` | Low | Medium | Item 2 checks the audit stream around the item 1 window | Record the denials plus context; classification is environment (SELinux) with the policy note |
+| Item 5 leaves the guest file diverged from the -4 payload | Certain if 5 runs | Low | Pre-place md5 recorded; `rpm -V` state recorded | Rollback restores the pre-place file (see Rollback) |
+| 32k turn cap truncates an evidence-heavy turn (section 14) | Medium | Medium | Briefs carry at most three file edits; one-line findings plus commands, no output dumps; small passes | Re-dispatch with a smaller brief; detect via the session DB (`finish: "length"`, `tokens.output = 32000`) |
+| PAT embedded in the `cinnamon/` subrepo origin URL (local `.git/config`, uncommitted, never pushed; the value is never written to any doc) | Standing | High if leaked | Flagged for Omega in `## Security`; no command in this plan pushes from that checkout | Rotation per the TASK-0033 `## Security` step (operator-owned); not touched by this task |
+| `~/AI/secrets/pass.txt` mode is 644 (AGENTS.md section 4 requires 600/700) | Standing | Medium | Flagged for Omega; this task uses `sshpass -f` only, never cats, never writes | Operator chmod (operator-owned, not an agent step) |
+| No-render: window-level verification impossible | Certain | Low (DoD scoped to process level) | A7; the verdict is process-level only | Re-verification deferred until the no-render state is resolved (TASK-0026/TASK-0034 territory) |
+
+**Validation.** Environment: `Rocky_Linux_10_Cinnamon` (192.168.122.4) and
+`Fedora_45_Cinnamon` (192.168.122.176); every `virsh` with `-c qemu:///system`; SSH as `howard`
+via `sshpass -f` (password never written); console/stderr evidence only (A7). Checks:
+(1) item 1's entry shows the reproduction (or bounded non-reproduction) plus the matched
+dbus_name; (2) item 2's entry shows the exact D-Bus error name on the wire plus the rejecting
+component with file:line; (3) item 3's entry shows the Fedora reproduction yes/no plus the
+`cs_power.py` md5 on both VMs plus package identity; (4) item 4's entry shows exactly one
+classification line plus the fix decision; (5) if item 5 ran: pre/post md5 plus the clean
+single-pane re-run (no `Unauthorized` traceback in stderr, pid alive after launch, killed by
+pid); (6) `## Test Results` (`Big`) shows checks requested vs run with the 2026-10-08 gate
+recorded as reference. No human-look pages: nothing is published, nothing is pushed, the
+`cinnamon/` checkout is never pushed. TASKS.md row status is `Robotnik`'s.
+
+**Rollback.** Detection: item 5's re-run still shows the `Unauthorized` traceback (fix
+ineffective) or shows a new traceback (fix regression); a launched process left running
+(`pgrep` check after each kill); a guest `cs_power.py` md5 drift not recorded in
+`## Implementation`. Exact reverts:
+- No item 5 ran: nothing to revert. Items 1-3 are launches plus read-only probes; every launch is
+  killed by its recorded pid; pidfiles are recorded.
+- Item 5 ran: restore the pre-place `cs_power.py` (md5 recorded in the item 5 entry), re-run the
+  single Power-pane launch, record the state. The baseline state has the traceback (that is the
+  pre-fix state); restoring it is the rollback, not a new defect.
+- Source checkout: the item 5 change is uncommitted dirty per practice; revert is
+  `git -C ~/Linux/projects/cinnamon-for-rocky10/cinnamon checkout -- files/usr/share/cinnamon/cinnamon-settings/modules/cs_power.py`
+  (restores the HEAD `61695c7` content). If committed at checkpoint, `git revert <sha>`.
+- VM level (only if a VM is left in a worse state): item 1 re-verifies `virsh -c qemu:///system
+  snapshot-list`; the Rocky checkpoint `2026-10-07-task0034-pre` (running, Current) and the
+  Fedora `2026-10-04T11:37` (shutoff) are the revert assets (both verified present in the
+  2026-10-08/2026-10-10 entries).
+- Point of no return: none. No published artifact is touched, nothing is pushed, the -4 RPM
+  stays in `rpms-local/`, and the snapshots are intact.
+
+### Fixes-applied record (moved from the ## Implementation fix-round entry; superseded)
+
+Per-finding record of the fixes the 2026-10-13 fix round applied. Superseded in place: the
+fixes live in items 1-4 of this section (the polkit restatement and no-op framing in the
+root-cause statement, the INFERRED-not-tested flag plus intake-Unknown resolution in item 4,
+the full guest path plus owning package in the service-code citation), the fix round's
+Changes-table row records the same five changes, and the Shadow re-run in ## Review verifies
+each finding resolved (Finding 1 through Nit 5 bullets). The Nit 5 bullet's "recorded below"
+pointer refers to the Note for `Vector`, which stays in the fix-round entry above.
+
+**Fixes applied (this section).**
+- Finding 1 (user-click path / intake Unknown line 34): the click case is now flagged as INFERRED-not-tested in item 4 (the same `on_my_value_changed` → `:883` → interactive check; the live-desktop outcome is inferred from `polkit.py:24` `flags=1` plus the running `gnome-keyring-daemon` agent, not live-tested under no-render), and intake Unknown line 34 is resolved: display intact (no-op, combo set at `:892` before the failing `:883` `Set`), profile switching auth-gated by design (the service's interactive polkit check; a live-desktop click prompts and succeeds with the password, a non-agent context fires the `:883` traceback). See the Alternative entry above for why a live click test was not run.
+- Finding 2 (misattribution, corroborated by Omega medium/authz): the item 2 polkit bullet and the root-cause statement now restate that `allow_active=yes` is permissive and the denial is the unsatisfied interactive check in a non-agent context, citing `tuned/utils/polkit.py:24` `flags=1`.
+- Finding 3 (no-op framing): the root-cause statement now states the `:883` startup `Set` is a no-op (writes back the `:891` read), the combo is set at `:892` before it, and the displayed value is correct.
+- Nit 4 (full path): the service-code bullet and root-cause statement now cite the full guest path `/usr/lib/python3.12/site-packages/tuned/exports/dbus_exporter_with_properties.py:49` plus the owning package `tuned-2.27.0-2.el10_2`.
+- Nit 5 (PPD comparison): recorded below as an explicit note for `Vector`.
+
+### Open items carried forward (moved from ## Test Results; resolved by the fix round)
+
+The original carried items from `## Test Results` "Open items carried forward" (Shadow should-fix
+1-3, nits 4-5), with their owners; the operator secrets step-stop item was not moved (still open,
+stays in place). Resolved in the 2026-10-13 fix round; each resolution is re-recorded in `## Test
+Results` 2026-10-13 re-run record ("Carried-forward open items"). Kept for the original wording
+the resolutions do not restate: #1's severity-framing bound (pane functionally intact if the
+click's check is interactive; user cannot switch profiles if it is non-interactive) and #5's
+settling method (install `power-profiles-daemon` in a scratch VM, repeat the launch).
+
+- **Owner `Tails`, before `Vector`'s upstream report** — Shadow should-fix #1: the user-click path
+  is untested. Item 4's "any non-root session raises the traceback" is verified only for the
+  startup self-trigger; the user-initiated profile switch (the same `:883`) is inferred, and
+  intake Unknown (line 34, pane functionality degraded?) is left open. Under no-render,
+  UI-level click testing is impossible (an interactive polkit dialog needs a live display plus
+  agent). The residual uncertainty bounds the upstream report's severity framing (pane functionally
+  intact if the click's check is interactive; user cannot switch profiles if it is non-interactive),
+  not this task's DoD.
+- **Owner `Tails`** — Shadow should-fix #2, corroborated by Omega medium/authz: the polkit
+  sentence in item 2 and in the root-cause statement misattributes the denial to
+  `allow_active=yes` (permissive); the denial is the non-interactive startup check. Must be
+  corrected before `Vector` drafts: the misreading points at the polkit action as the defect, and
+  a fix following it (guest policy edit) would be a security weakening per Omega.
+- **Owner `Tails`** — Shadow should-fix #3: state that the `:883` `Set` is a no-op (writes back the
+  profile just read at `:891`) and that the combo is set at `:892` before the failing `Set`, so
+  the displayed value is correct.
+- **Owner `Tails`** — Shadow nit #4: add the full guest path to the
+  `dbus_exporter_with_properties.py:49` citation.
+- **Owner `Vector` (note, out-of-scope evidence)** — Shadow nit #5: the PPD comparison (install
+  `power-profiles-daemon` in a scratch VM, repeat the launch) settles the upstream report's
+  framing; recorded as not provided by this task.

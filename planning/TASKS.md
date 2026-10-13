@@ -32,8 +32,8 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0023 | Install ripgrep (rg) on the agent host | Robotnik | planning/docs/TASK-0023-rg-host.md | Done |
 | TASK-0024 | Sign the Cinnamon RPMs, enable gpgcheck, publish the release manifest | Robotnik | planning/docs/TASK-0024-rpm-signing-gpgcheck.md | Done (2026-09-24; PR #6 merged, main `a70aedc`, tag `v1.0.0`; all 11 DoD ticked) |
 | TASK-0025 | Team v2: license agent, VM isolation, agentgateway/A2A, agentsmd, operator model | Robotnik | planning/docs/TASK-0025-team-v2-upgrade.md | Done (2026-09-29; all spec items implemented, verified end-to-end, committed) |
-| TASK-0026 | Cinnamon Control Center GUI test: Rocky Linux 10 vs Fedora Cinnamon 45 beta | Robotnik | planning/docs/TASK-0026-cinnamon-control-center-comparison.md | Blocked (box 1 open at window level on TASK-0034 no-render; box 2 open on TASK-0035 verdict) |
-| TASK-0027 | Cinnamon brightness: Settings and keyboard shortcuts have no effect | Robotnik | planning/docs/TASK-0027-cinnamon-brightness-fix.md | Planning |
+| TASK-0026 | Cinnamon Control Center GUI test: Rocky Linux 10 vs Fedora Cinnamon 45 beta | Robotnik | planning/docs/TASK-0026-cinnamon-control-center-comparison.md | Blocked (box 1 open at window level on TASK-0034 no-render; box 2 open on upstream change in linuxmint/cinnamon — TASK-0035 verdict in, report draft awaits operator per §8) |
+| TASK-0027 | Cinnamon brightness: Settings and keyboard shortcuts have no effect | Robotnik | planning/docs/TASK-0027-cinnamon-brightness-fix.md | Done (canonical push awaits the operator's TASK-0033 rotation steps, see ## Release) |
 | TASK-0028 | Rocky 10 + Fedora Cinnamon VM deploy skill | Shadow | planning/docs/TASK-0028-vm-deploy-skill.md | Done |
 | TASK-0029 | VM scripts repair (align scripts/ with AGENTS.md section 12) | Robotnik | planning/docs/TASK-0029-vm-scripts-repair.md | Planning |
 | TASK-0030 | Team model migration to Qwen3.8-27B-UD-IQ3_XXS (thinking low on workers) | Robotnik | planning/docs/TASK-0030-team-model-migration.md | Done |
@@ -41,7 +41,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0032 | Operator-directed text corrections (site woodwork draft: banned word + phrase) | Tails | planning/docs/TASK-0032-operator-text-corrections.md | Done |
 | TASK-0033 | Cinnamon-for-Rocky10 environment: single project directory, both VMs verified | Tails | planning/docs/TASK-0033-cinnamon-project-environment.md | In Progress |
 | TASK-0034 | Cinnamon shell no-render: panel and app windows not rendered on Rocky_Linux_10_Cinnamon | Robotnik | planning/docs/TASK-0034-cinnamon-shell-no-render.md | Done (2026-10-10; all five DoD boxes verified and ticked; verdict: environment limitation) |
-| TASK-0035 | Cinnamon Control Center Power pane: D-Bus Unauthorized (36) at cs_power.py:883 | Robotnik | planning/docs/TASK-0035-cinnamon-power-pane-dbus-unauthorized.md | Planning |
+| TASK-0035 | Cinnamon Control Center Power pane: D-Bus Unauthorized (36) at cs_power.py:883 | Robotnik | planning/docs/TASK-0035-cinnamon-power-pane-dbus-unauthorized.md | Done (canonical push + upstream report await the operator, see ## Release) |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
