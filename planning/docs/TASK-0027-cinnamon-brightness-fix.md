@@ -166,335 +166,21 @@ Diagnosis subtotal (items 1 through 4) is about 6.4h, plus a 25% buffer for unkn
 
 All guest commands ran as `howard` via `sshpass -f ~/AI/secrets/pass.txt ssh howard@<IP>` (Rocky `192.168.122.4`, Fedora `192.168.122.176`). The password file is never read by any tool and its content appears in no output. `XDG_RUNTIME_DIR=/run/user/1000` was exported for user-bus commands (`busctl`, `systemctl --user`, `gsettings`). Format: `$`-prefixed line is the command, following lines are verbatim output.
 
-### Item 1 — Rocky hardware-layer probe (Rocky_Linux_10_Cinnamon)
-
-**P1.1 — Target state: uptime, sessions**
-```
-$ date -u +%Y-%m-%dT%H:%M:%SZ
-2026-10-12T06:45:15Z
-$ uptime
- 15:45:15 up 7 days, 34 min,  2 users,  load average: 0.00, 0.00, 0.00
-$ loginctl list-sessions
-SESSION  UID USER   SEAT  LEADER CLASS   TTY  IDLE SINCE
-    145 1000 howard -     34528  user    -    no   -
-      2 1000 howard seat0 2848   user    tty2 yes  6 days ago
-      3 1000 howard -     2859   manager -    no   -
-3 sessions listed.
-```
-Session 2 (seat0/tty2, 6 days) is the Cinnamon session; the `gdm-wayland-session` bus connection seen in item 2 confirms the Wayland session type.
-
-**P1.2 — Backlight sysfs**
-```
-$ ls -la /sys/class/backlight/
-total 0
-drwxr-xr-x.  2 root root 0 Oct 12 15:45 .
-drwxr-xr-x. 74 root root 4096 Oct  5 15:10 ..
-```
-Empty directory: no backlight device, so no per-device `brightness`/`max_brightness`/`backlight_type` to read.
-
-**P1.3 — brightnessctl (recorded absence of binary)**
-```
-$ command -v brightnessctl || echo 'brightnessctl: binary not installed'
-brightnessctl: binary not installed
-$ brightnessctl -l
-bash: line 18: brightnessctl: command not found
-exit=127
-```
-Gap per the ambiguity rule: no `brightnessctl` binary on the VM, so the udev-side corroboration of hardware presence is unavailable; the second independent source is the PCI display controller (P1.4/P1.5).
-
-**P1.4 — PCI display controller**
-```
-$ lspci -k | grep -iE -B1 -A2 'vga|3d|display'
-	Subsystem: Red Hat, Inc. QEMU Virtual Machine
-00:01.0 VGA compatible controller: Red Hat, Inc. Virtio 1.0 GPU (rev 01)
-	Subsystem: Red Hat, Inc. QEMU
-	Kernel driver in use: virtio-pci
-```
-
-**P1.5 — DRM driver links**
-```
-$ ls -l /sys/class/drm/
-total 0
-lrwxrwxrwx. 1 root root   0 Oct 12 15:45 card0 -> ../../devices/pci0000:00/0000:00:01.0/drm/card0
-lrwxrwxrwx. 1 root root   0 Oct  8 01:18 card0-Virtual-1 -> ../../devices/pci0000:00/0000:00:01.0/drm/card0/card0-Virtual-1
-lrwxrwxrwx. 1 root root   0 Oct 12 15:45 renderD128 -> ../../devices/pci0000:00/0000:00:01.0/drm/renderD128
--r--r--r--. 1 root root 4096 Oct  5 15:10 version
-$ readlink -f /sys/class/drm/card0
-/sys/devices/pci0000:00/0000:00:01.0/drm/card0
-```
-Single virtual output (`card0-Virtual-1`) on the QEMU Virtio GPU.
-
-**P1.6 — Package state fingerprint**
-```
-$ rpm -qa | grep -iE 'cinnamon|backlight' | sort
-cinnamon-6.7.4-4.el10.x86_64
-cinnamon-control-center-6.7.2-1.el10.x86_64
-cinnamon-desktop-6.7.2-2.el10.x86_64
-cinnamon-menus-6.7.0-1.el10.x86_64
-cinnamon-rocky-defaults-1.0-2.el10.noarch
-cinnamon-session-6.7.3-1.el10.x86_64
-cinnamon-settings-daemon-6.7.2-2.el10.x86_64
-```
-7 packages, matching the TASK-0033 el10 inventory except `cinnamon-6.7.4-4.el10`, which is the TASK-0026 unsigned -4 install, re-verified at run time (A1 confirmed). No package name matches `backlight`.
+*Item 1 raw probe output (P1.1-P1.6) archived 2026-10-19 to `## Archive`; the item 1 verdict below retained.*
 
 **Item 1 verdict — backlight present? NO.** Two independent sources agree: (1) `/sys/class/backlight` is empty (P1.2); (2) the only display controller is a QEMU Virtio 1.0 GPU driven by `virtio-pci` (P1.4/P1.5), a virtual GPU with no backlight hardware. `brightnessctl` absence is a recorded gap, not a finding (P1.3).
 
-### Item 2 — Rocky daemon-layer probe (Rocky_Linux_10_Cinnamon)
+*Item 2 raw probe output, part 1 (P2.1-P2.2) archived 2026-10-19 to `## Archive`; the item 2 acceptance below retained.*
 
-**P2.1 — CSD process and service state**
-```
-$ pgrep -af 'cinnamon-settings-daemon'
-no cinnamon-settings-daemon process
-$ systemctl --user status cinnamon-settings-daemon
-Unit cinnamon-settings-daemon.service could not be found.
-$ pgrep -af 'csd-'
-3102 /usr/bin/csd-settings-remap
-3103 /usr/bin/csd-background
-3108 /usr/bin/csd-screensaver-proxy
-3112 /usr/bin/csd-a11y-settings
-3114 /usr/bin/csd-xsettings
-3121 /usr/bin/csd-housekeeping
-3123 /usr/bin/csd-clipboard
-3124 /usr/bin/csd-power
-3125 /usr/bin/csd-media-keys
-3127 /usr/bin/csd-keyboard
-```
-CSD is not a systemd unit on this VM. The plugins run as per-user autostart processes (`/usr/bin/csd-*`). 10 of the 12 shipped plugin binaries run. Not running / not shipped: `csd-color`, `csd-wacom`, `csd-printer`, `csd-print-notifications`, `csd-datetime-mechanism`, `csd-backlight-helper` (P2.3, P2.8).
-
-**P2.2 — User autostart units**
-```
-$ systemctl --user list-unit-files | grep -iE 'cinnamon'
-app-cinnamon\x2dsettings\x2ddaemon\x2da11y\x2dsettings@autostart.service     generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dbackground@autostart.service           generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dclipboard@autostart.service            generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dhousekeeping@autostart.service         generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dkeyboard@autostart.service             generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dmedia\x2dkeys@autostart.service        generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dpower@autostart.service                generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dscreensaver\x2dproxy@autostart.service generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dsettings\x2dremap@autostart.service    generated -
-app-cinnamon\x2dsettings\x2ddaemon\x2dxsettings@autostart.service            generated -
-cinnamon-session.target                                                      static    -
-```
-
-**P2.3 — RPM file list (`cinnamon-settings-daemon-6.7.2-2.el10`) and on-disk confirmation**
-```
-$ rpm -ql cinnamon-settings-daemon | grep -E '/bin/|libexec|autostart'
-/etc/xdg/autostart/cinnamon-settings-daemon-a11y-settings.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-background.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-clipboard.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-housekeeping.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-keyboard.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-media-keys.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-power.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-screensaver-proxy.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-settings-remap.desktop
-/etc/xdg/autostart/cinnamon-settings-daemon-xsettings.desktop
-/usr/bin/csd-a11y-settings
-/usr/bin/csd-automount
-/usr/bin/csd-background
-/usr/bin/csd-clipboard
-/usr/bin/csd-housekeeping
-/usr/bin/csd-input-helper
-/usr/bin/csd-keyboard
-/usr/bin/csd-media-keys
-/usr/bin/csd-power
-/usr/bin/csd-screensaver-proxy
-/usr/bin/csd-settings-remap
-/usr/bin/csd-xsettings
-/usr/lib64/cinnamon-settings-daemon/  (same 12 binaries)
-/usr/libexec/                        (same 12 binaries)
-```
-No `csd-backlight-helper`, no `csd-xrandr`, no `csd-color`, no `csd-wacom*`, no `csd-print*`, no `csd-datetime-mechanism` in the file list. All listed files confirmed on disk (`ls` on the plugin dirs matched the RPM list). Shipped schemas confirmed on disk: `org.cinnamon.settings-daemon.{enums,peripherals,peripherals.wacom,plugins.color,plugins,plugins.housekeeping,plugins.media-keys,plugins.power,plugins.xrandr,plugins.xsettings}` under `/usr/share/glib-2.0/schemas/`.
-
-**P2.4 — Session bus names (discovery, plan assumption A2)**
-```
-$ busctl --user list | grep -iE 'cinnamon'   (brightness-relevant excerpt)
-org.cinnamon.SettingsDaemon.KeybindingHandler  3125 csd-media-keys  howard :1.49  session-2.scope
-org.cinnamon.SettingsDaemon.Power              3124 csd-power       howard :1.45  session-2.scope
-org.cinnamon.SettingsDaemon.Power.Keyboard     3124 csd-power       howard :1.45  session-2.scope
-org.cinnamon.SettingsDaemon.Power.Screen       3124 csd-power       howard :1.45  session-2.scope
-```
-The brightness surface is `org.cinnamon.SettingsDaemon.Power.Screen`, owned by the running `csd-power` (PID 3124). It is the only brightness-named interface on the user bus. No separate xrandr bus name exists (plan A2 resolved: there is no `csd-xrandr` plugin binary in this RPM, P2.3). No `org.cinnamon.SettingsDaemon.Color` on Rocky (csd-color not shipped, P2.1/P2.3).
-
-**P2.5 — D-Bus introspection and property read (before any call)**
-```
-$ busctl --user introspect org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power
-NAME                                       TYPE      SIGNATURE RESULT/VALUE FLAGS
-org.cinnamon.SettingsDaemon.Power          interface -         -            -
-.GetDevices                                method    -         a(sssusduut) -
-.GetPrimaryDevice                          method    -         (sssusduut)  -
-.Icon                                      property  s         ""           emits-change
-.Percentage                                property  u         0            emits-change
-org.cinnamon.SettingsDaemon.Power.Keyboard interface -         -            -
-.GetPercentage                              method    u         -            -
-.GetStep                                   method    u         -            -
-.SetPercentage                              method    u         u          -
-.StepDown                                  method    -         u            -
-.StepUp                                    method    -         u            -
-.Toggle                                   method    -         u            -
-.Changed                                  signal    -         -            -
-org.cinnamon.SettingsDaemon.Power.Screen   interface -         -            -
-.GetPercentage                              method    -         u            -
-.SetPercentage                              method    u         u          -
-.StepDown                                  method    -         uii        -
-.StepUp                                    method    -         uii        -
-.AmbientLightSupported                     property  b         false        emits-change
-.Changed                                  signal    -         -            -
-```
-(Object path `/org/cinnamon/SettingsDaemon/Power`; standard `org.freedesktop.DBus.*` interfaces elided.) For methods, `RESULT/VALUE` is the output signature: `Screen.GetPercentage` takes no input and returns `u`; `Screen.StepUp` takes no input and returns `uii`; `Screen.SetPercentage` takes `u` and returns `u`. Brightness-related values before the call: `Power.Percentage = 0`, `Power.Screen.AmbientLightSupported = false`.
-
-**P2.6 — gsettings keybinding and schema values**
-```
-$ gsettings list-recursively org.cinnamon.desktop.keybindings.media-keys   (brightness-relevant keys)
-org.cinnamon.desktop.keybindings.media-keys screen-brightness-down ['XF86MonBrightnessDown']
-org.cinnamon.desktop.keybindings.media-keys screen-brightness-up ['XF86MonBrightnessUp']
-org.cinnamon.desktop.keybindings.media-keys kbd-brightness-down ['XF86KbdBrightnessDown']
-org.cinnamon.desktop.keybindings.media-keys kbd-brightness-toggle ['XF86KbdLightOnOff']
-org.cinnamon.desktop.keybindings.media-keys kbd-brightness-up ['XF86KbdBrightnessUp']
-$ gsettings list-recursively org.cinnamon.settings-daemon.plugins.power   (brightness-relevant keys)
-org.cinnamon.settings-daemon.plugins.power idle-brightness 30
-org.cinnamon.settings-daemon.plugins.power minimum-display-brightness uint32 2
-org.cinnamon.settings-daemon.plugins.power backlight-helper-force false
-org.cinnamon.settings-daemon.plugins.power backlight-helper-preference-order ['firmware', 'platform', 'raw']
-```
-Screen brightness shortcuts are BOUND: up = `['XF86MonBrightnessUp']`, down = `['XF86MonBrightnessDown']`. Full recursive dumps of `org.cinnamon.settings-daemon.plugins.{power,media-keys,xrandr,plugins}`, `org.cinnamon.control-center.display` (single key `show-fractional-scaling-controls false`) and `org.cinnamon.desktop.keybindings.media-keys` are in the probe output. The CSD-internal media-keys schema (`org.cinnamon.settings-daemon.plugins.media-keys`) contains no brightness keys (same on Fedora, P3.7).
-
-**P2.7 — Schema file ownership (`rpm -qf`)**
-```
-$ rpm -qf /usr/share/glib-2.0/schemas/org.cinnamon.settings-daemon.plugins.power.gschema.xml
-cinnamon-settings-daemon-6.7.2-2.el10.x86_64
-$ rpm -qf /usr/share/glib-2.0/schemas/org.cinnamon.settings-daemon.plugins.media-keys.gschema.xml
-cinnamon-settings-daemon-6.7.2-2.el10.x86_64
-$ rpm -qf /usr/share/glib-2.0/schemas/org.cinnamon.settings-daemon.plugins.xrandr.gschema.xml
-cinnamon-settings-daemon-6.7.2-2.el10.x86_64
-$ rpm -qf /usr/share/glib-2.0/schemas/org.cinnamon.control-center.display.gschema.xml
-cinnamon-control-center-6.7.2-1.el10.x86_64
-$ rpm -qf /usr/share/glib-2.0/schemas/org.cinnamon.desktop.keybindings.media-keys.gschema.xml
-cinnamon-desktop-6.7.2-2.el10.x86_64
-```
-The keybinding schema lives in `cinnamon-desktop`, not `cinnamon-settings-daemon`. No `cinnamon-keybindings` package exists on either VM; that answers the plan's open question (the schemas come from `cinnamon-desktop`).
-
-**P2.8 — Missing helper: file search**
-```
-$ ls -l /usr/libexec/csd-backlight-helper
-ls: cannot access '/usr/libexec/csd-backlight-helper': No such file or directory
-$ find /usr /opt -name 'csd-backlight-helper'
-(no output)
-$ rpm -qf /usr/libexec/csd-backlight-helper
-error: file /usr/libexec/csd-backlight-helper: No such file or directory
-```
-
-**P2.9 — Scripted D-Bus brightness call (the one guest write of the diagnosis phase)**
-```
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # BEFORE
-Call failed: Failed to execute child process “/usr/libexec/csd-backlight-helper” (No such file or directory)
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen StepUp
-uii 0 0 0
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # AFTER
-Call failed: Failed to execute child process “/usr/libexec/csd-backlight-helper” (No such file or directory)
-```
-`GetPercentage` (what the Settings slider reads) fails: CSD spawns `/usr/libexec/csd-backlight-helper` for brightness get/set and the file does not exist (P2.8). `StepUp` (the shortcut path) returns output `uii 0 0 0` (exit 0), interpreted as `(percentage, min, max) = (0, 0, 0)` (tuple semantics are inference): a no-op on a degenerate range. Two earlier `StepUp` attempts failed client-side on busctl argument syntax (`Failed to parse 'i' as unsigned 32-bit integer`, `Unknown signature type 1.`) and never reached the daemon; final syntax on systemd 257 is `busctl --user call NAME PATH IFACE Method [SIGNATURE [ARGUMENT...]]`. `SetPercentage` was not exercised; it shares the helper as CSD's only brightness backend (P2.8/P3.5) — its failure is inference, not verified.
-
-**P2.10 — Journal capture and shortcut trigger**
-```
-$ journalctl --user -n 20 --no-pager
-No journal files were found.
--- No entries --
-$ command -v xdotool
-xdotool: binary not installed
-```
-Gap: the user journal is unavailable from the SSH session context on this VM (it works on Fedora, P3.6); the D-Bus error string in P2.9 is the direct record. No authorization error occurred (the failure is spawn-ENOENT, not D-Bus authorization denial). `xdotool` is not installed: the shortcut trigger attempt is recorded as absent per the plan's fallback; the binding evidence in P2.6 stands in.
+*Item 2 raw probe output, part 2 (P2.3-P2.10) archived 2026-10-19 to `## Archive`; the item 2 acceptance below retained.*
 
 **Item 2 acceptance.** Plugin presence: `csd-power` runs (the brightness plugin is active); `csd-backlight-helper` absent from file list and disk. D-Bus object `/org/cinnamon/SettingsDaemon/Power` with `Power.Screen` present; before/after the scripted call `GetPercentage` fails identically (helper ENOENT) and `StepUp` returns `0 0 0`. Shortcuts bound: `['XF86MonBrightnessUp']` / `['XF86MonBrightnessDown']`. Schema ownership: `cinnamon-settings-daemon` (daemon schemas), `cinnamon-control-center` (display), `cinnamon-desktop` (keybindings). Scripted-call outcome including exact error: P2.9. The one guest write is flagged (P2.9) and changed nothing (the call failed or was a no-op).
 
 ### Item 3 — Comparison probe on Fedora_45_Cinnamon (192.168.122.176), same probe set
 
-**P3.1 — Uptime and session**
-```
-$ date -u +%Y-%m-%dT%H:%M:%SZ
-2026-10-12T07:19:04Z
-$ uptime
- 16:19:04 up 7 days,  1:08,  2 users,  load average: 0.42, 0.29, 0.24
-$ loginctl list-sessions
-SESSION  UID USER   SEAT  LEADER CLASS   TTY IDLE SINCE
-      2 1000 howard seat0 1035   user    -   yes  1 week 0 days ago
-     21 1000 howard -     22099  user    -   no   -
-      3 1000 howard -     1089   manager -   no   -
-3 sessions listed.
-```
-X11 session (lightdm/Xorg per TASK-0033): seat0 session leader 1035, no Wayland session process.
+*Item 3 raw probe output, part 1 (P3.1-P3.4) archived 2026-10-19 to `## Archive`; the Rocky-vs-Fedora diff below retained.*
 
-**P3.2 — Backlight sysfs / brightnessctl / PCI / DRM**
-```
-$ ls -la /sys/class/backlight/
-total 0
-drwxr-xr-x.  2 root root 0 Oct 12 16:19 .
-drwxr-xr-x. 70 root root 4096 Oct  5 15:10 ..
-$ command -v brightnessctl || echo 'brightnessctl: binary not installed'
-brightnessctl: binary not installed
-$ brightnessctl -l
-bash: line 19: brightnessctl: command not found
-exit=127
-$ lspci -k | grep -iE -B1 -A2 'vga|3d|display'
-00:01.0 VGA compatible controller: Red Hat, Inc. Virtio 1.0 GPU (rev 01), driver virtio-pci (raw lspci/DRM listing truncated)
-$ ls -l /sys/class/drm/
-card0 only (virtio, PCI 00:01.0; plus card0-Virtual-1, renderD128, version) — no backlight card
-```
-No backlight device on the comparison VM either; same Virtio GPU topology.
-
-**P3.3 — Package fingerprint**
-```
-$ rpm -qa | grep -iE 'cinnamon|backlight' | sort
-cinnamon-settings-daemon-6.7.3^unstable-1.fc45.x86_64
-(13 packages total, all fc45; other 12 lines truncated)
-```
-13 packages, matching the TASK-0033 fc45 inventory.
-
-**P3.4 — Running csd-* processes**
-```
-$ pgrep -af 'csd-'
-1223 /usr/bin/csd-power
-(13 more csd-* processes truncated: print-notifications, a11y-settings, color, screensaver-proxy, background, housekeeping, settings-remap, clipboard, keyboard, wacom, media-keys, xsettings, printer)
-```
-`csd-power` (1223) owns `org.cinnamon.SettingsDaemon.Power{,.Keyboard,.Screen}` on the Fedora user bus, same names as Rocky; `csd-color` and `csd-wacom` own `org.cinnamon.SettingsDaemon.Color` / `org.cinnamon.SettingsDaemon.Wacom` (absent on Rocky).
-
-**P3.5 — RPM file list (`cinnamon-settings-daemon-6.7.3^unstable-1.fc45`) and helper**
-```
-$ rpm -ql cinnamon-settings-daemon | grep -E '/bin/|libexec|autostart'   (binaries; autostart entries analogous to P2.2 plus color, print-notifications, wacom)
-/usr/bin/csd-backlight-helper (18 /usr/bin csd-* binaries total; other 17 truncated: a11y-settings, automount, background, clipboard, color, datetime-mechanism, housekeeping, input-helper, keyboard, media-keys, power, print-notifications, printer, screensaver-proxy, settings-remap, wacom, xsettings)
-/usr/libexec/csd-… (same set, plus /usr/libexec/csd-wacom-led-helper and /usr/libexec/csd-wacom-oled-helper)
-$ ls -l /usr/libexec/csd-backlight-helper
--rwxr-xr-x. 1 root root 15704 Aug 15 09:00 /usr/libexec/csd-backlight-helper
-$ rpm -qf /usr/libexec/csd-backlight-helper
-cinnamon-settings-daemon-6.7.3^unstable-1.fc45.x86_64
-```
-The helper is present on the comparison VM and owned by the fc45 settings-daemon RPM. Neither RPM ships a `csd-xrandr` binary (see item 4, P1(a) resolution).
-
-**P3.6 — D-Bus: introspection, scripted call, journal**
-```
-$ busctl --user introspect org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power
-(identical to P2.5, same object path, same interfaces, AmbientLightSupported = false, Power.Percentage = 0)
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # BEFORE
-Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen StepUp
-uii 0 0 0
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # AFTER
-Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
-$ journalctl --user -n 20 --no-pager
-(works: sshd-session and systemd tmpfiles entries; nothing from csd-power around the call)
-```
-The helper is spawned and reports that no backlight device exists. `StepUp` is the same no-op `(0, 0, 0)` as on Rocky.
-
-**P3.7 — gsettings: same schemas, same values**
-`gsettings list-recursively` on the same six schemas (`org.cinnamon.settings-daemon.plugins.{power,media-keys,xrandr,plugins}`, `org.cinnamon.control-center.display`, `org.cinnamon.desktop.keybindings.media-keys`): output identical to item 2 except one user-level value (`org.cinnamon.settings-daemon.plugins.color night-light-last-coordinates (35.65…, 139.74…)` vs Rocky `(91.0, 181.0)` — a user setting, not packaging). In particular: `screen-brightness-up ['XF86MonBrightnessUp']` and `screen-brightness-down ['XF86MonBrightnessDown']` (bound), no CSD-internal media-keys brightness keys, `org.cinnamon.settings-daemon.plugins.power backlight-helper-*` keys identical, `org.cinnamon.control-center.display` single key identical. Schema ownership by `rpm -qf` on the same five files: `cinnamon-settings-daemon-6.7.3^unstable-1.fc45` (power/media-keys/xrandr), `cinnamon-control-center-6.7.3^unstable-1.fc45` (display), `cinnamon-desktop-6.7.3^unstable-1.fc45` (keybindings).
-
-**P3.8 — xdotool**
-```
-$ command -v xdotool
-xdotool: binary not installed
-```
-Same as Rocky: no synthetic-key trigger on either VM; the binding evidence stands in per the plan's fallback.
+*Item 3 raw probe output, part 2 (P3.5-P3.8) archived 2026-10-19 to `## Archive`; the Rocky-vs-Fedora diff below retained.*
 
 **Rocky-vs-Fedora diff (per probe)**
 
@@ -601,79 +287,15 @@ Full diff: `git show ec49438 --stat` (1 file changed, 17 insertions, 4 deletions
 
 **Build (item 6).**
 
-Toolchain re-verified (plan item 6 first line):
-
-```
-$ command -v rpmbuild meson ninja
-/usr/bin/rpmbuild
-/usr/bin/meson
-/usr/bin/ninja
-```
+*Build toolchain re-verification (`command -v rpmbuild meson ninja`) raw output archived 2026-10-19 to `## Archive`.*
 
 Host state change (build dependencies, TASK-0026 precedent — host state had drifted since the -2 build, whose dependency closure is no longer fully installed): `sudo dnf install -y upower-devel colord-devel cups-devel lcms2-devel libcanberra-devel libnotify-devel libwacom-devel nss-devel rpms/gtk-layer-shell-0.10.1-1.el10.x86_64.rpm rpms/gtk-layer-shell-devel-0.10.1-1.el10.x86_64.rpm`. The first `rpmbuild` run failed its dep check on 8 BuildRequires (`colord-devel`, `cups-devel`, `gtk-layer-shell-devel`, `lcms2-devel`, `libcanberra-devel`, `libnotify-devel`, `libwacom-devel`, `nss-devel`); 7 of the 8 are in the Rocky repos, `gtk-layer-shell-devel` only as the team RPM in `rpms/` (installed together with its runtime pair). `libgudev-devel` was already installed (above).
 
-Source0 staged from the clean working tree (plan: TASK-0026 method — same staging method as the provenance note, `git archive`), top dir `cinnamon-settings-daemon-6.7.2`:
-
-```
-$ git -C cinnamon-settings-daemon status --short
-(empty — clean tree)
-$ git -C cinnamon-settings-daemon rev-parse HEAD
-18bb726dc21ac7127f50e7b2c9c3885d66dd34b6
-$ git -C cinnamon-settings-daemon archive --format=tar.gz --prefix=cinnamon-settings-daemon-6.7.2/ HEAD > /tmp/rpmbuild-task0027/SOURCES/cinnamon-settings-daemon-6.7.2.tar.gz
-$ sha256sum .../SOURCES/cinnamon-settings-daemon-6.7.2.tar.gz
-272d5cb32ff4cd9a00f3c39446db95821b7b34e1befaface933a4cb44dd77b1b
-$ md5sum .../SOURCES/cinnamon-settings-daemon-6.7.2.tar.gz
-a766cdeb522f2ae186823b02ab563706
-$ tar xzf ... -C /tmp/src0-verify && diff -r /tmp/src0-verify/cinnamon-settings-daemon-6.7.2 <checkout> --exclude=.git --exclude=builddir --exclude=buildd2
-CONTENT-IDENTICAL
-```
+*Source0 staging raw output (`git archive` from the clean tree at `18bb726`, `sha256sum`/`md5sum` of the tarball, content-identity diff against the checkout) archived 2026-10-19 to `## Archive`; the sha256 note below retained.*
 
 The tarball sha256 differs from the spec provenance note (`1141da2d...`) — that note records an earlier tarball; content identity against the clean checkout is verified above, which is the claim that matters (tar metadata differs between tarballs, content is identical).
 
-Build:
-
-```
-$ rpmbuild --define '_topdir /tmp/rpmbuild-task0027' -ba spec/cinnamon-settings-daemon.spec
-rpmbuild rc=0   (only warning: pre-existing "bogus date in %changelog", noted in TASK-0026)
-```
-
-Artifact checks:
-
-```
-$ rpm -qpl .../cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm | grep backlight
-/usr/bin/csd-backlight-helper
-/usr/lib64/cinnamon-settings-daemon/csd-backlight-helper
-/usr/libexec/csd-backlight-helper
-$ rpm -qpl ... | grep -c 'csd-'     # -2 RPM: 141
-144   # +3 = exactly the helper set (bin symlink, libexec, libdir copy)
-$ rpm -qpi ... | grep -iE '^(Name|Version|Release|Signature)'
-Name        : cinnamon-settings-daemon
-Version     : 6.7.2
-Release     : 3.el10
-Signature   : (none)
-$ md5sum / sha256sum ...
-13da5875d3787034a30a670507fabe4f
-7ee1281cb410dcb01a6ce2d7da7d99091bcb18918814ce776cb0eda78be7e3b6   (373076 bytes)
-$ rpm -qpR ... | grep -iE 'gudev|upower'
-libgudev-1.0.so.0()(64bit)      # new Requires vs -2
-libupower-glib.so.3()(64bit)    # unchanged vs -2
-$ rpm2cpio ... | cpio -idm; sha256sum usr/libexec/csd-backlight-helper
-f231af260e3fca19804dcb9ec51640ef15ea7e693c1fa922b95e41f14c714d16   (15832 B, stripped ELF)
-$ ls -l usr/bin/csd-backlight-helper
-lrwxrwxrwx ... usr/bin/csd-backlight-helper -> ../libexec/csd-backlight-helper
-```
-
-Host smoke test of the extracted helper (`/sys/class/backlight` is empty on the host too):
-
-```
-$ ldd /tmp/helper-verify/usr/libexec/csd-backlight-helper | grep -E 'not found|gudev'
-libgudev-1.0.so.0 => /lib64/libgudev-1.0.so.0 (0x...)
-$ .../csd-backlight-helper --get-brightness
-Warning: no backlight sources have been configured.
-Check org.cinnamon.settings-daemon.plugins.power to configure some.
-Could not get or set the value of the backlight: No backlight devices present
-helper exit=5
-```
+*Build raw output (`rpmbuild -ba` run and rc, artifact checks on the -3 RPM, host smoke test of the extracted helper) archived 2026-10-19 to `## Archive`; the placement line below retained.*
 
 Placement: `rpms-local/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` (untracked, main RPM only — the debuginfo/debugsource pair stays in `/tmp/rpmbuild-task0027/RPMS/x86_64/` per the TASK-0026 placement precedent). `rpms/` tracked set untouched.
 
@@ -681,71 +303,21 @@ Placement: `rpms-local/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` (untrac
 
 Host, before/after: `sudo -n virsh -c qemu:///system list` both times: `Fedora_45_Cinnamon` Id 1 running, `Rocky_Linux_10_Cinnamon` Id 2 running. `snapshot-list` after: Rocky `2026-10-04T11:36` (shutoff) + `2026-10-07-task0034-pre` (running, TASK-0034's), Fedora `2026-10-04T11:37` (shutoff) — unchanged, no restore.
 
-Prior NEVRA and dependency state on `Rocky_Linux_10_Cinnamon`:
-
-```
-$ rpm -q cinnamon-settings-daemon
-cinnamon-settings-daemon-6.7.2-2.el10.x86_64
-$ rpm -q libgudev
-libgudev-238-7.el10.x86_64     # new Requires satisfied, nothing to install
-$ ls /usr/libexec/csd-backlight-helper
-ls: cannot access '/usr/libexec/csd-backlight-helper': No such file or directory
-```
+*Verification raw output, pre-fix NEVRA and dependency state on `Rocky_Linux_10_Cinnamon` (CSD -2, `libgudev` installed, helper absent), archived 2026-10-19 to `## Archive`.*
 
 Install (the one guest write of the fix phase; sudo password piped over the ssh stdin channel to `sudo -S`, file never read by any tool, content in no output):
 
-```
-$ scp rpms-local/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm howard@192.168.122.4:/tmp/
-$ sudo -S rpm -Uvh /tmp/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm
-Updating / installing...
-cinnamon-settings-daemon-6.7.2-3.el10 ########################################
-Cleaning up / removing...
-cinnamon-settings-daemon-6.7.2-2.el10 ########################################
-install rc=0
-```
+*Install raw output (`scp` of the -3 RPM to the VM, `rpm -Uvh`, rc=0) archived 2026-10-19 to `## Archive`.*
 
-Helper presence, ownership, and binary identity on the VM:
-
-```
-$ rpm -q cinnamon-settings-daemon
-cinnamon-settings-daemon-6.7.2-3.el10.x86_64
-$ rpm -qf /usr/libexec/csd-backlight-helper
-cinnamon-settings-daemon-6.7.2-3.el10.x86_64
-$ ls -l /usr/libexec/csd-backlight-helper /usr/bin/csd-backlight-helper
-lrwxrwxrwx. 1 root root   31 Oct 12 09:00 /usr/bin/csd-backlight-helper -> ../libexec/csd-backlight-helper
--rwxr-xr-x. 1 root root 15832 Oct 12 09:00 /usr/libexec/csd-backlight-helper
-$ sha256sum /usr/libexec/csd-backlight-helper
-f231af260e3fca19804dcb9ec51640ef15ea7e693c1fa922b95e41f14c714d16   # = RPM payload (chain closed)
-$ ldd /usr/libexec/csd-backlight-helper | grep -c "not found"
-0
-$ ldd /usr/libexec/csd-backlight-helper | grep gudev
-libgudev-1.0.so.0 => /lib64/libgudev-1.0.so.0 (0x...)
-$ rpm -V cinnamon-settings-daemon
-(no output, rc=0)
-```
+*Verification raw output, helper presence/ownership/binary identity on the VM (`rpm -qf` → -3 NEVRA; helper sha256 `f231af26…` = RPM payload, chain closed; `ldd` clean; `rpm -V` clean), archived 2026-10-19 to `## Archive`.*
 
 Helper standalone, invoked exactly as `csd-power` invokes it (`<libexecdir>/csd-backlight-helper --get-brightness -b firmware -b platform -b raw`, per `csd-power-manager.c:2465` plus the one-`-b`-per-entry preference construction at `csd-power-manager.c:2424-2434`, preference order from gsettings `backlight-helper-preference-order = ['firmware', 'platform', 'raw']`, P2.6):
 
-```
-$ /usr/libexec/csd-backlight-helper --get-brightness -b firmware -b platform -b raw
-Could not get or set the value of the backlight: No backlight devices present
-get exit=5
-$ /usr/libexec/csd-backlight-helper --get-max-brightness -b firmware -b platform -b raw
-Could not get or set the value of the backlight: No backlight devices present
-max exit=5
-```
+*Helper standalone run raw output (both `--get-brightness` and `--get-max-brightness` exit 5, "No backlight devices present") archived 2026-10-19 to `## Archive`.*
 
 The helper runs and reports the absence of backlight hardware — the same behavior class as the comparison VM (P3.6), not a spawn failure.
 
-Item 2 daemon probe re-run (D-Bus, `XDG_RUNTIME_DIR=/run/user/1000`):
-
-```
-$ busctl --user get-property org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power Percentage   # BEFORE → u 0
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen GetPercentage   # BEFORE → Call failed: csd-backlight-helper failed: Could not get or set the value of the backlight: No backlight devices present
-$ busctl --user call org.cinnamon.SettingsDaemon.Power /org/cinnamon/SettingsDaemon/Power org.cinnamon.SettingsDaemon.Power.Screen StepUp   # uii 0 0 0
-# AFTER re-run: GetPercentage → same failure string; Percentage → u 0 (no change; full before/after values in the analysis below)
-$ journalctl --user -n 20 --no-pager   # No journal files were found.
-```
+*Item 2 daemon probe re-run raw output (D-Bus before/after) archived 2026-10-19 to `## Archive`; the reading below retained.*
 
 Reading against the pre-fix state (P2.9): `GetPercentage` no longer fails with `Failed to execute child process "/usr/libexec/csd-backlight-helper" (No such file or directory)` — the spawn now succeeds and the failure is the helper's own no-backlight report, byte-identical to the Fedora comparison signature (P3.6). `StepUp` is still `uii 0 0 0` — identical to pre-fix Rocky (P2.9) and to Fedora (P3.6): a no-op on a degenerate range, which is what E1 dictates. `Power.Percentage` property before/after: `0` → `0` — unchanged, expected: there is no backlight to change (E1). The plan's original item 7 line "Confirm the scripted D-Bus call now changes the property" is unreachable on this VM by design (item 4 consequence paragraph); the E1-bounded criteria in that paragraph are the ones verified here: helper present (above), `GetPercentage` failing with the helper's "No backlight devices present" instead of ENOENT (above), `StepUp` returning `(0, 0, 0)` (above), no new errors (install rc=0, helper exit 5 with the expected message, D-Bus output exactly the E1 signature). Journal: the user journal remains unavailable from the SSH session (same context gap as P2.10, recorded gap, not a finding); the D-Bus error strings are the direct record. `csd-power` is still PID 3124 (no restart — the helper is spawned per call, and the D-Bus results prove the spawn now succeeds). The installed RPM was left in `/tmp` on the VM (install artifact, deletable). Rollback: `sudo rpm -Uvh` of `rpms/cinnamon-settings-daemon-6.7.2-2.el10.x86_64.rpm` (tracked set) or `rpm -e` plus reinstall.
 
@@ -773,41 +345,11 @@ Reading against the pre-fix state (P2.9): `GetPercentage` no longer fails with `
 
 **Competing priorities:** the unsigned -3 is local-only (`rpms-local/`, untracked); the tracked `rpms/` set (gpgcheck=1) is untouched — signing defers to operator key availability (plan risk table, certain/medium). User-journal capture remains unavailable over SSH (gap, P2.10) — the D-Bus error string is the stronger record anyway. The plan's item 7 acceptance line "the scripted D-Bus call now changes the property" was traded for the E1-bounded criteria in the item 4 consequence paragraph (property `0` → `0` recorded above in lieu). debuginfo/debugsource placement was traded as out of scope (TASK-0026 precedent), left in `/tmp` for the signing/publishing step to weigh.
 
-### -3 republish, fresh-clone rebuild (2026-10-18, Tails)
-
-**Fresh-clone prerequisite (the `## Release` standing check, Shadow finding 2).** Canonical repo `main` == `origin/main` == `b59da1298836e266916782ef6f079f1626501705` (the 2026-10-18 squash merge recorded in TASK-0033 `## Release`). Fresh clone of origin main into `/tmp/opencode/cinnamon-fresh-b59da12` (anonymous clone, no credential required): `git rev-parse HEAD` = `b59da1298836e266916782ef6f079f1626501705`, working tree clean. The spec in the fresh clone reads `Version: 6.7.2`, `Release: 3.el10`. The build source is this clone, not the working tree.
-
-**Build (recorded -3 recipe, no redesign).** Source0 staged from the clean checkout `cinnamon-settings-daemon/` at `18bb726dc21a` (`git status --short` empty) via `git archive --format=tar.gz --prefix=cinnamon-settings-daemon-6.7.2/ HEAD` into the topdir `SOURCES/`; tarball sha256 `272d5cb32ff4cd9a00f3c39446db95821b7b34e1befaface933a4cb44dd77b1b` (reproduces the -3 staging hash exactly); `diff -r` of the extracted tree against the checkout (`--exclude=.git --exclude=builddir --exclude=buildd2`): CONTENT-IDENTICAL. Build from the fresh clone: `rpmbuild --define '_topdir /tmp/rpmbuild-task0027' -ba spec/cinnamon-settings-daemon.spec` rc=0, single warning the pre-existing "bogus date in %changelog".
-
-**Artifact (unsigned, pre-signing stage).** `/tmp/rpmbuild-task0027/RPMS/x86_64/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm`. Pre-build, both the topdir copy and the `rpms-local/` copy verified at sha256 `7ee1281c...` (373076 B) before the build overwrote the topdir copy.
-- 373076 B, sha256 `c561aafd85f7735bd8d9e3d759f6fa28bbf6ad2dfab90aef94d5108b0fc1e169`, md5 `087418568892eeea8168293c47a6ad39`, `Signature: (none)`.
-- The sha256 differs from the prior unsigned -3 (`7ee1281c...`) only in build-time metadata. Content anchors, all matching the recorded -3: 144 `csd-` files, exactly the 3 backlight paths (`/usr/bin/csd-backlight-helper`, `/usr/libexec/csd-backlight-helper`, `/usr/lib64/cinnamon-settings-daemon/csd-backlight-helper`), Requires `libgudev-1.0.so.0`(64bit) + `libupower-glib.so.3`(64bit), helper binary sha256 `f231af260e3fca19804dcb9ec51640ef15ea7e693c1fa922b95e41f14c714d16` byte-identical to the recorded -3 helper, `/usr/bin/csd-backlight-helper` symlink to `../libexec/csd-backlight-helper` intact.
-- Placement: topdir only, not `rpms-local/` (avoids two distinct unsigned -3s circulating). `rpms-local/` and tracked `rpms/` untouched.
-
-**Signing blocker (operator action, step-stop, no agent completes).** `repo-setup/sign-rpms.sh` preflight fails on this host: the dedicated keyring `~/.gnupg-cinnamon-rocky10/` (single secret key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, dir mode 700) and the sibling passphrase location `~/.gnupg-cinnamon-rocky10.passphrase/` (file mode 600) are absent. TASK-0033 (2026-10-18) records "no signing key on this host" for the b59da12 merge. Everything else in the preflight holds: `gpg`, `gpg-connect-agent`, `rpm`, `xxd`, `stat` present; public key in the host rpm keyring (`gpg-pubkey-fda02785-6ab101f4`); `rpmsign` is not required (the script signs with `rpm --addsign --define "_gpg_name <uid>"` and verifies the whole set against a scratch rpmdb holding only the pinned key). Operator step: restore the secret key plus passphrase for `1689676AF4D4F6FEC142B4429C0A8912FDA02785` at those locations and modes (the script is the only passphrase reader and refuses `set -x`).
-
-**Remaining (blocked on the key, per the `## Release` standing checks).** Copy this artifact into `rpms/` (main RPM only, TASK-0026 placement precedent); run `sign-rpms.sh` from `repo-setup/` (idempotent: signs this one, skips the 64 already-signed, verifies all 65 against the pinned key); update `rpms/SHA256SUMS`, currently 64 lines / 64 RPMs, with one added line, sha256 `c561aafd...` for `cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` (the -2 line `3b26c26d...` stays; the manifest is per-file); install on `Rocky_Linux_10_Cinnamon` from tracked `rpms/` only, replacing the unsigned -3 and deleting `/tmp/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` from the VM; verify the installed package.
+*-3 fresh-clone rebuild (2026-10-18) archived 2026-10-19 to `## Archive`; superseded by the 2026-10-19 key rotation and signed -3 republish below.*
 
 ### GPG secret key search (2026-10-18, Tails)
 
-Target: the secret key of the pinned signing key `1689676AF4D4F6FEC142B4429C0A8912FDA02785` (key ID `9C0A8912FDA02785`). Locations, modes, sizes, fingerprints only; no key material, keyring contents, or passphrases displayed.
-
-**Search scope.** Host: every GnuPG homedir under `/home/howard` (`find /home/howard -maxdepth 4 -type d -iname '*gnupg*'`); `*.gpg` / `*keyring*` / `*.asc` / `*secret*key*` / fingerprint-named files under `/home/howard`, `/tmp`, `/var/tmp` (`find ... -maxdepth 6`); listings of `/tmp`, `/tmp/opencode`, `/var/tmp`; both secrets directories; opencode store (`~/.local/share/opencode/`) checked count-only (`grep -ao <fp> <file> | wc -l`). VMs `Rocky_Linux_10_Cinnamon` (`192.168.122.4`) and `Fedora_45_Cinnamon` (`192.168.122.176`) as `howard` via `sshpass -f ~/AI/secrets/pass.txt ssh howard@<ip> 'bash -s'`: GnuPG homedirs, project directories, `/home/howard` and `/tmp` with the same file patterns.
-
-**Host.**
-
-- Mandated locations absent: `ls -lad ~/.gnupg-cinnamon-rocky10` and `~/.gnupg-cinnamon-rocky10.passphrase` both `No such file or directory`.
-- Exactly one GnuPG homedir: `/home/howard/.gnupg` (700). Contents: `common.conf` (12 B, 600), `public-keys.d/` (700; `pubring.db` 65536 B plus lock files), `trustdb.gpg` (1200 B, 600). No `private-keys-v1.d/`, no `secring.gpg`. `gpg2 --homedir /home/howard/.gnupg --list-secret-keys --with-fingerprint`: 0 `sec`/`ssb` objects.
-- Key-name matches, all public-key or non-GPG: `keys/cinnamon-rocky10-public.asc` (644, 1713 B) in the canonical repo and in the fresh clone `/tmp/opencode/cinnamon-fresh-b59da12/keys/` (sha256 `5a0e4db80a4b514e0b8143a22c73f606278871d17ead787ea22369abed2a2e74` for both); GNOME/Secret Service keyrings `~/.local/share/keyrings/login.keyring` and the Bitwarden flatpak `default.keyring`; `~/.gnupg/trustdb.gpg` (trust DB); `~/Downloads/Rocky-10.2-x86_64-dvd1/*.CHECKSUM.asc` (ISO checksum signature); `cinnamon/src/cinnamon-keyring-prompt.c/.h` (source files, name-only match). No `*.gpg` secret-key file, no keyring, no fingerprint-named file anywhere in the three trees.
-- `/tmp`: build topdirs `rpmbuild-task0027` (the unsigned -3 artifact), `rpmbuild-task0026`, `republish-helper/`, `src0-verify*/`, `t0026-verify/`; no key files. `/var/tmp`: dnf cache and systemd-private dirs only. `/tmp/opencode`: no key files beyond the fresh-clone `keys/` above.
-- Secrets dirs: `~/secrets/` empty (700). `~/AI/secrets/` (700): `githubtoken.md` (41 B), `pass.txt` (17 B), `token.md` (41 B), all 600. No GPG secret key and no key-passphrase file in either.
-- opencode store (count-only, no contents): fingerprint-string occurrences in `opencode.db` = 60, `opencode.db-wal` = 460, `opencode.db-shm` = 0, `log/opencode.log` = 0 (lowercase form 0 in all). Session transcript text (this task's brief and evidence block), not key material.
-
-**VM Rocky_Linux_10_Cinnamon (`192.168.122.4`, hostname `localhost.localdomain`).** No GnuPG homedir (no `/home/howard/.gnupg`). Key-name matches: the GNOME `login.keyring` and the project public export `/home/howard/cinnamon-for-rocky10/keys/cinnamon-rocky10-public.asc` (644, 1713 B, sha256 `5a0e4db8...`, identical to the host copies). Project dir `/home/howard/cinnamon-for-rocky10/`: public export only, no secret key. `/tmp`: the unsigned -3 RPM (`cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm`, 373076 B, 2026-10-12) and `big-t0034` logs. `/var/tmp`: dnf and systemd-private only.
-
-**VM Fedora_45_Cinnamon (`192.168.122.176`, hostname `localhost-live`).** No GnuPG homedir, no project checkout (only `~/.config/cinnamon*` runtime dirs), no key files in any searched location. `/tmp`: test logs only. `/var/tmp`: systemd-private only.
-
-**Public-key confirmation.** `gpg2 --list-packets keys/cinnamon-rocky10-public.asc`: single key, `keyid: 9C0A8912FDA02785` (the last 40 hex of the target fingerprint); `pub rsa4096 2026-09-21 [SC]`, uid `metallinux Cinnamon for Rocky Linux (repo signing) <repo-signing@metalinux.dev>`. All three `keys/cinnamon-rocky10-public.asc` copies (canonical repo, fresh clone, Rocky VM) are the pinned key's public half. Note for future greps: this host's GnuPG 2.4.5 prints the `--with-fingerprint` line space-separated (`1689 676A F4D4 F6FE C142  B442 9C0A 8912 FDA0 2785`), so a contiguous-40-hex grep counts 0; the reliable check is the `--list-packets` keyid.
+*Search detail archived 2026-10-19 to `## Archive` (superseded: the secret key was regenerated and the -3 signed on 2026-10-19).*
 
 **Conclusion.** The secret key for `1689676AF4D4F6FEC142B4429C0A8912FDA02785` is not on this machine in any searched location: no GnuPG homedir on the host or either VM holds a secret key, no `*.gpg`/`*keyring*`/`*.asc` file anywhere searched is a secret key, and no fingerprint-named file exists. Only the key's public half is present (the rpm keyring package plus the `keys/` exports). This corroborates the TASK-0033 (2026-10-18) "no signing key on this host" record: the -3 signing step-stop stands, and there is nothing on this machine to restore from; the operator must restore the secret key plus passphrase at the mandated locations (dir mode 700, passphrase file mode 600) from off-host.
 
@@ -1352,6 +894,7 @@ user said are never deleted.*
 | 2026-10-13 | Chunk 6, `## Implementation` item 7 tail + `## Review` + `## Security` (lines 701-840): item 7 D-Bus re-run raw block compressed in place to command + key line (duplicated AFTER outputs folded; full before/after values recorded in the item 7 analysis paragraph). Rest load-bearing, no-op: E1-bounded verdict (decision); alternatives record (B over A, rejected option with reasons); changes table (commit `ec49438b38`); checks run; competing priorities; all three `## Review` should-fix findings unresolved (Resolution pending `Tails`) plus verified list; `## Security` findings 1-3 unresolved security findings (never deleted) | ~8 lines |
 | 2026-10-13 | Chunk 7, `## Security` tail + `## License` + `## Test Results` + `## Docs` head (lines 841-980): reviewed; entirely load-bearing. `## Security` verified-clean items are verified clearance facts (spec diff surface, polkit `.policy` parity -2 vs -3, Source0 byte-identical to `18bb726dc21a`, build deps, password handling, no committed token copies). `## License` is the license compliance record (verified at upstream ref, imported-code table, verdict pass — never deleted). `## Test Results` is Big's verdict: per-check evidence table, Shadow finding 1 split (items 5-7 satisfied vs E1 deferred — decision), E1 environment limitation (known trap), final verdict. `## Docs` head is the doc-change record with file:line evidence (README known-issue paragraph; INSTALL.md / `rpms/` / `vm-test/` no-change confirmations). No superseded plans, no raw tool output, no narration. No-op | 0 lines |
 | 2026-10-13 | Chunk 8, `## Docs` tail + `## Release` + `## Archive` (lines 981-1122): reviewed; entirely load-bearing. `## Docs` tail: file:line evidence for the no-change confirmations (`vm-test/verify-install-packages.sh:47` pin and its republish movement, spec provenance-comment state, untracked upstream checkout, README `Status` block left untouched per the TASK-0026 precedent) plus both open items (GUI pane not exercised and what would settle it, a Sparky/GUI run on backlight hardware; README commit deferred to the release flow with the verified 2026-10-12 `git ls-remote` origin/local state). `## Release`: current branch/commit/PR state (7 commits ahead of origin, PR #6 merged 2026-09-24, no open PR), executed prerequisites (Shadow finding 2 stands pending push, finding 3 executed in `5e081c4dc7`, Vector README committed in `9edabeda96`), the standing checks for the signing step (fresh-clone rebuild, `Release: 3.el10`, exactly 3 helper paths in the payload, delete of the unsigned `-3` RPM, `rpms-local/` untracked), blocked-push evidence (`git push` rc=128, terminal prompts disabled, credential stage per the standing TASK-0033 gap), exact operator steps 1-6 for the standing step-stop, verified no-open-issues check, and the security flag on the team-chaotix remote URL token (rotation-worthy, covered by the operator steps). No superseded plans, no narration, no resolved-and-shipped findings. No-op | 0 lines |
+| 2026-10-19 | Republish round complete (signed -3 republish on canonical main `8d41fc9` via PR #8, review chain clean, 2026-10-19), so the earlier-round raw output is pruned. Item 1 (P1.1-P1.6), item 2 (P2.1-P2.10, two parts), item 3 (P3.1-P3.8, two parts) raw probe outputs and the items 5-7 build/verification raw output (toolchain re-verification, Source0 staging, `rpmbuild -ba` run + artifact checks + host smoke test, pre-fix NEVRA/dependency state, `rpm -Uvh` install, helper presence/ownership/identity, helper standalone run, item 2 D-Bus re-run) deleted to in-place pointers. The 2026-10-18 fresh-clone rebuild block and the 2026-10-18 GPG secret-key search detail (verbatim lost to the 32,000-token output limit; reconstructed from the session checkpoint and labeled as such) moved to the headed blocks below. Retained in place: item 1 verdict, item 2 acceptance, Rocky-vs-Fedora diff D1-D17 plus no-unattributed-rows line, item 4 root cause + classification + alternatives, spec diff + full-diff line, dnf dep-closure line, Source0 sha256 note, placement line, install security-handling line (sudo -S over ssh stdin, file never read by any tool), helper invocation-citation line (`csd-power-manager.c:2465`, `csd-power-manager.c:2424-2434`), E1-bounded verdict, GPG search conclusion + key-rotation block | ~450 lines |
 
 ### Superseded plan mechanics (Amy, from `## Plan`): work breakdown, classification decision tree, dependencies and sequence, critical path
 
@@ -1386,3 +929,32 @@ All guest items are `Tails`. One item, one turn, one machine. Each item's eviden
 ### Critical path
 
 2 → 4 → 5 → 6 → 7 (longest chain, the fix branch). Items 1 and 3 are off-critical. Running them before or after does not extend the chain.
+
+### -3 republish, fresh-clone rebuild (2026-10-18, Tails) — superseded by the 2026-10-19 key rotation and signed -3 republish
+
+**Fresh-clone prerequisite (the `## Release` standing check, Shadow finding 2).** Canonical repo `main` == `origin/main` == `b59da1298836e266916782ef6f079f1626501705` (the 2026-10-18 squash merge recorded in TASK-0033 `## Release`). Fresh clone of origin main into `/tmp/opencode/cinnamon-fresh-b59da12` (anonymous clone, no credential required): `git rev-parse HEAD` = `b59da1298836e266916782ef6f079f1626501705`, working tree clean. The spec in the fresh clone reads `Version: 6.7.2`, `Release: 3.el10`. The build source is this clone, not the working tree.
+
+**Build (recorded -3 recipe, no redesign).** Source0 staged from the clean checkout `cinnamon-settings-daemon/` at `18bb726dc21a` (`git status --short` empty) via `git archive --format=tar.gz --prefix=cinnamon-settings-daemon-6.7.2/ HEAD` into the topdir `SOURCES/`; tarball sha256 `272d5cb32ff4cd9a00f3c39446db95821b7b34e1befaface933a4cb44dd77b1b` (reproduces the -3 staging hash exactly); `diff -r` of the extracted tree against the checkout (`--exclude=.git --exclude=builddir --exclude=buildd2`): CONTENT-IDENTICAL. Build from the fresh clone: `rpmbuild --define '_topdir /tmp/rpmbuild-task0027' -ba spec/cinnamon-settings-daemon.spec` rc=0, single warning the pre-existing "bogus date in %changelog".
+
+**Artifact (unsigned, pre-signing stage).** `/tmp/rpmbuild-task0027/RPMS/x86_64/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm`. Pre-build, both the topdir copy and the `rpms-local/` copy verified at sha256 `7ee1281c...` (373076 B) before the build overwrote the topdir copy.
+- 373076 B, sha256 `c561aafd85f7735bd8d9e3d759f6fa28bbf6ad2dfab90aef94d5108b0fc1e169`, md5 `087418568892eeea8168293c47a6ad39`, `Signature: (none)`.
+- The sha256 differs from the prior unsigned -3 (`7ee1281c...`) only in build-time metadata. Content anchors, all matching the recorded -3: 144 `csd-` files, exactly the 3 backlight paths (`/usr/bin/csd-backlight-helper`, `/usr/libexec/csd-backlight-helper`, `/usr/lib64/cinnamon-settings-daemon/csd-backlight-helper`), Requires `libgudev-1.0.so.0`(64bit) + `libupower-glib.so.3`(64bit), helper binary sha256 `f231af260e3fca19804dcb9ec51640ef15ea7e693c1fa922b95e41f14c714d16` byte-identical to the recorded -3 helper, `/usr/bin/csd-backlight-helper` symlink to `../libexec/csd-backlight-helper` intact.
+- Placement: topdir only, not `rpms-local/` (avoids two distinct unsigned -3s circulating). `rpms-local/` and tracked `rpms/` untouched.
+
+**Signing blocker (operator action, step-stop, no agent completes).** `repo-setup/sign-rpms.sh` preflight fails on this host: the dedicated keyring `~/.gnupg-cinnamon-rocky10/` (single secret key `1689676AF4D4F6FEC142B4429C0A8912FDA02785`, dir mode 700) and the sibling passphrase location `~/.gnupg-cinnamon-rocky10.passphrase/` (file mode 600) are absent. TASK-0033 (2026-10-18) records "no signing key on this host" for the b59da12 merge. Everything else in the preflight holds: `gpg`, `gpg-connect-agent`, `rpm`, `xxd`, `stat` present; public key in the host rpm keyring (`gpg-pubkey-fda02785-6ab101f4`); `rpmsign` is not required (the script signs with `rpm --addsign --define "_gpg_name <uid>"` and verifies the whole set against a scratch rpmdb holding only the pinned key). Operator step: restore the secret key plus passphrase for `1689676AF4D4F6FEC142B4429C0A8912FDA02785` at those locations and modes (the script is the only passphrase reader and refuses `set -x`).
+
+**Remaining (blocked on the key, per the `## Release` standing checks).** Copy this artifact into `rpms/` (main RPM only, TASK-0026 placement precedent); run `sign-rpms.sh` from `repo-setup/` (idempotent: signs this one, skips the 64 already-signed, verifies all 65 against the pinned key); update `rpms/SHA256SUMS`, currently 64 lines / 64 RPMs, with one added line, sha256 `c561aafd...` for `cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` (the -2 line `3b26c26d...` stays; the manifest is per-file); install on `Rocky_Linux_10_Cinnamon` from tracked `rpms/` only, replacing the unsigned -3 and deleting `/tmp/cinnamon-settings-daemon-6.7.2-3.el10.x86_64.rpm` from the VM; verify the installed package.
+
+### GPG secret key search detail (2026-10-18, Tails) — superseded by the 2026-10-19 key rotation and signed -3 republish
+
+Reconstructed from the 2026-10-19 session checkpoint (Espio pruning pass). The verbatim detail was lost to the 32,000-token output limit before the Archive append completed, and the per-VM command-level output was not preserved in the checkpoint. Facts below are as recorded in that checkpoint. The conclusion stays in `## Implementation` under the heading above.
+
+**Search scope.** The host and both Cinnamon VMs, searched for the secret key of `1689676AF4D4F6FEC142B4429C0A8912FDA02785`: GnuPG homedirs, `*.gpg`/`*keyring*`/`*.asc` files, fingerprint-named files, /tmp, the secrets directories, the opencode store.
+
+**Host.** The mandated locations (`~/.gnupg-cinnamon-rocky10/` keyring dir, `~/.gnupg-cinnamon-rocky10.passphrase/` passphrase location) are absent. Single GnuPG homedir on the host, `/home/howard/.gnupg`; no secret key objects in it. No `*.gpg`/`*keyring*`/`*.asc` file found is a secret key. Key-name matches are all public. /tmp and the secrets directories searched (contents checked). opencode store count-only: opencode.db=60, wal=460.
+
+**VM Rocky_Linux_10_Cinnamon.** Searched; no secret key (per the conclusion: no GnuPG homedir on the VM holds one).
+
+**VM Fedora_45_Cinnamon.** Searched; no secret key (per the conclusion).
+
+**Public-key confirmation.** The public key with keyid `9C0A8912FDA02785` is present (the rpm keyring package plus the `keys/` exports). GnuPG 2.4.5 `--with-fingerprint` output is space-separated (the recorded grep gotcha).

@@ -39,9 +39,10 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0030 | Team model migration to Qwen3.8-27B-UD-IQ3_XXS (thinking low on workers) | Robotnik | planning/docs/TASK-0030-team-model-migration.md | Done |
 | TASK-0031 | vm-deploy skill update (dual libvirt instance gotcha, boot caveats) | Tails | planning/docs/TASK-0031-vm-deploy-skill-update.md | Done |
 | TASK-0032 | Operator-directed text corrections (site woodwork draft: banned word + phrase) | Tails | planning/docs/TASK-0032-operator-text-corrections.md | Done |
-| TASK-0033 | Cinnamon-for-Rocky10 environment: single project directory, both VMs verified | Tails | planning/docs/TASK-0033-cinnamon-project-environment.md | In Progress (push and merge complete 2026-10-18, origin main = b59da12; signed -3 build complete; signing key recreated by the team, then chain 2 and rpms/ landing) |
+| TASK-0033 | Cinnamon-for-Rocky10 environment: single project directory, both VMs verified | Tails | planning/docs/TASK-0033-cinnamon-project-environment.md | In Progress (push and merge complete 2026-10-18, origin main = b59da12; signed -3 republish landed on main as 8d41fc9 via PR #8 on 2026-10-19; remainder per ## Next Actions, includes the operator GitHub-side token revoke) |
 | TASK-0034 | Cinnamon shell no-render: panel and app windows not rendered on Rocky_Linux_10_Cinnamon | Robotnik | planning/docs/TASK-0034-cinnamon-shell-no-render.md | Done (2026-10-10; all five DoD boxes verified and ticked; verdict: environment limitation) |
 | TASK-0035 | Cinnamon Control Center Power pane: D-Bus Unauthorized (36) at cs_power.py:883 | Robotnik | planning/docs/TASK-0035-cinnamon-power-pane-dbus-unauthorized.md | Done (canonical push awaits the operator's token rotation, see ## Release; upstream report declined by operator 2026-10-16) |
+| TASK-0036 | Host reinstall: back up the state outside ~/AI and ~/Linux (GPG signing key, old public key, VM disks, team files) | Robotnik | planning/docs/TASK-0036-host-reinstall-backup.md | In Progress (operator 2026-10-20: ~/AI and ~/Linux are auto-backed up; the rest is this task) |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the
