@@ -98,6 +98,13 @@ Key concepts:
 
 Reference: `https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/`
 
+## Screenshots
+
+You read screenshots directly. The operator gives the team a directory of screenshots and you read
+each image with `read` and analyze it visually. The record is text, because the planning doc is
+text. State what the screen shows, and put the md5 and any PIL or OCR check that backs the
+visual read alongside.
+
 ## The workflows
 
 Test workflows live in `.github/workflows/`. Custom actions live in `.github/actions/`.

@@ -382,7 +382,10 @@ team's A2A adapter (fronted by agentgateway on port 4100).
 ## Model
 
 All agents use `Qwen3.8-27B-UD-IQ3_XXS` (EVO-X2 endpoint `evo-x2-qwen3.8-iq3xxs`, port 8094,
-`--parallel 1`). All model traffic routes through the team's agentgateway (LLM gateway on port
+`--parallel 1`). The model is multimodal (vision projector `mmproj-F16.gguf`, see Model files),
+so every agent can read screenshots and other images with `read` and analyze them visually. When
+the work needs screenshots, the operator gives the team a directory of them (AGENTS.md section 7).
+All model traffic routes through the team's agentgateway (LLM gateway on port
 4000, see AGENTS.md section 15), which forwards to the EVO-X2 endpoint unchanged. The endpoint
 has a single inference slot, so exactly one agent runs at a time and every dispatch is strictly
 sequential. The machine that serves this endpoint, a GMKtec EVO-X2, is documented in the EVO-X2

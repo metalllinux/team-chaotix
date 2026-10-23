@@ -19,9 +19,12 @@ serves the VM administration UI. Node.js 24 (`nodejs24`) provides `node`/`npm` v
 
 **Model:** All agents use `Qwen3.8-27B-UD-IQ3_XXS` (provider `evo-x2-qwen3.8-iq3xxs`); thinking
 stays on for the project-manager agent (`robotnik`), every other agent runs the `low` variant
-(`#low` in its model reference). Gateway routing is unchanged: all model traffic routes through
-the team's agentgateway (section 15) with `--parallel 1`, the single inference slot means exactly
-one agent runs at a time. All dispatch is sequential (see section 3).
+(`#low` in its model reference). The model is multimodal (vision projector `mmproj-F16.gguf`), so
+every agent can read screenshots and other images with `read` and analyze them visually. When the
+work needs screenshots, the operator gives the team a directory of them and the agent reads the
+images from that directory (section 7). Gateway routing is unchanged: all model traffic routes
+through the team's agentgateway (section 15) with `--parallel 1`, the single inference slot means
+exactly one agent runs at a time. All dispatch is sequential (see section 3).
 
 **The operator model.** The operator (the human) sits above the team and is never asked
 questions. No agent has the `question` tool. The operator's jobs are to update agent
@@ -196,6 +199,12 @@ Testing is multi-layered and adapts to the project type:
 - **Unit and integration tests:** Standard language-native frameworks (pytest, cargo test, go test, etc.)
 - **Raku (Sparky prerequisite):** Not in Rocky Linux 10 repos. Install via
   `curl -sL https://raw.githubusercontent.com/SuperBiBi20/raku-install/master/raku-install | bash`
+
+**Screenshots.** The team reads screenshots directly. The operator gives the team a directory of
+screenshots (`virsh screenshot` output, Sparky results, operator-captured UI shots) and the agent
+reads the images from that directory with `read` and analyzes them visually. Text tools (md5, PIL
+histograms, OCR) stay as auxiliary evidence. The planning doc is text, so the record states what
+the image shows, with the text checks alongside.
 
 **Test instances get names, not ports.** Every VM and container used for testing is reachable
 through portless: `portless alias <name> <host-port>` registers a static route, and the instance
