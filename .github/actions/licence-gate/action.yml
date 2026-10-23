@@ -1,0 +1,37 @@
+# Composite action: run the team's licence gate on the checked-out repo.
+#
+# Outputs:
+#   outcome  PASS | POLICY_EXCEPTION | BLOCK | HARD_STOP
+#   exit     the scanner's exit code (0 | 6 | 7 | 8)
+#
+# The action always exits 0 and reports through outputs; the workflow
+# decides which outcomes are failures. That keeps this action reusable
+# from other workflows (and from other teams' checkouts) without
+# hard-coding a policy decision.
+name: licence-gate
+description: Run the Team Chaotix licence gate on the repo root
+
+outputs:
+  outcome:
+    description: The gate outcome (PASS | POLICY_EXCEPTION | BLOCK | HARD_STOP)
+  exit:
+    description: The scanner exit code
+
+runs:
+  using: composite
+  main:
+    # Bind inputs to env per house rule; nothing is interpolated into a
+    # run: body.
+    - name: Run the licence gate
+      shell: bash
+      env:
+        LICENSE_PATH: ${{ github.workspace }}
+      run: |
+        set -u
+        rc=0
+        REPORT="$(bash "${GITHUB_ACTION_PATH}/run.sh" "${LICENSE_PATH}" --json)" || rc=$?
+        printf '%s\n' "${REPORT}"
+        OUTCOME="$(printf '%s\n' "${REPORT}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["outcome"])' 2>/dev/null || echo "UNKNOWN")"
+        echo "outcome=${OUTCOME}" >> "${GITHUB_OUTPUT}"
+        echo "exit=${rc}" >> "${GITHUB_OUTPUT}"
+        exit 0

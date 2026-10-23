@@ -1,0 +1,55 @@
+# Team selftest: the deterministic test gate for the team platform.
+#
+# Runs the same tests locally (tests/selftest.sh) and in CI, so a green
+# tick here means the local run was green too. No model is invoked in this
+# workflow; the suite is fully deterministic.
+name: Team Selftest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege: the workflow only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    # The runner is this machine (AGENTS.md section 6), so the suite runs
+    # against the same python, openssl and tools the team uses.
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+    steps:
+      # Checkout this repository, SHA-pinned.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Python is system-provided; install the team's declared dependencies
+      # user-scoped so the system python stays untouched.
+      - name: Install python dependencies
+        shell: bash
+        run: |
+          python3 -m pip install --user --break-system-packages -r team/requirements.txt
+
+      # The whole gate: syntax, YAML/JSON parse, no-turn-caps rule,
+      # agent config gate, pytest, and the licence gate on this repo.
+      - name: Run the selftest
+        shell: bash
+        run: bash tests/selftest.sh
+
+      # A suite that stopped asserting reads as green to a naive reader, so
+      # the check count itself is asserted.
+      - name: Confirm the selftest asserted something
+        shell: bash
+        run: |
+          OUT="$(bash tests/selftest.sh)"
+          COUNT="$(printf '%s\n' "$OUT" | grep -Eo '[0-9]+ checks passed' | grep -o '^[0-9]' || true)"
+          MIN=40
+          if [ -z "${COUNT}" ] || [ "${COUNT}" -lt "${MIN}" ]; then
+            echo "::error::selftest reported ${COUNT:-no} checks; expected at least ${MIN}"
+            exit 1
+          fi
+          printf 'selftest: %s checks passed\n' "${COUNT}"

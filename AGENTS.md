@@ -1,7 +1,7 @@
 # AGENTS.md — shared operating rules for Team Chaotix
 
 Auto-loaded by opencode for every agent (globbed up from the working directory). These rules are
-binding on all eleven agents. Agent-specific instructions live in `.opencode/agents/`.
+binding on all twelve agents. Agent-specific instructions live in `.opencode/agents/`.
 
 ---
 
@@ -28,7 +28,7 @@ exactly one agent runs at a time. All dispatch is sequential (see section 3).
 
 **The operator model.** The operator (the human) sits above the team and is never asked
 questions. No agent has the `question` tool. The operator's jobs are to update agent
-configuration (prompts, permissions, `steps`, model) and to check outputs (planning docs, PRs,
+configuration (prompts, permissions, model) and to check outputs (planning docs, PRs,
 releases). Decisions are recorded in planning docs, not asked. Two step-stops remain by policy,
 executed by record rather than by question: PRs to external repositories outside `metalllinux`,
 and deployments that require human confirmation.
@@ -74,6 +74,7 @@ Every planning doc has this exact section order:
 ## Review                 (Shadow)
 ## Security               (Omega)
 ## License (Charmy)       (Charmy)
+## License Audit (Flicky) (Flicky)
 ## Test Results           (Big)
 ## Docs                   (Vector)
 ## Release                (Knuckles)
@@ -108,15 +109,15 @@ the command that produced it. If you did not verify something, say so explicitly
 
 - **`Robotnik` is the only agent that delegates.** The project config sets `subagent_depth: 1`
   (v2.0.18 omits it as a legacy setting; kept for compatibility). The guarantee that actually
-  binds is `task` permissions: only robotnik has task allows, all ten workers have `task: deny`.
+  binds is `task` permissions: only robotnik has task allows, all eleven workers have `task: deny`.
 - **The model endpoint runs `--parallel 1`: one inference slot, one agent at a time.** All
   dispatch is strictly sequential. `Robotnik` issues **one task call, waits for it to complete,
   then issues the next**. Issuing several task calls in a single message queues them against the
   single slot, wastes context, and risks timeouts.
 - The review chain is independent, so its internal order is free, but it still runs one at a
-  time in a fixed sequence: `Shadow` → `Omega` → `Big` → `Charmy`.
-- The cycle is a single chain: `Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Charmy` →
-  `Tails` fixes → `Vector` → `Knuckles`.
+  time in a fixed sequence: `Shadow` → `Omega` → `Big` → `Charmy` → `Flicky`.
+- The cycle is a single chain: `Amy` → `Tails` → `Shadow` → `Omega` → `Big` → `Charmy` → `Flicky`
+  → `Tails` fixes → `Vector` → `Knuckles`.
 - Keep briefs to subagents short. Point at the planning doc; do not restate it.
 
 ---
@@ -207,9 +208,10 @@ histograms, OCR) stay as auxiliary evidence. The planning doc is text, so the re
 the image shows, with the text checks alongside.
 
 **Test instances get names, not ports.** Every VM and container used for testing is reachable
-through portless: `portless alias <name> <host-port>` registers a static route, and the instance
-is reached at `https://<name>.localhost` (`portless get <name>`). No test instance is addressed
-by a raw port. VM provisioning goes through `scripts/vm-create` (section 12).
+through portless: `portless alias <name> <host> <port>` registers a static route, and the
+instance is reached at `https://<name>.localhost` (`portless resolve <name>` prints the URL,
+`portless probe <name>` checks liveness). No test instance is addressed by a raw port. VM
+provisioning goes through `scripts/vm-create` (section 12).
 
 The `Big (Testing)` agent determines which testing layers apply and configures them accordingly.
 
@@ -229,16 +231,25 @@ be handled autonomously.
 
 ## 9. License compliance
 
-License compliance is owned by `Charmy (License)`, fourth in the review chain. Charmy verifies
-two things, always against the **upstream source repository** at the ref actually used:
+Licence checking is owned by `Flicky (Licence)`, fifth in the review chain; licence work is her
+whole job. She runs the machine gate (`scripts/licence-check`, scanner and house policy in
+`team/licenses/`) and verifies two things, always against the **upstream source repository** at
+the ref actually used:
 
-1. The project's own license is declared and appropriate for what the project does.
-2. Every piece of imported open source code is respected: the license as declared upstream, the
-   copyright headers, the license file, and the NOTICE/attribution obligations.
+1. The project's own licence is declared and appropriate for what the project does.
+2. Every piece of imported open source code is respected: the licence as declared upstream, the
+   copyright headers, the licence file, and the NOTICE/attribution obligations.
 
-`Omega` flags license signals as security findings (vector `license`); the pass/fail verdict
-lives in `## License (Charmy)` in the planning doc. Never distribute code under incompatible
-licenses. GPL-2.0 code remains GPL-2.0.
+The gate emits four outcomes with fixed exit codes: `PASS` (0), `POLICY_EXCEPTION` (6),
+`BLOCK` (7), `HARD_STOP` (8). "Avoid" is not "refuse": inherited copyleft is frequently the only
+lawful option, so an avoid-list licence is a recorded exception, never a block. The gate is
+evidence, not a lawyer; legal conclusions go in `## License Audit (Flicky)` with the upstream
+ref cited. The gate runs in CI (`Licence Check` workflow) and on this repo in every
+`tests/selftest.sh`.
+
+`Charmy` stays fourth in the chain and owns `## License (Charmy)` for the licence review of the
+change; `Omega` flags license signals as security findings (vector `license`). Never distribute
+code under incompatible licenses. GPL-2.0 code remains GPL-2.0.
 
 ---
 
@@ -262,10 +273,12 @@ Applies to READMEs, PR descriptions, and anything the operator reads.
 ## 11. Least privilege
 
 Every agent operates with the minimum permissions required for its role. Every agent gets the
-`skill` privilege and a per-agent turn cap (`steps` in its frontmatter). If an agent does not
-need write access, it does not get write access. `Espio` is the only agent whose `edit` is
-scoped to `planning/`. No agent has the `question` tool. See individual agent definitions for
-specific permissions.
+`skill` privilege. There are no turn caps on this team: no max-turns field and no `steps` in any
+agent frontmatter, and none will be added (operator requirement; `tests/config_gate.py` enforces
+the roster, the thinking levels, and this rule on every selftest). If an agent does not need
+write access, it does not get write access. `Espio` is the only agent whose `edit` is scoped to
+`planning/`. No agent has the `question` tool. See individual agent definitions for specific
+permissions.
 
 ---
 
@@ -302,8 +315,8 @@ kernel, packages, and services, and cannot isolate any of that.
 A VM's test port is forwarded to the host and given a stable named URL:
 
 ```bash
-virsh portforward <vm> 80            # returns the host port
-portless alias <vm> <host-port>       # https://<vm>.localhost
+virsh portforward <vm> 80                    # returns the host port
+portless alias <vm> 127.0.0.1 <host-port>    # https://<vm>.localhost
 ```
 
 No service in a VM is identified by a raw port.
@@ -325,11 +338,12 @@ limit. Destroy what you are done with.
 - **Virtualization:** libvirt + QEMU/KVM (installed, `libvirtd` running, `howard` in `libvirt`).
   Cockpit Machines (https://localhost:9090) for VM administration. Golden image and
   `scripts/vm-*` per section 12.
-- **Runner:** GitHub Actions self-hosted, extracted to `~/gh-runner/`, needs registration token
-  from https://github.com/metalllinux/team-chaotix/settings/actions/runners
+- **Runner:** GitHub Actions self-hosted, extracted in-repo at the repo root (`bin/`, `config.sh`,
+  `run.sh`; all gitignored), registered to `metalllinux/team-chaotix` (section 6)
 - **Node.js:** nodejs24 (`node`/`npm` via `/usr/local/bin` symlinks to `node-24`/`npm-24`)
 - **agentgateway:** `/usr/local/bin/agentgateway` (section 15)
-- **portless:** HTTPS proxy on 443, named `.localhost` URLs (sections 7 and 12)
+- **portless:** HTTPS proxy on 443, named `.localhost` URLs (sections 7 and 12). Implementation
+  in `team/portless/` (section 18); CLI at `~/.local/bin/portless`; registry state machine-local
 - **agentsmd:** `~/.local/bin/agentsmd` (section 16)
 
 ### Credential storage
@@ -383,16 +397,20 @@ All model traffic and all agent-to-agent traffic for the team routes through age
   endpoint (`http://192.168.1.106:8094`) with the model name unchanged, so both
   `Qwen3.8-27B-UD-IQ3_XXS` and `Qwen3.8-27B-UD-IQ4_XS` work. The gateway is the only place the
   upstream address is configured, and it logs every request.
-- **A2A (port 4100).** Fronts the team's A2A adapter (`scripts/a2a-server.py`, local port 4210,
-  running as the `team-chaotix-a2a` system service). The adapter exposes Team Chaotix as an
-  A2A agent:
+- **A2A (port 4100).** Fronts the team's A2A adapter (`scripts/a2a-server.py` entry point,
+  implementation in `team/a2a/server.py`, local port 4210, running as the `team-chaotix-a2a`
+  system service). The adapter exposes Team Chaotix as an A2A agent:
   - **Capability discovery:** `GET /.well-known/agent.json` returns an agent card whose skills
     are generated from `.opencode/agents/`, so the card is always the team's current roster.
-  - **Task collaboration:** `POST /` (JSON-RPC `message/send`, `message/stream`, `tasks/get`).
-    A task is addressed with a leading `@<agent>` token (default `@robotnik`) and runs one
-    `opencode run --standalone --agent <role>` session in this directory. Tasks are queued one
-    at a time, matching the single inference slot. The final task's
+  - **Task collaboration:** `POST /` (JSON-RPC `message/send`, `message/stream`, `tasks/get`,
+    `tasks/cancel`). A task is addressed with a leading `@<agent>` token (default `@robotnik`)
+    and runs one `opencode run --standalone --agent <role>` session in this directory. Tasks
+    are queued one at a time, matching the single inference slot. The final task's
     `status.message.parts[0].text` is the agent's output.
+  - **One id, several systems:** every task carries a `contextId`; the caller may supply one or
+    the server mints it. The contextId is also the langgraph thread id for the cycle graph
+    (section 18), so the A2A task record and the graph checkpoint of the same run are queryable
+    from one string.
 
 A2A is the protocol **between** team instances (this team and another instance, on another
 machine or VM). Inside one instance, agents still communicate through the planning doc
@@ -432,8 +450,39 @@ Every tool call costs latency, context, and a share of the single inference slot
 3. **Verify, then act, in the same turn** when the result is in hand. Do not end a turn to
    "think about" a result you already have.
 4. **No tool for a thought.** A decision that needs no tool is not a turn.
-5. **`steps` is a budget, not a target.** Each agent's `steps` cap bounds its turns. Hitting the
-   cap is a planning failure: re-brief with a smaller scope and a planning-doc pointer.
+5. **Turns are not capped.** There is no per-agent turn budget on this team. A stage that needs
+   more than one turn gets a smaller re-brief with a planning-doc pointer, because the planning
+   doc (section 2) is the durable context, not the session.
+
+## 18. Team platform (`team/`)
+
+The team's own machinery, as a python package in the repo. Dependencies are declared in
+`team/requirements.txt` (langgraph, langchain-core, langgraph-checkpoint-sqlite, PyYAML,
+pytest). Recorded in `planning/docs/TASK-0037-team-platform.md`.
+
+- **`team/graph/`** the cycle as a langgraph `StateGraph`: intake → plan → implement → review
+  chain (`Shadow` → `Omega` → `Big` → `Charmy` → `Flicky`) → fix loop → docs → release →
+  archive. Runs are checkpointed per thread id (SQLite under `.runs/`, gitignored; in-memory
+  when no runs dir is available) and the thread id is the A2A `contextId`. The default runner
+  is one `opencode run --standalone` session per stage; tests inject a fake runner, so the
+  graph is testable without a model. There are no turn caps in the cycle state;
+  `max_revisions` is a loop guard for the review chain, not a budget on turns.
+- **`team/a2a/`** the A2A server and client (section 15).
+- **`team/portless/`** name-based service addressing (sections 7 and 12): a registry plus a
+  Host-routed proxy with a local `*.localhost` certificate authority. The CLI is
+  `team/portless/portless`, installed at `~/.local/bin/portless`; registry state is
+  machine-local, never committed.
+- **`team/licenses/`** the licence scanner and the house policy (section 9).
+  `scripts/licence-check` is its entry point and the CI gate.
+- **`team/gateway/`** the agentgateway config template and `gateway.sh` (section 15):
+  apply/up/down/status/selftest. Rendered config and state are machine-local, never committed.
+- **`tests/selftest.sh`** is the single test entry point, run locally before pushing and in CI
+  (`Team Selftest` workflow): syntax gates, YAML/JSON parse, the no-turn-caps rule, the agent
+  config gate (`tests/config_gate.py`), pytest, and the licence gate on this repo. No model is
+  invoked. CI asserts a minimum check count, so a suite that stopped asserting cannot read as
+  green.
+
+---
 
 ## Learned rules
 

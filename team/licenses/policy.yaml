@@ -1,0 +1,143 @@
+# Team Chaotix house licence policy.
+#
+# This is the metalllinux house policy, encoded for the licence gate
+# (team/licenses/core.py) and for the Flicky agent. It is a restatement
+# for machines, not legal advice: a finding that reads like a legal
+# conclusion is routed to the operator in the planning doc, never decided
+# here.
+#
+# The distinction the gate exists to make: "avoid" is not "refuse".
+# Inherited copyleft is frequently the only lawful option, so an avoid-list
+# licence is a POLICY_EXCEPTION (record it), not a BLOCK.
+
+version: 1
+owner: Team Chaotix (metalllinux)
+effective: 2026-10-23
+
+disclaimer: >-
+  Internal guidance only. Not legal advice. Specific situations may
+  require operator review; a licence decision that cannot be made from
+  this file is recorded in the planning doc's ## License Audit and routed
+  to the operator.
+
+# ---------------------------------------------------------------------------
+# Approved for team-originated code and its dependencies
+# ---------------------------------------------------------------------------
+approved:
+  code:
+    - spdx: MIT
+      when: >-
+        The default. Extremely permissive; only requires preservation of
+        copyright and licence notices.
+    - spdx: Apache-2.0
+      when: >-
+        Patent exposure matters, or the project collaborates with vendors.
+        Same shape as MIT plus an explicit patent grant. Team Chaotix
+        itself is Apache-2.0.
+    - spdx: BSD-3-Clause
+      when: >-
+        Attribution and non-endorsement matter.
+
+  non_code:
+    - spdx: CC-BY-4.0
+      when: >-
+        Documentation, guides, website content. Creative Commons licences
+        are NOT open source and must not be applied to code.
+    - spdx: CC0-1.0
+      when: >-
+        Snippets, boilerplate, trivial configuration. Use rarely.
+
+# ---------------------------------------------------------------------------
+# Avoid. Not "refuse" -- record an exception.
+# ---------------------------------------------------------------------------
+avoid:
+  - spdx: GPL-2.0-only
+    severity: policy_exception
+  - spdx: GPL-2.0-or-later
+    severity: policy_exception
+  - spdx: GPL-3.0-only
+    severity: policy_exception
+  - spdx: GPL-3.0-or-later
+    severity: policy_exception
+  - spdx: LGPL-2.1-only
+    severity: policy_exception
+  - spdx: LGPL-2.1-or-later
+    severity: policy_exception
+  - spdx: LGPL-3.0-only
+    severity: policy_exception
+  - spdx: LGPL-3.0-or-later
+    severity: policy_exception
+  - spdx: AGPL-3.0-only
+    severity: policy_exception
+    note: >-
+      The most restrictive open source licence. Extends GPL obligations to
+      network and cloud use. Strictly avoid for any use.
+
+# Blocker severity: never a silent pass, never an exception.
+  - spdx: BUSL-1.1
+    severity: blocker
+    note: >-
+      Not an open source licence and not OSI-recognised. Source-available.
+      Prohibits production use without an Additional Use Grant.
+  - spdx: SSPL-1.0
+    severity: blocker
+    note: >-
+      Not OSI-recognised. Banned by Debian and Fedora.
+
+# ---------------------------------------------------------------------------
+# Hard stops
+# ---------------------------------------------------------------------------
+# A licence on this list anywhere, or a condition below, is HARD_STOP.
+hard_stop_licences: []
+hard_stop:
+  - condition: no_licence
+    reason: >-
+      A project or dependency without a declared licence cannot be used:
+      copyright attaches on creation, and a work is not open source
+      without an open source licence. "There is no LICENSE file" is the
+      most restrictive finding available, not the least.
+  - condition: source_available_not_osi
+    reason: >-
+      Source-available licences are strictly avoided for any dependency in
+      public-facing work.
+
+# ---------------------------------------------------------------------------
+# Compatibility, when two licences meet
+# ---------------------------------------------------------------------------
+compatibility:
+  - pair: [permissive, permissive]
+    verdict: pass
+  - pair: [permissive, copyleft]
+    verdict: policy_exception
+    note: >-
+      The combined work typically takes the copyleft licence. That is a
+      licence CHANGE on the combined work, so the destination repo's
+      licence is the thing in question, not just the incoming file.
+  - pair: [copyleft, copyleft_different]
+    verdict: blocker
+    note: >-
+      May be incompatible with each other. GPL-2.0 and GPL-3.0 are not
+      directly compatible.
+
+# ---------------------------------------------------------------------------
+# Escalation
+# ---------------------------------------------------------------------------
+escalation:
+  owner: operator
+  note: >-
+    The route to a legal question on this team is the operator, via the
+    planning doc's ## License Audit section. An agent produces the finding
+    with the clause quoted and the alternatives named; it never grants or
+    refuses an exception itself.
+
+# ---------------------------------------------------------------------------
+# Practical guidelines
+# ---------------------------------------------------------------------------
+guidelines:
+  - Always prefer permissive licences (MIT, Apache-2.0, BSD) for dependencies.
+  - Never distribute code under incompatible licences. GPL code remains GPL.
+  - Document every open source component used, including its licence.
+  - Verify imported code against the upstream source repository at the ref
+    actually used, not against a fork or a mirror.
+  - Enforce separation between team code and copyleft components through
+    architectural boundaries.

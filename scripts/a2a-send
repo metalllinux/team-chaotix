@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""Send one task to the team's A2A endpoint and wait for the result.
+
+See team/a2a/client.py for the module form. Examples:
+
+  scripts/a2a-send @shadow "Review TASK-0037 (planning/docs/...)"
+  scripts/a2a-send "Intake issue 14 on metalllinux/team-chaotix"
+  A2A_BASE_URL=http://127.0.0.1:4210 scripts/a2a-send @big "Run the matrix"
+"""
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from team.a2a import client  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(client.main())

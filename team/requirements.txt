@@ -1,0 +1,15 @@
+# Python dependencies for the team platform (team/).
+#
+# Install with:  python3 -m pip install --user -r team/requirements.txt
+# (on Rocky 10 add --break-system-packages, or use a venv)
+#
+# langgraph  the cycle state machine (team/graph)
+# langchain-core  typed messages for the inter-agent log (langchain family)
+# langgraph-checkpoint-sqlite  durable per-run checkpoints (team/graph)
+# PyYAML     licence policy file (team/licenses)
+# pytest     the test suite (tests/)
+langgraph>=1.0
+langchain-core>=0.3
+langgraph-checkpoint-sqlite>=2.0
+PyYAML>=6.0
+pytest>=8.0

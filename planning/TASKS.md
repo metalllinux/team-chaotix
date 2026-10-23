@@ -43,6 +43,7 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0034 | Cinnamon shell no-render: panel and app windows not rendered on Rocky_Linux_10_Cinnamon | Robotnik | planning/docs/TASK-0034-cinnamon-shell-no-render.md | Done (2026-10-10; all five DoD boxes verified and ticked; verdict: environment limitation) |
 | TASK-0035 | Cinnamon Control Center Power pane: D-Bus Unauthorized (36) at cs_power.py:883 | Robotnik | planning/docs/TASK-0035-cinnamon-power-pane-dbus-unauthorized.md | Done (canonical push awaits the operator's token rotation, see ## Release; upstream report declined by operator 2026-10-16) |
 | TASK-0036 | Host reinstall: back up the state outside ~/AI and ~/Linux (GPG signing key, old public key, VM disks, team files) | Robotnik | planning/docs/TASK-0036-host-reinstall-backup.md | In Progress (operator 2026-10-20: ~/AI and ~/Linux are auto-backed up; the rest is this task) |
+| TASK-0037 | Team platform: cycle graph, A2A, portless, licence gate, gateway wrapper; new Flicky licence agent | Robotnik | planning/docs/TASK-0037-team-platform.md | In Progress (implementation in worktree, local selftest is the gate; landing on main via branch improvements/team-platform-2026-10-23) |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the

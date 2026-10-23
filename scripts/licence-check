@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# licence-check -- the team's machine-checkable licence gate (Flicky's tool).
+#
+# Scans the project root for licence declarations and evaluates them
+# against team/licenses/policy.yaml. Exit codes are the contract:
+#
+#   0  PASS              approved and compatible
+#   6  POLICY_EXCEPTION  lawful, on the avoid list, needs a recorded exception
+#   7  BLOCK             incompatible, or a blocker-severity avoid licence
+#   8  HARD_STOP         no licence at all, or a hard-stop condition
+#
+# "Avoid" is not "refuse": inherited copyleft is frequently the only lawful
+# option, so it is an exception to record, not a block.
+#
+# CI runs this in .github/workflows/licence-check.yml; Flicky runs it by
+# hand and writes the verdict into the planning doc's ## License Audit.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# CI must not fail because a linter is missing; the scanner is the gate.
+if [ "$#" -gt 0 ]; then
+  exec python3 "${ROOT}/team/licenses/core.py" "$@"
+fi
+exec python3 "${ROOT}/team/licenses/core.py" "${ROOT}"

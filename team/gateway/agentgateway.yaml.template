@@ -1,0 +1,47 @@
+# Team Chaotix agentgateway configuration (TEMPLATE).
+#
+# Rendered by team/gateway/gateway.sh into
+# ~/.config/team-chaotix/agentgateway.yaml with the values below. The
+# rendered file is machine-local and never committed.
+#
+# Layout, per AGENTS.md section 15:
+#   - LLM on 4000: OpenAI-compatible endpoint. opencode providers point
+#     their baseURL at http://127.0.0.1:4000/v1. The gateway forwards to
+#     the EVO-X2 endpoint with the model name unchanged, and is the only
+#     place the upstream address is configured.
+#   - A2A on 4100: fronts the team's A2A adapter (team/a2a/server.py,
+#     local port 4210).
+#   - UI on 4000: the gateway's own UI, for inspection only.
+
+gateways:
+  default:
+    port: __LLM_PORT__
+    bindAddress: 127.0.0.1
+  a2a:
+    port: __A2A_PORT__
+    bindAddress: 127.0.0.1
+
+llm:
+  gateways: [default]
+  models:
+  - name: "*"
+    provider:
+      custom:
+        formats:
+        - type: completions
+        params:
+          baseUrl: "__UPSTREAM_BASE_URL__"
+          model: "__TEAM_MODEL__"
+
+routes:
+- name: a2a-adapter
+  gateways: [a2a]
+  matches:
+  - path:
+      pathPrefix: /
+  backends:
+  - host: 127.0.0.1:__ADAPTER_PORT__
+    weight: 1
+
+ui:
+  gateways: [default]

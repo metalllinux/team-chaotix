@@ -1,0 +1,63 @@
+# Licence Check (Flicky): the machine-checkable licence gate.
+#
+# Runs the same scanner Flicky runs by hand. Exit codes:
+#   0 PASS  6 POLICY_EXCEPTION  7 BLOCK  8 HARD_STOP
+# The gate fails on BLOCK and HARD_STOP; POLICY_EXCEPTION passes with a
+# warning, because "avoid" is not "refuse" and inherited copyleft is
+# frequently the only lawful option (record it, do not silently pass it).
+name: Licence Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "LICENSE"
+      - "team/**"
+      - "scripts/**"
+      - ".opencode/package.json"
+      - ".github/workflows/licence-check.yml"
+      - ".github/actions/licence-gate/**"
+  pull_request:
+    paths:
+      - "LICENSE"
+      - "team/**"
+      - "scripts/**"
+      - ".opencode/package.json"
+      - ".github/workflows/licence-check.yml"
+      - ".github/actions/licence-gate/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  licence:
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      contents: read
+    steps:
+      # Checkout this repository, SHA-pinned.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # The gate is a composite action so the same run.sh is reusable.
+      - id: gate
+        uses: ./.github/actions/licence-gate
+
+      # Interpret the gate's exit code: 0 and 6 pass (6 warns), 7 and 8 fail.
+      - name: Report outcome
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.gate.outputs.outcome }}
+        run: |
+          case "${OUTCOME}" in
+            PASS)
+              echo "licence-check: PASS"
+              ;;
+            POLICY_EXCEPTION)
+              echo "::warning::licence-check: POLICY_EXCEPTION - record the exception in the planning doc's ## License Audit"
+              ;;
+            *)
+              echo "::error::licence-check: ${OUTCOME}"
+              exit 1
+              ;;
+          esac

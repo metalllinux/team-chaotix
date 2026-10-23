@@ -25,6 +25,7 @@ permission:
     "omega": allow
     "big": allow
     "charmy": allow
+    "flicky": allow
     "vector": allow
     "sonic": allow
     "knuckles": allow

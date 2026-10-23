@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""portless -- reach team services by name, never by raw port.
+
+This file is the CLI; the implementation is ``team/portless/core.py`` so
+tests can import it without executing the CLI. The repo is the source of
+truth: install by symlinking this file into ~/.local/bin (the team's
+install step does exactly that).
+
+Commands:
+
+  portless alias NAME HOST PORT [--proto http|https] [--note TEXT]
+  portless rm NAME
+  portless list [--json]
+  portless resolve NAME
+  portless probe NAME
+  portless serve [--port N] [--bind ADDR] [--no-tls]
+  portless ca
+
+State lives in ~/.local/state/team-chaotix/portless (override with
+PORTLESS_STATE_DIR) and is never committed.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+# Make the package importable no matter where the symlink points from.
+_REPO = Path(__file__).resolve()
+while _REPO.name != "team" and _REPO.parent != _REPO:
+    _REPO = _REPO.parent
+if _REPO.name == "team":
+    _REPO = _REPO.parent
+sys.path.insert(0, str(_REPO))
+
+from team.portless import core  # noqa: E402
+
+
+def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    ap = argparse.ArgumentParser(prog="portless")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("alias", help="register a service by name")
+    p.add_argument("name")
+    p.add_argument("host")
+    p.add_argument("port", type=int)
+    p.add_argument("--proto", choices=["http", "https"], default="http")
+    p.add_argument("--note", default="")
+
+    p = sub.add_parser("rm", help="remove a service")
+    p.add_argument("name")
+
+    p = sub.add_parser("list", help="list services")
+    p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("resolve", help="print a service's URL")
+    p.add_argument("name")
+
+    p = sub.add_parser("probe", help="reach a service and report status")
+    p.add_argument("name")
+
+    p = sub.add_parser("serve", help="run the Host-routed proxy")
+    p.add_argument("--port", type=int, default=443)
+    p.add_argument("--bind", default="127.0.0.1")
+    p.add_argument("--no-tls", action="store_true")
+
+    sub.add_parser("ca", help="print the local CA (trust it for *.localhost)")
+
+    args = ap.parse_args(argv)
+
+    if args.cmd == "alias":
+        svc = core.add_alias(args.name, args.host, args.port,
+                             proto=args.proto, note=args.note)
+        print("%s -> %s" % (args.name, svc["url"]))
+        return 0
+    if args.cmd == "rm":
+        if not core.remove_alias(args.name):
+            print("portless: no such service: %s" % args.name, file=sys.stderr)
+            return 1
+        return 0
+    if args.cmd == "list":
+        svcs = core.list_services()
+        if args.json:
+            print(json.dumps(svcs, indent=2, sort_keys=True))
+            return 0
+        for name in sorted(svcs):
+            s = svcs[name]
+            note = ("  # %s" % s["note"]) if s.get("note") else ""
+            print("%-24s %s%s" % (name, s["url"], note))
+        return 0
+    if args.cmd == "resolve":
+        print(core.resolve(args.name)["url"])
+        return 0
+    if args.cmd == "probe":
+        r = core.probe(args.name)
+        if r["ok"]:
+            print("%s OK %s" % (r["name"], r["status"]))
+        else:
+            print("%s FAIL %s" % (r["name"], r.get("error")), file=sys.stderr)
+            return 1
+        return 0
+    if args.cmd == "serve":
+        port = core.serve(port=args.port, bind=args.bind, tls=not args.no_tls)
+        print("portless: serving on %s:%d (tls=%s)"
+              % (args.bind, port, not args.no_tls))
+        try:
+            import time
+            while True:
+                time.sleep(3600)
+        except KeyboardInterrupt:
+            pass
+        return 0
+    if args.cmd == "ca":
+        ca = core.ensure_ca()
+        print(ca.read_text(), end="")
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

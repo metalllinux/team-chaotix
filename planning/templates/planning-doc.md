@@ -36,6 +36,7 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [ ] `Omega`: no unresolved findings above `low` in `## Security`
 - [ ] `Big`: all harness checks PASS, with no silently dropped checks
 - [ ] `Charmy`: no unresolved findings in `## License (Charmy)`
+- [ ] `Flicky`: gate outcome `PASS`, or a `POLICY_EXCEPTION` recorded in `## License Audit (Flicky)`
 - [ ] `Vector`: documentation updated as affected
 - [ ] Human review completed (if external PR or deployment)
 
@@ -136,6 +137,29 @@ repository and the ref used, never from a copy in this repo.*
 | | | | yes/no + what | pass/finding |
 
 **Verdict:** pass | findings *(Tails fixes; the chain re-runs until clean)*
+
+---
+
+## License Audit (Flicky)
+
+*Owner: `Flicky`. Fifth in the review chain. Runs the machine gate; the gate is evidence, and
+this section records it. Never grants or refuses an exception.*
+
+**Gate:** `scripts/licence-check <project-root>` (exit 0 `PASS` · 6 `POLICY_EXCEPTION` ·
+7 `BLOCK` · 8 `HARD_STOP`)
+
+**Outcome:** PASS | POLICY_EXCEPTION | BLOCK | HARD_STOP *(state the exit code that produced it)*
+
+**Declarations**
+
+| File / component | Declared | Verified at (upstream @ ref) |
+|---|---|---|
+| | | |
+
+**Exceptions recorded:** *(each POLICY_EXCEPTION with the clause quoted and why it is lawful,
+or "none")*
+
+**Verdict:** pass | findings *(fail-closed: a gate run that cannot be read is FAIL)*
 
 ---
 

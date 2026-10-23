@@ -1,4 +1,6 @@
 node_modules/
+__pycache__/
+*.pyc
 *.log
 .DS_Store
 Thumbs.db
@@ -33,3 +35,6 @@ gh_token*
 # agentsmd local evidence store (raw sessions, trajectories, ledger).
 # Rules render into AGENTS.md; the evidence never leaves the machine.
 .agentsmd/
+
+# Cycle graph run checkpoints (team/graph): machine-local evidence, never committed.
+.runs/
