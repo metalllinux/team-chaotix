@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# pre-push: the team's standing local gate (operator decision 2026-10-24:
+# while the repo is public, no self-hosted runner can be registered, so the
+# selftest is the gate that a push must pass).
+#
+# Enable per clone (already set on the team machine):
+#   git config core.hooksPath scripts/hooks
+#
+# The push goes out only if the selftest is green on this checkout.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+exec bash "${ROOT}/tests/selftest.sh"

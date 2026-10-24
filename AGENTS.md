@@ -185,6 +185,15 @@ The agents run **locally in opencode**. CI is entirely deterministic: agents *di
 with `gh` and *read* their results. There is **no model API call in any workflow**, and none is to
 be added.
 
+### Local gate before push
+
+GitHub does not allow self-hosted runner registration on public repositories, and this repo is
+public (operator decision 2026-10-24: keep it public). Until the repo goes private, the effective
+gate is the local selftest, made mechanical by `scripts/hooks/pre-push`: every push runs
+`tests/selftest.sh` and is blocked on failure. Enable per clone with
+`git config core.hooksPath scripts/hooks` (already set on the team machine). The workflows stay
+defined for the self-hosted runner and will run once it can be registered.
+
 ---
 
 ## 7. Testing strategy
@@ -339,7 +348,10 @@ limit. Destroy what you are done with.
   Cockpit Machines (https://localhost:9090) for VM administration. Golden image and
   `scripts/vm-*` per section 12.
 - **Runner:** GitHub Actions self-hosted, extracted in-repo at the repo root (`bin/`, `config.sh`,
-  `run.sh`; all gitignored), registered to `metalllinux/team-chaotix` (section 6)
+  `run.sh`; all gitignored). Not registered: GitHub does not allow self-hosted runner
+  registration on public repositories, and this repo is public (operator decision 2026-10-24:
+  keep it public). The effective gate is the local selftest via the pre-push hook
+  (section 6); if the repo ever goes private, register the extracted runner
 - **Node.js:** nodejs24 (`node`/`npm` via `/usr/local/bin` symlinks to `node-24`/`npm-24`)
 - **agentgateway:** `/usr/local/bin/agentgateway` (section 15)
 - **portless:** HTTPS proxy on 443, named `.localhost` URLs (sections 7 and 12). Implementation

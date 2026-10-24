@@ -12,8 +12,9 @@
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads, so a
 stale entry means the whole loop runs on bad information.*
 
-**Now:** implementation complete in worktree `.team-chaotix-wt/team-platform` (branch
-`improvements/team-platform-2026-10-23`); local selftest is the gate before merge to main.
+**Now:** landed on main as `28e4b2a` (branch `improvements/team-platform-2026-10-23`, merged
+2026-10-24). Local selftest green: 55 checks, 28 pytest tests, licence gate PASS. Review chain
+sections below are still to be filled by the agents.
 
 **Environment / scope:**
 - Files in scope: `team/` (new package), `tests/` (new), `scripts/` (a2a-server.py, a2a-send,
@@ -24,9 +25,9 @@ stale entry means the whole loop runs on bad information.*
 - Graphical UI: no
 - Rocky Linux target: yes (selftest runs on the host runner)
 
-**Unknowns:**
-- Whether the self-hosted runner is registered to the repo; if not, the workflows are green on
-  paper only until it is.
+**Unknowns:** none. (The runner question is resolved: the repo is public, and GitHub does not
+allow self-hosted runner registration on public repos. Operator decision 2026-10-24: keep it
+public; the local pre-push selftest is the effective gate.)
 
 ---
 
@@ -35,17 +36,19 @@ stale entry means the whole loop runs on bad information.*
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] `team/` package implements graph, a2a, portless, licenses, gateway with tests under `tests/`
-- [ ] `tests/selftest.sh` passes locally on the host and is the CI entry point
-- [ ] No turn caps anywhere in team source (selftest gate)
-- [ ] All workers on `#low`, robotnik full thinking, robotnik the only delegator (config gate)
-- [ ] `flicky` agent exists, fifth in the review chain, owns `## License Audit (Flicky)`
-- [ ] `scripts/licence-check` emits the four outcomes with exits 0/6/7/8 and passes on this repo
-- [ ] Workflows `Team Selftest` and `Licence Check` run on the self-hosted runner, no LLM calls
-- [ ] A2A surface: agent card from roster files, message/send, message/stream, tasks/get,
+- [x] `team/` package implements graph, a2a, portless, licenses, gateway with tests under `tests/`
+- [x] `tests/selftest.sh` passes locally on the host and is the CI entry point
+- [x] No turn caps anywhere in team source (selftest gate)
+- [x] All workers on `#low`, robotnik full thinking, robotnik the only delegator (config gate)
+- [x] `flicky` agent exists, fifth in the review chain, owns `## License Audit (Flicky)`
+- [x] `scripts/licence-check` emits the four outcomes with exits 0/6/7/8 and passes on this repo
+- [x] Workflows `Team Selftest` and `Licence Check` defined, no LLM calls (self-hosted runner
+  registration is N/A while the repo is public; local pre-push selftest is the effective gate per
+  operator decision 2026-10-24)
+- [x] A2A surface: agent card from roster files, message/send, message/stream, tasks/get,
   tasks/cancel, contextId
-- [ ] portless CLI installed at `~/.local/bin/portless`; registry machine-local
-- [ ] agentgateway template + `gateway.sh` (apply/up/down/status/selftest)
+- [x] portless CLI installed at `~/.local/bin/portless`; registry machine-local
+- [x] agentgateway template + `gateway.sh` (apply/up/down/status/selftest)
 - [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
 - [ ] `Omega`: no unresolved findings above `low` in `## Security`
 - [ ] `Big`: all harness checks PASS, with no silently dropped checks
@@ -61,8 +64,9 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Robotnik`: land the branch on main (merge) and confirm CI green on the runner
-- [ ] `Robotnik`: register the self-hosted runner to the repo if not already done
+- [ ] `Robotnik`: enable the pre-push hook on fresh clones (`git config core.hooksPath scripts/hooks`)
+- [ ] `Shadow`, `Omega`, `Big`, `Charmy`, `Flicky`: run the review chain over this doc (sections
+  below are the placeholders)
 - [ ] `Flicky`: first real gate run on a target project (not this repo) to prove the path end to end
 
 ---
