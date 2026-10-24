@@ -56,7 +56,7 @@ cmd_up() {
     printf 'gateway.sh: already running (pid %s)\n' "$(cat "${PIDFILE}")"
     return 0
   fi
-  nohup "${BIN}" --config "${CONFIG}" > "${LOGFILE}" 2>&1 &
+  nohup "${BIN}" --file "${CONFIG}" > "${LOGFILE}" 2>&1 &
   echo $! > "${PIDFILE}"
   printf 'gateway.sh: agentgateway started (pid %s, log %s)\n' "$(cat "${PIDFILE}")" "${LOGFILE}"
 }
@@ -96,7 +96,7 @@ cmd_selftest() {
   work="$(mktemp -d)"
   cfg="${work}/agentgateway.yaml"
   LLM_PORT="${llm}" A2A_PORT="${a2a}" cmd_apply --config "${cfg}"
-  "${BIN}" --config "${cfg}" > "${work}/gw.log" 2>&1 &
+  "${BIN}" --file "${cfg}" > "${work}/gw.log" 2>&1 &
   local gwpid=$!
   trap 'kill "${gwpid}" 2>/dev/null || true; rm -rf "${work}"' RETURN
   local i
@@ -118,6 +118,11 @@ cmd_selftest() {
     # The adapter may be down; that is a finding, not a gateway failure.
     printf 'selftest: A2A endpoint (:%s) no adapter answer (gateway may still be up)\n' "${a2a}"
   fi
+  # The RETURN trap also fires when main() and the script itself return,
+  # where the locals are gone; clean up here and clear it.
+  trap - RETURN
+  kill "${gwpid}" 2>/dev/null || true
+  rm -rf "${work}"
   return "${rc}"
 }
 

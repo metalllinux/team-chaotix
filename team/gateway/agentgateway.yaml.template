@@ -29,9 +29,9 @@ llm:
       custom:
         formats:
         - type: completions
-        params:
-          baseUrl: "__UPSTREAM_BASE_URL__"
-          model: "__TEAM_MODEL__"
+    params:
+      baseUrl: "__UPSTREAM_BASE_URL__"
+      model: "__TEAM_MODEL__"
 
 routes:
 - name: a2a-adapter

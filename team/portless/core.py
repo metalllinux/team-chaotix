@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import socket
 import ssl
 import subprocess
@@ -170,8 +171,9 @@ def ensure_ca() -> Path:
     key = ca_dir / "server.key"
     if ca_pem.exists() and crt.exists() and key.exists():
         return ca_pem
-    if subprocess.run(["openssl", "version"], capture_output=True).returncode != 0:
-        raise PortlessError("openssl is required to mint the team CA")
+    if shutil.which("openssl") is None:
+        raise PortlessError(
+            "openssl is required to mint the team CA (dnf install openssl)")
 
     def run(cmd):
         r = subprocess.run(cmd, capture_output=True, text=True)

@@ -98,4 +98,15 @@ scripts/licence-check > /dev/null || fail "licence-check on this repo"
 PASS
 note "licence-check OK"
 
+# --- gateway selftest (boot the real binary on ephemeral ports) ------------
+# The template must not merely parse: the gateway has to boot with it.
+# Skipped when the binary is absent (same rule as shellcheck above).
+if [ -x "${AGENTGATEWAY_BIN:-/usr/local/bin/agentgateway}" ]; then
+  GW_OUT="$(bash team/gateway/gateway.sh selftest 2>&1)" || { printf '%s\n' "$GW_OUT"; fail "gateway selftest"; }
+  PASS
+  note "gateway selftest OK"
+else
+  note "agentgateway binary absent, gateway selftest skipped"
+fi
+
 printf 'SELFTEST: %s checks passed\n' "${CHECKS}"
