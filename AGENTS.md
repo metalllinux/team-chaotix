@@ -206,6 +206,12 @@ Testing is multi-layered and adapts to the project type:
   Sparrow tasks (Raku) for automated UI testing. See
   `https://docs.rockylinux.org/10/guides/automation/sparky_getting_started/`.
 - **All Rocky Linux projects:** Sparky testing applies regardless of graphical or non-graphical nature.
+- **Cinnamon / desktop RPM projects:** GPG signature verification on a fresh consumer
+  (`gpgcheck=1` install of the full published set; per-RPM `rpm -K`; the signing key's
+  fingerprint matches the documented key and the recorded fingerprint); icon parity against
+  the reference desktop (every difference fixed or documented with evidence); feature
+  parity against the reference desktop (missing features added or documented out of scope
+  with a reason).
 - **Unit and integration tests:** Standard language-native frameworks (pytest, cargo test, go test, etc.)
 - **Raku (Sparky prerequisite):** Not in Rocky Linux 10 repos. Install via
   `curl -sL https://raw.githubusercontent.com/SuperBiBi20/raku-install/master/raku-install | bash`
