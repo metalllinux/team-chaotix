@@ -44,6 +44,8 @@ Statuses: `Planning` · `In Progress` · `In Review` · `In Test` · `Releasing`
 | TASK-0035 | Cinnamon Control Center Power pane: D-Bus Unauthorized (36) at cs_power.py:883 | Robotnik | planning/docs/TASK-0035-cinnamon-power-pane-dbus-unauthorized.md | Done (canonical push awaits the operator's token rotation, see ## Release; upstream report declined by operator 2026-10-16) |
 | TASK-0036 | Host reinstall: back up the state outside ~/AI and ~/Linux (GPG signing key, old public key, VM disks, team files) | Robotnik | planning/docs/TASK-0036-host-reinstall-backup.md | In Progress (operator 2026-10-20: ~/AI and ~/Linux are auto-backed up; the rest is this task) |
 | TASK-0037 | Team platform: cycle graph, A2A, portless, licence gate, gateway wrapper; new Flicky licence agent | Robotnik | planning/docs/TASK-0037-team-platform.md | In Progress (implementation landed on main as 28e4b2a 2026-10-24; selftest 55 checks green; review chain pending; runner registration N/A while repo is public, operator decision — local pre-push selftest is the gate) |
+| TASK-0038 | Cinnamon for Rocky 10: fix GPG signing/install, System Settings launch+icon, icon parity vs F45 | Robotnik | planning/docs/TASK-0038-cinnamon-gpg-settings-icons.md | In Progress (items 1-5 done: git repair, signature audit, keyring, re-sign staged+swapped; GPG root cause = 64 RPMs under old key vs docs shipping only new key) |
+| TASK-0039 | Update team agents to catch GPG, icon, and feature-parity issues | Robotnik | planning/docs/TASK-0039-agent-gpg-icon-feature-catch.md | Planning |
 
 The "Team Chaotix V1 Setup" row is the pipeline itself, built before the team existed to build it.
 It has no planning doc because there was no team to write one. Every row after this one follows the

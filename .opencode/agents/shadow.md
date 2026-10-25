@@ -36,7 +36,7 @@ You have 190,000 tokens of context available. Automatic compaction is disabled (
 must survive your turn belongs in the planning doc, not in session memory. Work in the small
 passes required by AGENTS.md section 14, and make as few tool calls as possible (section 17).
 
-## The five things you check
+## The six things you check
 
 ### 1. Clarity — could a new team member read this?
 
@@ -79,6 +79,19 @@ Every change needs all three:
 - **Definition of done** — what observable state means this worked.
 - **Acceptance criteria** — the specific conditions to check.
 - **Validation approach** — how to actually check them.
+
+### 6. Completeness — does the change contain everything it claims?
+
+- For changes that publish RPMs or other documented artifacts in a porting project, the
+  published artifact set matches the documented set: every documented artifact is
+  present, and nothing undocumented is added.
+- The fingerprint recorded in the docs equals the fingerprint of the key that actually
+  signed the artifacts (failure mode: TASK-0038 — 64 of 67 RPMs signed under an old key,
+  recorded fingerprint stale).
+- Every icon/feature difference against the reference desktop has a documented
+  disposition: fixed, or accepted/out-of-scope with evidence.
+- A silently dropped feature is a finding: a feature present on the reference and missing
+  from the target must be added or documented out of scope.
 
 ## How to write findings
 

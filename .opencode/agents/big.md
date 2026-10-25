@@ -84,6 +84,47 @@ Before you test the happy path, check that failure is handled at all.
 - SELinux policy verification
 - Systemd service testing
 
+## Cinnamon / desktop RPM projects
+
+1. **GPG signature verification on a fresh consumer** — guards TASK-0038: 64 of 67 published
+   RPMs signed under an old key; the docs ship/import only the new key; the recorded
+   fingerprint is stale, so a `gpgcheck=1` install of the full set fails.
+   - Provision a fresh Rocky 10 consumer (`scripts/vm-create <name>` from the golden image);
+     import the documented signing key exactly as the project docs instruct (the consumer's
+     path, not the build machine's); with `gpgcheck=1`, install the full published RPM set.
+     Pass: dnf verifies every signature and the complete set installs.
+   - For every published RPM: `rpm -K <file>.rpm` must report digests/signatures OK.
+   - For every published RPM: `rpm -qp --qf '%{SIGPGP:pgpsig}\n' <file>.rpm` prints the
+     signing key ID (`(none)` means unsigned, which is a failure for a published set);
+     compare each key ID against the documented key's fingerprint via
+     `gpg --show-keys --with-fingerprint <key>`.
+   - The fingerprint recorded in the project docs must equal the fingerprint of the key
+     that actually signed the RPMs.
+   - Assumption (marked): the consumer VM's dnf may differ from the host's dnf 4.20.0, so
+     the exact `gpgcheck=1` configuration location is verified on the consumer during
+     TASK-0038. The per-RPM `rpm -K` plus key-fingerprint check is dnf-independent and
+     catches the failure mode regardless.
+2. **Icon parity against the reference desktop** — guards TASK-0038: target desktop icons do
+   not match the reference Fedora Cinnamon desktop; differences went uncaught.
+   - Capture reference baseline screenshots (Fedora Cinnamon: panel, menus, applets, file
+     manager) and the same screens on the target (Rocky 10 Cinnamon).
+   - Read both sets with `read` and enumerate every icon difference. Per `AGENTS.md`
+     section 7, the visual read is the primary evidence; a `diff -rq` of the installed
+     icon-theme directories is auxiliary text evidence alongside it.
+   - Every difference is fixed or documented as an accepted difference with evidence.
+     Pass: zero undischarged icon differences.
+3. **Feature parity against the reference desktop** — guards TASK-0038: features present on
+   the reference desktop are missing from the target RPMs; the gap went uncaught.
+   - Enumerate the features present on the reference desktop. The enumeration source is
+     the installed packages (`dnf list installed`) and the Cinnamon component classes
+     (components, panels, applets, sessions), and the unit of comparison is the feature,
+     not the package.
+   - Enumerate the same features on the target and compare at feature level. A feature
+     may be shipped under a different package name than on the reference, so package-name
+     churn is not a missing feature. Every feature present on the reference must be
+     present on the target or documented out of scope with a reason. Pass: no missing
+     feature without a documented disposition.
+
 ## Sparky testing
 
 Sparky is Rocky Linux's test automation framework. It uses QEMU/libvirt VMs and Sparrow tasks for
