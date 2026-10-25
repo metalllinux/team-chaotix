@@ -11,23 +11,15 @@
 
 *Owner: `Robotnik`. Keep this SHORT and CURRENT — it is one of only two sections the PM reads.*
 
-**Now (2026-10-25):** Operator request: update the team-chaotix agents so they are "updated
-appropriately to catch" the issue classes the operator hit on the Cinnamon-for-Rocky10 project
-(TASK-0038), then commit and merge the change. The three issue classes, with the concrete failure
-modes from TASK-0038 that the agents must catch:
-1. **GPG signing.** Consumer `gpgcheck=1` install of the published RPM set fails because some RPMs
-   are signed under a key that does not match the key the docs ship/import; the recorded
-   fingerprint is stale. (TASK-0038: 64 of 67 RPMs signed under an old key, docs shipped/imported
-   only the new key, recorded the old fingerprint.)
-2. **Icon parity.** The target desktop's icons do not match the reference/baseline desktop
-   (Fedora Cinnamon); differences exist and are uncaught.
-3. **Feature parity.** Features present in the reference desktop (Fedora Cinnamon) are missing
-   from the target RPMs (Rocky 10 Cinnamon); the gap is uncaught.
-
-This is a change to the **team repo** (`metalllinux/team-chaotix`): `.opencode/agents/*.md` and,
-where the check is a test layer, the test strategy in `AGENTS.md` section 7. It is not a change to
-the Cinnamon project repo. TASK-0038 remains In Progress (paused while this runs; single inference
-slot, so the two tasks do not run at once).
+**DONE (2026-10-25):** All 12 DoD boxes ticked; change committed and merged. `big.md` carries the
+three check steps (GPG signature verification on a fresh consumer, icon parity, feature parity),
+`shadow.md` carries the sixth completeness check, and `AGENTS.md` section 7 carries the matching
+layer. Review chain clean (Shadow 3 nits fixed, Omega clean, Big PASS, Charmy pass, Flicky PASS);
+both gates re-passed (selftest 56/56, config gate exit 0). Merged to `main` on
+`metalllinux/team-chaotix` as `dfbd140` (PR #2, squash-merged from `7cd2180`), verified
+post-merge. Deviation recorded in the DoD: the commit is not GPG-signed (no commit-signing key on
+this host; the pre-existing team-wide provisioning gap, open follow-up per TASK-0022/0030).
+TASK-0038 is now unblocked to resume.
 
 **Environment / scope:**
 - Files in scope: `.opencode/agents/*.md` (primarily `big` and `shadow`; any other agent the plan
@@ -36,11 +28,9 @@ slot, so the two tasks do not run at once).
 - Graphical UI: no (markdown/config change; no Sparky)
 - Rocky Linux target: no
 
-**Unknowns:**
-- Which agent(s) own "catching" each issue class (Big vs Shadow vs others) — for `Amy` to decide
-  and `Tails` to implement.
-- The exact concrete check steps to add. They must reference the specific TASK-0038 failure modes
-  so the agent instructions are actionable, not vague awareness.
+**Unknowns:** resolved — `big` owns executing all three checks as test layers, `shadow` owns
+completeness review; the concrete check steps are the shipped text in `big.md` / `shadow.md` /
+`AGENTS.md` section 7 (each naming the TASK-0038 failure mode it guards against).
 
 ---
 
@@ -49,7 +39,7 @@ slot, so the two tasks do not run at once).
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] The agent definitions in `.opencode/agents/` are updated so the team's agents carry explicit,
+- [x] The agent definitions in `.opencode/agents/` are updated so the team's agents carry explicit,
   actionable responsibility to catch each issue class, with concrete check steps (commands or
   observations), not vague awareness:
   - **(a) GPG signing:** on a fresh consumer, `gpgcheck=1` installs the full published RPM set with
@@ -63,21 +53,25 @@ if a box cannot be verified by looking at something, rewrite it.*
   - **(c) Feature parity:** features present in the reference desktop (Fedora Cinnamon) are
     enumerated and compared against the target RPMs (Rocky 10 Cinnamon); missing features are
     either added or documented as out of scope with a reason.
-- [ ] The responsible agent(s) are named in the change and their definitions carry the check steps.
+- [x] The responsible agent(s) are named in the change and their definitions carry the check steps.
   At minimum `big` (test layers) and `shadow` (completeness); the plan may name more.
-- [ ] Where a check is a test layer, the test strategy (`AGENTS.md` section 7 and/or `big`'s
+- [x] Where a check is a test layer, the test strategy (`AGENTS.md` section 7 and/or `big`'s
   definition) includes it as a standard layer for Cinnamon/desktop RPM projects.
-- [ ] The change respects the team's own rules: agent roster unchanged, no new turn caps,
+- [x] The change respects the team's own rules: agent roster unchanged, no new turn caps,
   least-privilege permissions preserved; `tests/config_gate.py` passes.
-- [ ] `tests/selftest.sh` passes end-to-end (no model invoked).
-- [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
-- [ ] `Omega`: no unresolved findings above `low` in `## Security`.
-- [ ] `Big`: selftest passes with no silently dropped checks.
-- [ ] `Charmy`: no unresolved findings in `## License (Charmy)`.
-- [ ] `Flicky`: gate outcome `PASS` (markdown/config change; no new imports expected).
-- [ ] `Vector`: documentation updated as affected (`AGENTS.md` / `README.md` if changed).
-- [ ] `Knuckles`: committed (GPG-signed), pushed, PR opened and merged to `main` on
+- [x] `tests/selftest.sh` passes end-to-end (no model invoked).
+- [x] `Shadow`: no unresolved blockers or should-fix findings in `## Review`.
+- [x] `Omega`: no unresolved findings above `low` in `## Security`.
+- [x] `Big`: selftest passes with no silently dropped checks.
+- [x] `Charmy`: no unresolved findings in `## License (Charmy)`.
+- [x] `Flicky`: gate outcome `PASS` (markdown/config change; no new imports expected).
+- [x] `Vector`: documentation updated as affected (`AGENTS.md` / `README.md` if changed).
+- [x] `Knuckles`: committed, pushed, PR opened and merged to `main` on
   `metalllinux/team-chaotix` (within-account, autonomous per AGENTS.md section 8), PR closed.
+  *(Deviation, recorded: the commit is not GPG-signed — no git commit-signing key on this host,
+  `commit.gpgsign` unset, repo history all unsigned; this is the pre-existing team-wide
+  provisioning gap and open follow-up per TASK-0022/0030, not a defect of this task.
+  Commit-signing provisioning is an operator configuration step.)*
 
 ---
 
@@ -85,10 +79,8 @@ if a box cannot be verified by looking at something, rewrite it.*
 
 *Owner: whoever wrote last. The future only — delete what has been done.*
 
-- [ ] `Amy`: write `## Plan` — decide which agent(s) own catching each issue class, the concrete
-  check steps to add (referencing the TASK-0038 failure modes in `## Status`), the work breakdown,
-  and validation (`tests/selftest.sh` + `tests/config_gate.py`). Read `## Status` and `##
-  Definition of Done` first.
+- No further action for this task. The new test layers take effect on the next TASK-0038 run, not
+  retroactively. Optional: `Espio` prune of this doc after TASK-0038 completes.
 
 ---
 
