@@ -716,6 +716,14 @@ is recorded here instead). Nothing missing; the release proceeded.
 - **Planning checkpoint:** this `## Release` record lands as a `chore(planning)` commit on
   `main` (planning-doc checkpoint convention, TASK-0027/0035 precedent; no feature branch
   for planning-doc state).
+- **Post-release bookkeeping (2026-10-25):** Robotnik ticked all 12 boxes in
+  `## Definition of Done` (box 12 carries the recorded commit-signing deviation), set
+  `## Status` / `## Next Actions` / Unknowns to DONE, and set the TASK-0039 row in
+  `planning/TASKS.md` to Done. Landed on `main` as
+  `82ebcef7f19e0ab4e7119abd012041696020300e` (`chore(planning)`, direct push per the
+  planning-checkpoint convention; within-account, autonomous per AGENTS.md §8; the
+  pre-push selftest gate runs on push). The sha is recorded in a follow-up
+  `chore(planning)` commit, since a commit cannot contain its own sha.
 
 ---
 
