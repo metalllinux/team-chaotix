@@ -679,12 +679,51 @@ checks" is satisfied. No code bug, no harness bug. The three nits in `## Review`
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** yes (2026-10-25, Knuckles). All boxes verified against in-doc
+evidence at release time: boxes 1-3 per `## Implementation`, re-verified directly in the
+working tree (the three check steps at `big.md:87-126` including the nit 3 feature-level
+rewrite, item 6 at `shadow.md:83-94` including the nit 2 trigger rewrite, the §7 bullet at
+`AGENTS.md:209-214` including the nit 1 qualifiers); box 4 and box 5 per `## Test Results`
+(both gates exit 0, 56 checks, re-passed after the fix pass); box 6 Shadow no blockers or
+should-fix, the three nits fixed in the `## Implementation` fix pass (re-verified in the
+files at release time); box 7 Omega clean; box 8 Big PASS (56/56, no silently dropped
+checks); box 9 Charmy pass; box 10 Flicky gate PASS exit 0; box 11 Vector complete in
+`## Docs`; box 12 closed by this record. The boxes remain unticked in `## Definition of
+Done` (that section is Robotnik's, and per the TASK-0022/0017 precedent the verification
+is recorded here instead). Nothing missing; the release proceeded.
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** `feature/TASK-0039-agent-gpg-icon-feature-catch`, cut from `main` at `8e7411b`
+  (= `origin/main` at release time, the plan's fork point).
+- **Commits:** `7cd2180d5c7661c8bb1c16f307594b650982b18c` on the branch, 6 files
+  (+1606/−1), author `Team Chaotix <chaotix@metallinux.dev>`. GPG-signed: no — this host has
+  no GPG key (`gpg --list-secret-keys` empty), `commit.gpgsign` and `user.signingkey` are
+  unset, and the recent repo history is all unsigned (`git log --format='%h %G?'` → N).
+  Unsigned by current practice (TASK-0022/0030 precedent); GPG provisioning stays the open
+  follow-up those records name.
+- **PR:** #2 opened (https://github.com/metalllinux/team-chaotix/pull/2), squash-merged to
+  `main` as `dfbd14098f471f4cd997571b7f815c9a106a29ab`. In-account repo, autonomous per
+  AGENTS.md §8, no human gate. The merge went through the GraphQL `mergePullRequest`
+  mutation, because the REST `POST /pulls/{n}/merge` endpoint returns an empty 404 from
+  this host (the egress pattern recorded in TASK-0033); PR creation and all reads worked
+  on REST. The four PR-triggered workflow runs (Planning Doc Gate 40190848686, Static
+  Checks 40190848589, Team Selftest 40190848621, Secret Scan Self 40190848590) sat
+  `queued` on the unregistered runner and were cancelled at merge time (TASK-0022
+  precedent).
+- **Deploy:** n/a — a markdown/config change to the team repo; no deployment workflow
+  applies. The local pre-push selftest gate ran on the branch push and passed
+  (`SELFTEST: 56 checks passed`; the effective gate per AGENTS.md §6 while the repo is
+  public and the runner is unregistered).
+- **Staged scope:** exactly the six intended files (`.opencode/agents/big.md`,
+  `.opencode/agents/shadow.md`, `AGENTS.md`, `planning/TASKS.md`, the TASK-0038 planning
+  doc, this doc). The untracked TASK-0038 RPM artifacts and the operator draft files (`-`,
+  `continue-prompt-2026-10-05.md`, `prompt-task0026-continuation.md`) stayed untracked and
+  unstaged (Flicky's observation in `## License Audit` holds).
+- **Post-merge verification:** merge commit `dfbd140` on `main` carries exactly the six
+  files (+1606/−1), verified by `git show --stat` after the local fast-forward
+  (`8e7411b..dfbd140`).
+- **Planning checkpoint:** this `## Release` record lands as a `chore(planning)` commit on
+  `main` (planning-doc checkpoint convention, TASK-0027/0035 precedent; no feature branch
+  for planning-doc state).
 
 ---
 
