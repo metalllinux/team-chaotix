@@ -508,4 +508,5 @@ pytest). Recorded in `planning/docs/TASK-0037-team-platform.md`.
 <!-- Promoted by agentsmd after review. -->
 - [r000] Reach test instances by name through portless, never by raw port.  (cited: 0)
 - [r001] A subagent dispatch that fails with a request-body or compaction-summary size error means the PM session context is too large for the child to inherit; record a handoff in the planning doc's ## Status and continue in a fresh PM session.  (cited: 0)
+- [r002] Leave every change the team tests applied on the team's test VMs — do not reset or destroy a test VM at the end of a run — so the operator can check the VMs for themselves and see the differences.  (cited: 0)
 <!-- agentsmd:learned:end -->
