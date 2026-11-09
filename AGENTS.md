@@ -365,9 +365,10 @@ limit. Destroy what you are done with.
 - **agentsmd:** `~/.local/bin/agentsmd` (section 16)
 
 ### Credential storage
-- **`~/secrets/` on the local machine only** (section 4). No GitHub Environments, no Keychain,
+- **`~/AI/secrets/` on the local machine only** (section 4). No GitHub Environments, no Keychain,
   no pass store.
-- Issue tracking is **GitHub Issues only** via `gh` CLI. No Jira integration.
+- Issue tracking is **GitHub Issues only**, via git plus the REST API with the token from
+  `~/AI/secrets/token.md` (the `gh` CLI is not installed on this host). No Jira integration.
 
 ### Sparky / Raku
 - Raku is not in Rocky Linux 10 default repos. Must be installed manually.

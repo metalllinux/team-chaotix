@@ -49,7 +49,7 @@ Key permission patterns:
   and are scoped by role, in their prompt, not by tool
 - `Shadow`, `Omega`, and `Charmy` are read-only on code in practice: their writes go to the
   planning doc, into their own section (`Espio` additionally archives within existing sections)
-- No agent can access credential stores directly. Secrets live in `~/secrets/` on the local
+- No agent can access credential stores directly. Secrets live in `~/AI/secrets/` on the local
   machine, never in the repo and never on GitHub
 
 ## Getting started
@@ -58,24 +58,17 @@ Key permission patterns:
 
 1. **opencode** installed and configured
 2. **Git** with access to `metalllinux/team-chaotix` on GitHub
-3. **GitHub token** with `repo` and `workflow` scopes (see below)
+3. **GitHub token** with the `repo` scope (see below)
 4. **Self-hosted GitHub Actions runner** on Rocky Linux (see Runner setup below)
 
 ### GitHub authentication
 
-Sonic, Knuckles, and Robotnik use `gh` CLI to read Issues, create PRs, and dispatch workflows. The
-token must be available as the `GH_TOKEN` environment variable before launching opencode:
+GitHub operations run through git plus the REST API, with the token from `~/AI/secrets/token.md`.
+The `gh` CLI is not installed on the host.
 
-```bash
-GH_TOKEN="$(cat ~/secrets/github-token.md)" opencode
-```
-
-The token needs `repo` and `workflow` scopes. That covers reading Issues and PRs, creating pull
-requests, and triggering GitHub Actions workflow runs.
-
-The push token lives in `~/secrets/github-token.md` on the local machine (file mode 600,
-directory mode 700). No secret is ever committed or pushed to GitHub. Workflow runs on the
-self-hosted runner (this machine) read what they need from `~/secrets/` at run time.
+The token lives in `~/AI/secrets/token.md` on the local machine (file mode 600, directory mode
+700) and has the `repo` scope. No secret is ever committed or pushed to GitHub. Workflow runs on
+the self-hosted runner (this machine) read what they need from `~/AI/secrets/` at run time.
 Token files named `githubtoken*.md` stay in `.gitignore` as a trap for accidents.
 
 ### Quick start
@@ -314,10 +307,10 @@ All actions are hand-written. No Marketplace actions are used (except `actions/c
 
 ## Secrets management
 
-- **No secrets in the repository, and none on GitHub.** All credentials live in `~/secrets/` on
+- **No secrets in the repository, and none on GitHub.** All credentials live in `~/AI/secrets/` on
   the local machine (one file per secret, mode 600, directory mode 700).
 - Workflows run on the self-hosted runner (this machine) and read what they need from
-  `~/secrets/` at run time. Nothing secret is referenced from GitHub Environments, and none
+  `~/AI/secrets/` at run time. Nothing secret is referenced from GitHub Environments, and none
   is pushed.
 - In workflow `run:` blocks, untrusted input is bound to `env:` first, never interpolated.
 - `printenv VAR > file` is used instead of `echo "$VAR" > file` when materialising keys.
