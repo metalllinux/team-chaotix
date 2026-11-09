@@ -700,12 +700,15 @@ are the operator's configuration role (AGENTS.md §16).
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** no (boxes 3, 5, 7, 8 pending operator steps; not a release)
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+- **Branch:** main (docs-only change, per the in-repo planning-doc commit precedent; no feature branch)
+- **Commits:** GPG-signed (yes; `git log -1 --format=%G?` → G, identity `Team Chaotix <chaotix@metallinux.dev>`, key `49261060…EB67` via global `~/.gitconfig`)
+- **Commit:** `9cab6d23aff15a08fa4fb4a661931ef27fbfb411` `docs(planning): TASK-0040 planning doc and credential-storage corrections` (this planning doc, `planning/TASKS.md`, `README.md`, `AGENTS.md` §13)
+- **PR:** none (in-repo, metalllinux account, autonomous per standing permission; not a release, no tag)
+- **Deploy:** n/a (not a release)
+- **Push:** pushed to `origin/main` (`metalllinux/team-chaotix`) 2026-11-10; pre-push selftest 56 checks passed; push range `0f4e5cf..9cab6d2` includes the two pre-existing local commits (`6f1e28c`, `22bb25b`); post-push `git ls-remote origin refs/heads/main` == local HEAD
+- **Secrets check:** staged diff scanned against runtime-derived fragments of every file in `~/AI/secrets/` (first and second base64 body line of each export, token line, passphrase files, machine-pass file) → zero hits; no file from `~/AI/secrets/` staged or tracked; paths only, never values
 
 ---
 
