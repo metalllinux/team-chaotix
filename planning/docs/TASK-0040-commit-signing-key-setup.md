@@ -1001,7 +1001,7 @@ the operator or a follow-up task if the setup instructions should stay current.
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** no (boxes 3, 5, 7, 8 pending operator steps; not a release)
+**DONE checklist verified:** no (9/10; box 7 open on operator steps; not a release)
 
 - **Branch:** main (docs-only change, per the in-repo planning-doc commit precedent; no feature branch)
 - **Commits:** GPG-signed (yes; `git log -1 --format=%G?` → G, identity `Team Chaotix <chaotix@metallinux.dev>`, key `49261060…EB67` via global `~/.gitconfig`)
@@ -1010,6 +1010,15 @@ the operator or a follow-up task if the setup instructions should stay current.
 - **Deploy:** n/a (not a release)
 - **Push:** pushed to `origin/main` (`metalllinux/team-chaotix`) 2026-11-10; pre-push selftest 56 checks passed; push range `0f4e5cf..9cab6d2` includes the two pre-existing local commits (`6f1e28c`, `22bb25b`); post-push `git ls-remote origin refs/heads/main` == local HEAD
 - **Secrets check:** staged diff scanned against runtime-derived fragments of every file in `~/AI/secrets/` (first and second base64 body line of each export, token line, passphrase files, machine-pass file) → zero hits; no file from `~/AI/secrets/` staged or tracked; paths only, never values
+
+**Second planning-doc-and-docs commit (2026-11-11, re-run chain complete on the identity change):**
+
+- **Commit:** `ff2d3f4116625218001551c9dc687f06bc3ecb06` `docs(planning): TASK-0040 re-run chain, AGENTS.md section 4 fix, TASKS row, doc deltas`. Paths: `AGENTS.md` (section 4 secrets-path fix), `planning/TASKS.md` (TASK-0040 row), `planning/docs/TASK-0033-cinnamon-project-environment.md`, `planning/docs/TASK-0038-cinnamon-gpg-settings-icons.md`, `planning/docs/TASK-0040-commit-signing-key-setup.md`, `planning/decisions/TASK-0040-commit-signing-format.md` (new file)
+- **Commits:** GPG-signed (yes; `git log -1 --format=%G?` → G; identity `Team Chaotix <howard.a.vanderwal@protonmail.com>` via the global `~/.gitconfig`, key `F9261D151316FD60`; the repo-local `user.name`/`user.email` overrides carried the retired `chaotix@metallinux.dev` and were unset before the commit; local config only, not committed)
+- **PR:** none (in-repo, metalllinux account, autonomous per standing permission; not a release, no tag)
+- **Deploy:** n/a (not a release)
+- **Push:** pushed to `origin/main` (`metalllinux/team-chaotix`) 2026-11-11; pre-push selftest 56 checks passed; post-push `git ls-remote origin refs/heads/main` == local HEAD `ff2d3f41…cb06`
+- **Secrets check:** staged diff scanned against runtime-derived fragments of every file in `~/AI/secrets/` (first base64 body lines of each export, token line, passphrase lines, whole lines of the small files) → 1 hit, classified as the `[commit]` git config section header quoted in the Test Results table, not secret material; zero secret material otherwise; no file from `~/AI/secrets/` staged or tracked (tracked paths checked by name; the directory is outside the repo); `README.md` unchanged since `9cab6d23`
 
 ---
 
