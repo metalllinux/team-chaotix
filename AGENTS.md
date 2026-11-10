@@ -126,11 +126,11 @@ the command that produced it. If you did not verify something, say so explicitly
 
 - **No credential, token, key, or password is ever written to a file in the repo, a commit, a log,
   a planning doc, or GitHub.** Not redacted, not partial, not "example" values that are real.
-- **Secrets live in `~/secrets/` on the local machine.** One file per secret
-  (`~/secrets/<name>.md`), file mode 600, directory mode 700, owned by the operator's user.
+- **Secrets live in `~/AI/secrets/` on the local machine.** One file per secret
+  (`~/AI/secrets/<name>.md`), file mode 600, directory mode 700, owned by the operator's user.
   They are never committed, never pushed, and never uploaded to GitHub in any form.
 - Workflows run on the self-hosted runner, which is this machine. A workflow that needs a secret
-  reads it from `~/secrets/` at run time and binds it to `env:`. GitHub Environments are not
+  reads it from `~/AI/secrets/` at run time and binds it to `env:`. GitHub Environments are not
   used by this team, and no secret is stored in them.
 - In workflow `run:` blocks, never interpolate untrusted input directly. Bind it to `env:` and
   reference the env var.
