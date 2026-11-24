@@ -54,38 +54,38 @@ they are records of when Flicky existed, not living config.
 *Owner: `Robotnik`, and nobody else. Written **before** any work starts. Objectively checkable —
 if a box cannot be verified by looking at something, rewrite it.*
 
-- [ ] `.opencode/agents/flicky.md` is deleted; the agent roster is 11 (12 minus `flicky`).
-- [ ] `.opencode/agents/charmy.md` owns all of Flicky's functionality: she runs the machine gate
+- [x] `.opencode/agents/flicky.md` is deleted; the agent roster is 11 (12 minus `flicky`).
+- [x] `.opencode/agents/charmy.md` owns all of Flicky's functionality: she runs the machine gate
   `scripts/licence-check`, records its 4-outcome result (PASS / POLICY_EXCEPTION / BLOCK /
   HARD_STOP), and does the upstream-at-ref verification and obligations/attribution checks. Charmy
   is the sole licence agent.
-- [ ] `.opencode/agents/robotnik.md` task-allows no longer lists `flicky`; the other 10 workers remain.
-- [ ] `AGENTS.md`: the roster is 11 agents with no mention of Flicky; the review chain is
+- [x] `.opencode/agents/robotnik.md` task-allows no longer lists `flicky`; the other 10 workers remain.
+- [x] `AGENTS.md`: the roster is 11 agents with no mention of Flicky; the review chain is
   `Shadow` → `Omega` → `Big` → `Charmy` (Charmy last); section 9 (licence compliance) is owned by
   Charmy; the planning-doc contract lists the consolidated `## License (Charmy)` section; the
   section-18 cycle graph has no Flicky node.
-- [ ] `tests/config_gate.py`: the WORKERS roster has no `flicky`; the chain assertion expects
+- [x] `tests/config_gate.py`: the WORKERS roster has no `flicky`; the chain assertion expects
   `Shadow → Omega → Big → Charmy`; the doc contract asserts the consolidated section, not
   `## License Audit (Flicky)`.
-- [ ] `team/graph/state.py` and `team/graph/cycle.py`: no `review_flicky` state and no Flicky node;
+- [x] `team/graph/state.py` and `team/graph/cycle.py`: no `review_flicky` state and no Flicky node;
   the cycle is intake → plan → implement → review (Shadow, Omega, Big, Charmy) → fix loop → docs →
   release → archive.
-- [ ] `tests/test_cycle.py` and `tests/test_a2a.py`: no `flicky` references; the A2A skill
+- [x] `tests/test_cycle.py` and `tests/test_a2a.py`: no `flicky` references; the A2A skill
   assertion reflects the 11-agent roster.
-- [ ] `README.md`: no Flicky in the diagram, the agent table, or the chain prose; Charmy is
+- [x] `README.md`: no Flicky in the diagram, the agent table, or the chain prose; Charmy is
   described as the sole licence agent.
-- [ ] `planning/templates/planning-doc.md`: a single consolidated `## License (Charmy)` section
+- [x] `planning/templates/planning-doc.md`: a single consolidated `## License (Charmy)` section
   carrying both the licence review and the machine-gate audit; the DoD item is one consolidated
   Charmy item.
-- [ ] `scripts/licence-check`, `.github/workflows/licence-check.yml`, `team/licenses/core.py`,
+- [x] `scripts/licence-check`, `.github/workflows/licence-check.yml`, `team/licenses/core.py`,
   `team/licenses/policy.yaml`, `team/__init__.py`: "Flicky's tool" / "Flicky agent" references
   updated to Charmy.
-- [ ] No `flicky` / `Flicky` remains in any living team file (`.opencode/agents/`, `AGENTS.md`,
+- [x] No `flicky` / `Flicky` remains in any living team file (`.opencode/agents/`, `AGENTS.md`,
   `tests/`, `team/`, `README.md`, `planning/templates/`, `scripts/`, `.github/`). Historical
   planning docs (`planning/docs/TASK-003x`) and `continue-prompt-*` scratch files are
   intentionally untouched.
-- [ ] `tests/selftest.sh` passes (config gate + pytest + licence gate).
-- [ ] Committed (GPG-signed) and pushed to `metalllinux/team-chaotix` via a PR, merged to `main`.
+- [x] `tests/selftest.sh` passes (config gate + pytest + licence gate).
+- [x] Committed (GPG-signed) and pushed to `metalllinux/team-chaotix` via a PR, merged to `main`.
 
 ---
 
@@ -94,11 +94,7 @@ if a box cannot be verified by looking at something, rewrite it.*
 *Owner: whoever wrote last. The future only — delete what has been done. The second of the two sections
 the PM reads.*
 
-- [ ] `Tails`: one-phrase polish — reword the `## Implementation` checks clause so the `.pyc` is
-  described as reused in steady state, not regenerated on every run (Shadow's nit).
-- [ ] `Vector`: docs pass — README verified against the implementation, CHANGELOG if present; write
-  `## Docs`.
-- [ ] `Knuckles`: GPG-signed commit, PR to `metalllinux/team-chaotix`, merge to `main`.
+- [ ] `Espio`: archive pass — prune superseded detail from this doc per the section contract.
 
 ---
 
@@ -685,12 +681,30 @@ item (de-embed or token rotation), not a test gate, and does not change this ver
 
 *Owner: `Knuckles`.*
 
-**DONE checklist verified:** yes / no — if no, what is missing and this stops here.
+**DONE checklist verified:** yes — all 13 boxes ticked (box 13 is this release)
 
-- **Branch:**
-- **Commits:** GPG-signed
-- **PR:** opened ✅ | human reviewed ✅ (if external)
-- **Deploy:** dispatched workflow run <id>, result
+| Box | Verified | Evidence |
+|---|---|---|
+| 1. `flicky.md` deleted, roster 11 | yes | `ls .opencode/agents/*.md \| wc -l` → 11; `git status` shows `D .opencode/agents/flicky.md`; config gate `roster OK (11 agents)` |
+| 2. `charmy.md` owns all of Flicky's functionality | yes | gate + four-outcome table + upstream-at-ref + `VERDICT` contract blocks present; frontmatter unchanged; Shadow cross-file block-counterpart check in `## Review` |
+| 3. `robotnik.md` task-allows: no flicky, other 10 workers remain | yes | `grep -in flicky .opencode/agents/robotnik.md` → empty; task block lists exactly the 10 workers |
+| 4. `AGENTS.md`: 11 agents, no Flicky, chain ends at Charmy, section 9, contract, section 18 | yes | `grep -ci flicky AGENTS.md` → 0; chain at `:117` ends at `Charmy`; section 9 at `:248`; contract line at `:76` |
+| 5. `config_gate.py`: WORKERS, chain assertion, doc contract | yes | no literal in source (concatenation idiom); config gate green, all five OK lines |
+| 6. `state.py` / `cycle.py`: no `review_flicky`, no Flicky node | yes | `grep -in flicky` → empty; 11 stages, `review_charmy` present |
+| 7. `test_cycle.py` / `test_a2a.py`: no flicky references; 11-agent A2A assertion | yes | no literal in source; `assert len(skill_ids) == 11` at `:71` |
+| 8. `README.md`: no Flicky; Charmy sole licence agent | yes | `grep -ci flicky README.md` → 0; Vector docs pass in `## Docs` |
+| 9. Template: single consolidated `## License (Charmy)` section | yes | `grep -ci flicky planning/templates/planning-doc.md` → 0; zero `License Audit` pointers |
+| 10. `scripts/licence-check`, workflow, `team/licenses/`, `team/__init__.py` → Charmy | yes | `grep -ri flicky scripts .github team` → empty |
+| 11. No flicky/Flicky in any living team file | yes | scoped grep (`--exclude-dir=__pycache__`) → no matches, exit 1 |
+| 12. `tests/selftest.sh` passes | yes | exit 0, `SELFTEST: 56 checks passed` (config gate + 28 pytest + licence gate PASS) |
+| 13. GPG-signed, pushed via PR, merged to main | yes | this release, below |
+
+- **Branch:** feature/TASK-0041-remove-flicky-fold-into-charmy
+- **Commits:** GPG-signed yes. Implementation commit `80cba76` (full `80cba7613460b213ce2b555b0b2c08a9037049d8`), signed, good signature from Team Chaotix (EDDSA key D553…FD60), 18 files (16 in-scope + this doc + the TASKS.md row), nothing else staged (untracked scratch and the prior-task TASK-0040 doc delta excluded).
+- **PR:** #3 opened ✅, squash-merged ✅ (inside `metalllinux`, no human review needed)
+- **Merge:** squash-merged to main as `f0679ca` (full `f0679ca775c9d23507fc30b8bca041f3ea2a9837`), title `refactor(team): remove Flicky agent; fold licence functionality into Charmy (#3)`; PR #3 state: merged
+- **Local gate:** pre-push hook ran `tests/selftest.sh` on the branch push, green (56 checks); it re-ran on the bookkeeping push to main, green
+- **Deploy:** n/a — in-repo team config change, no deployment target; the merge to main is the release. No workflow dispatched.
 
 ---
 
