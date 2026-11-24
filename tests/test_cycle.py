@@ -27,7 +27,7 @@ class FakeRunner:
     def __call__(self, agent: str, task_id: str, brief: str) -> str:
         self.calls.append((agent, brief))
         out = f"[{agent}] stage done"
-        if agent in ("shadow", "omega", "big", "charmy", "flicky"):
+        if agent in ("shadow", "omega", "big", "charmy"):
             # Reviewers always end with an explicit verdict; a clean round
             # is a PASS, not silence (silence is fail-closed by design).
             if self.round < self.fail_rounds and (
@@ -70,7 +70,7 @@ def test_cycle_runs_start_to_archive_with_clean_reviews(tmp_path, monkeypatch):
     assert final["stage_history"] == [
         "intake", "plan", "implement",
         "review_shadow", "review_omega", "review_big", "review_charmy",
-        "review_flicky", "docs", "release", "archive",
+        "docs", "release", "archive",
     ]
     # langchain-core messages: the first message is the task brief, and
     # every stage left an AIMessage in the log.

@@ -35,8 +35,8 @@ if a box cannot be verified by looking at something, rewrite it.*
 - [ ] `Shadow`: no unresolved blockers or should-fix findings in `## Review`
 - [ ] `Omega`: no unresolved findings above `low` in `## Security`
 - [ ] `Big`: all harness checks PASS, with no silently dropped checks
-- [ ] `Charmy`: no unresolved findings in `## License (Charmy)`
-- [ ] `Flicky`: gate outcome `PASS`, or a `POLICY_EXCEPTION` recorded in `## License Audit (Flicky)`
+- [ ] `Charmy`: no unresolved findings in `## License (Charmy)`, and gate outcome `PASS` or a
+      `POLICY_EXCEPTION` recorded in the same section
 - [ ] `Vector`: documentation updated as affected
 - [ ] Human review completed (if external PR or deployment)
 
@@ -125,8 +125,9 @@ the PM reads.*
 
 ## License (Charmy)
 
-*Owner: `Charmy`. Fourth in the review chain. Every license is verified at the upstream source
-repository and the ref used, never from a copy in this repo.*
+*Owner: `Charmy`. Fourth in the review chain (last). Every licence is verified at the upstream
+source repository and the ref used, never from a copy in this repo. Runs the machine gate; the
+gate is evidence, and this section records it. Never grants or refuses an exception.*
 
 **Project license:** <license> — appropriate | finding
 
@@ -136,16 +137,7 @@ repository and the ref used, never from a copy in this repo.*
 |---|---|---|---|---|
 | | | | yes/no + what | pass/finding |
 
-**Verdict:** pass | findings *(Tails fixes; the chain re-runs until clean)*
-
----
-
-## License Audit (Flicky)
-
-*Owner: `Flicky`. Fifth in the review chain. Runs the machine gate; the gate is evidence, and
-this section records it. Never grants or refuses an exception.*
-
-**Gate:** `scripts/licence-check <project-root>` (exit 0 `PASS` · 6 `POLICY_EXCEPTION` ·
+**Machine gate:** `scripts/licence-check <project-root>` (exit 0 `PASS` · 6 `POLICY_EXCEPTION` ·
 7 `BLOCK` · 8 `HARD_STOP`)
 
 **Outcome:** PASS | POLICY_EXCEPTION | BLOCK | HARD_STOP *(state the exit code that produced it)*
@@ -159,7 +151,8 @@ this section records it. Never grants or refuses an exception.*
 **Exceptions recorded:** *(each POLICY_EXCEPTION with the clause quoted and why it is lawful,
 or "none")*
 
-**Verdict:** pass | findings *(fail-closed: a gate run that cannot be read is FAIL)*
+**Verdict:** pass | findings *(fail-closed: a gate run that cannot be read is FAIL; Tails fixes,
+and the chain re-runs until clean)*
 
 ---
 

@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 AGENTS = ROOT / ".opencode" / "agents"
 WORKERS = [
-    "amy", "big", "charmy", "espio", "flicky", "knuckles",
+    "amy", "big", "charmy", "espio", "knuckles",
     "omega", "shadow", "sonic", "tails", "vector",
 ]
 ROBOTNIK = "robotnik"
@@ -63,11 +63,16 @@ def main() -> None:
         if p.stem == ROBOTNIK:
             if not re.search(r"^mode:\s*primary", fm, re.M):
                 fail("robotnik: mode must be primary")
-            # The delegator allows every worker, and nothing else, via task.
+            # The delegator allows every worker, and nothing else, via task:
+            # allowed must equal set(WORKERS) exactly, so a dead allow for a
+            # name with no agent file fails instead of passing a one-way
+            # missing-set check.
             allowed = set(re.findall(r'^\s+"([a-z]+)":\s*allow', fm, re.M))
-            missing = set(WORKERS) - allowed
-            if missing:
-                fail("robotnik: task allows missing for %s" % sorted(missing))
+            if allowed != set(WORKERS):
+                fail("robotnik: task allows must be exactly the worker set "
+                     "(missing=%s, extra=%s)"
+                     % (sorted(set(WORKERS) - allowed),
+                        sorted(allowed - set(WORKERS))))
             if "question: deny" not in fm:
                 fail("robotnik: question must stay denied")
             # The delegator is the only agent with full thinking.
@@ -85,20 +90,37 @@ def main() -> None:
                 fail(f"{p.stem}: question must stay denied")
     print("config-gate: thinking levels and permissions OK")
 
-    # The review chain in AGENTS.md must name the licence agent last.
+    # The review chain in AGENTS.md section 3 must name the sole licence
+    # agent last. The check is pinned to the section-3 line itself (the
+    # line that carries "fixed sequence"): the section-18 cycle
+    # parenthetical carries the same chain, and a whole-file search would
+    # let a deleted section-3 sentence, or a 5-agent regressed chain with a
+    # new fifth-agent name, pass on that match. The cycle chain also runs
+    # Charmy and then continues to `Tails` fixes, so "ends at Charmy" is
+    # pinned on the chain string itself: the Shadow → Omega → Big → Charmy
+    # sequence with no arrow after Charmy. The absence check below still
+    # runs. The retired name is built by concatenation so this file never
+    # carries the literal (same idiom as test_cycle.py's max-Turns check).
     agents_md = (ROOT / "AGENTS.md").read_text()
-    chain = re.search(r"`Shadow`\s*→\s*`Omega`\s*→\s*`Big`\s*→\s*`Charmy`\s*→\s*`Flicky`",
-                      agents_md)
+    section3 = [ln for ln in agents_md.splitlines() if "fixed sequence" in ln]
+    chain = any(re.search(r"`Shadow`\s*→\s*`Omega`\s*→\s*`Big`\s*→\s*`Charmy`(?!\s*→)",
+                          ln)
+                for ln in section3)
     if not chain:
-        fail("AGENTS.md: review chain must be Shadow → Omega → Big → Charmy → Flicky")
-    if "## License Audit (Flicky)" not in agents_md:
-        fail("AGENTS.md: the doc contract must list ## License Audit (Flicky)")
+        fail("AGENTS.md: the section-3 review chain must be Shadow → Omega → Big → Charmy, "
+             "ending at Charmy")
+    if "## License (Charmy)" not in agents_md:
+        fail("AGENTS.md: the doc contract must list ## License (Charmy)")
+    if re.search(r"fl" "icky", agents_md, re.I):
+        fail("AGENTS.md: must not reference the retired licence agent")
     print("config-gate: AGENTS.md chain and doc contract OK")
 
-    # The planning template must carry the section in order.
+    # The planning template must carry the consolidated section in order.
     tpl = (ROOT / "planning" / "templates" / "planning-doc.md").read_text()
-    if "## License Audit (Flicky)" not in tpl:
-        fail("planning template: ## License Audit (Flicky) section missing")
+    if "## License (Charmy)" not in tpl:
+        fail("planning template: ## License (Charmy) section missing")
+    if re.search(r"fl" "icky", tpl, re.I):
+        fail("planning template: must not reference the retired licence agent")
     print("config-gate: planning template OK")
 
     # The A2A server's roster must not hardcode the team: it reads the

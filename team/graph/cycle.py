@@ -4,7 +4,7 @@ This is the dispatch backbone for the team: one compiled graph models the
 cycle in AGENTS.md,
 
     intake -> plan -> implement -> review chain (Shadow, Omega, Big,
-    Charmy, Flicky) -> (fix loop) -> docs -> release -> archive
+    Charmy) -> (fix loop) -> docs -> release -> archive
 
 with the review chain running as a fixed sequential chain, exactly the way
 the single inference slot requires.

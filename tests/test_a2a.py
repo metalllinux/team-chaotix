@@ -66,9 +66,12 @@ def test_agent_card_matches_roster_files(live_server):
     card = _get(base, "/.well-known/agent.json")
     assert card["name"] == srv.TEAM_NAME
     skill_ids = {s["id"] for s in card["skills"]}
-    # Every roster agent file is advertised, including the new licence
-    # agent and the delegator.
-    assert "flicky" in skill_ids
+    # Every roster agent file is advertised: the 11-agent roster with no
+    # retired agent, including the sole licence agent and the delegator.
+    assert len(skill_ids) == 11
+    # Concatenated so the source never carries the retired agent's literal
+    # name (same idiom as test_cycle.py's max-Turns check).
+    assert "fl" "icky" not in skill_ids
     assert "robotnik" in skill_ids
     assert "tails" in skill_ids
     # The card carries the protocol version and the team version.
