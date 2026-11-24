@@ -1,4 +1,4 @@
-"""Licence scanning and policy engine (Flicky's tooling).
+"""Licence scanning and policy engine (Charmy's tooling).
 
 Scans a project tree for licence declarations and evaluates them against
 the team's house policy (``policy.yaml``, next to this file). Four

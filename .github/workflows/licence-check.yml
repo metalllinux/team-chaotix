@@ -1,6 +1,6 @@
-# Licence Check (Flicky): the machine-checkable licence gate.
+# Licence Check (Charmy): the machine-checkable licence gate.
 #
-# Runs the same scanner Flicky runs by hand. Exit codes:
+# Runs the same scanner Charmy runs by hand. Exit codes:
 #   0 PASS  6 POLICY_EXCEPTION  7 BLOCK  8 HARD_STOP
 # The gate fails on BLOCK and HARD_STOP; POLICY_EXCEPTION passes with a
 # warning, because "avoid" is not "refuse" and inherited copyleft is
@@ -54,7 +54,7 @@ jobs:
               echo "licence-check: PASS"
               ;;
             POLICY_EXCEPTION)
-              echo "::warning::licence-check: POLICY_EXCEPTION - record the exception in the planning doc's ## License Audit"
+              echo "::warning::licence-check: POLICY_EXCEPTION - record the exception in the planning doc's ## License (Charmy)"
               ;;
             *)
               echo "::error::licence-check: ${OUTCOME}"

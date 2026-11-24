@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# licence-check -- the team's machine-checkable licence gate (Flicky's tool).
+# licence-check -- the team's machine-checkable licence gate (Charmy's tool).
 #
 # Scans the project root for licence declarations and evaluates them
 # against team/licenses/policy.yaml. Exit codes are the contract:
@@ -12,8 +12,8 @@
 # "Avoid" is not "refuse": inherited copyleft is frequently the only lawful
 # option, so it is an exception to record, not a block.
 #
-# CI runs this in .github/workflows/licence-check.yml; Flicky runs it by
-# hand and writes the verdict into the planning doc's ## License Audit.
+# CI runs this in .github/workflows/licence-check.yml; Charmy runs it by
+# hand and writes the verdict into the planning doc's ## License (Charmy).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

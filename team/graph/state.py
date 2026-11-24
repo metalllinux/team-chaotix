@@ -29,7 +29,6 @@ STAGES: tuple[str, ...] = (
     "review_omega",
     "review_big",
     "review_charmy",
-    "review_flicky",
     "docs",
     "release",
     "archive",
@@ -41,7 +40,6 @@ REVIEW_STAGES: tuple[str, ...] = (
     "review_omega",
     "review_big",
     "review_charmy",
-    "review_flicky",
 )
 
 #: The agent that owns each stage. ``fix`` is owned by the implementer.
@@ -53,7 +51,6 @@ STAGE_AGENT: dict[str, str] = {
     "review_omega": "omega",
     "review_big": "big",
     "review_charmy": "charmy",
-    "review_flicky": "flicky",
     "fix": "tails",
     "docs": "vector",
     "release": "knuckles",
