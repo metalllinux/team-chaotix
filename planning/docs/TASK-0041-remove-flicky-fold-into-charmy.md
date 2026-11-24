@@ -543,6 +543,7 @@ item (de-embed or token rotation), not a test gate, and does not change this ver
 - **Merge:** squash-merged to main as `f0679ca` (full `f0679ca775c9d23507fc30b8bca041f3ea2a9837`), title `refactor(team): remove Flicky agent; fold licence functionality into Charmy (#3)`; PR #3 state: merged
 - **Local gate:** pre-push hook ran `tests/selftest.sh` on the branch push, green (56 checks); it re-ran on the bookkeeping push to main, green
 - **Deploy:** n/a — in-repo team config change, no deployment target; the merge to main is the release. No workflow dispatched.
+- **Bookkeeping commit:** `810425c9d8a302af3f4d09b3a08994a17b593d15` (GPG-signed, 2026-11-24) — commits Espio's post-release archive pass on this doc; this line recorded in the follow-up bookkeeping commit
 
 ---
 
